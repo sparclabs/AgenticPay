@@ -1,6 +1,49 @@
-# AgenticPayGym
 
-A Multi-Agent Negotiation Framework for Buyer-Seller Transactions using LLM-based Agents.
+
+<h1 align="center" style="font-size: 30px;"><strong><em>AgenticPayGym</em></strong>: A Multi-Agent LLM Negotiation System for Buyer–Seller Transactions</h1>
+
+**A Multi-Agent Negotiation Framework for Buyer-Seller Transactions using LLM-based Agents.**
+
+- [Overview](#overview)
+- [Features](#features)
+- [Installation](#installation)
+  * [Dependencies](#dependencies)
+- [Quick Start](#quick-start)
+  * [Basic Single-Product Negotiation](#basic-single-product-negotiation)
+  * [Multi-Product Negotiation](#multi-product-negotiation)
+- [Project Structure](#project-structure)
+- [Core Components](#core-components)
+  * [Environments](#environments)
+    + [NegotiationEnv](#negotiationenv)
+    + [MultiProductNegotiationEnv](#multiproductnegotiationenv)
+  * [Agents](#agents)
+    + [BaseAgent](#baseagent)
+  * [Environment Registration System](#environment-registration-system)
+  * [ConversationMemory](#conversationmemory)
+  * [UserProfile](#userprofile)
+  * [BaseLLM](#basellm)
+- [Configuration](#configuration)
+  * [Environment Parameters](#environment-parameters)
+  * [Agent Configuration](#agent-configuration)
+    + [BuyerAgent](#buyeragent)
+    + [SellerAgent](#selleragent)
+    + [ProductSelectorAgent](#productselectoragent)
+  * [User Profile Configuration](#user-profile-configuration)
+  * [LLM Configuration](#llm-configuration)
+- [Examples](#examples)
+  * [Available Examples](#available-examples)
+  * [Running Examples](#running-examples)
+- [Extending the Framework](#extending-the-framework)
+  * [Adding a New LLM Provider](#adding-a-new-llm-provider)
+  * [Creating Custom Agents](#creating-custom-agents)
+  * [Registering New Environments](#registering-new-environments)
+  * [Adding New Features](#adding-new-features)
+- [License](#license)
+- [Contributing](#contributing)
+- [Citation](#citation)
+
+
+
 
 ## Overview
 
@@ -471,11 +514,13 @@ Contributions are welcome! Please feel free to submit issues or pull requests.
 If you use AgenticPayGym in your research, please cite:
 
 ```bibtex
-@software{agenticpaygym2025,
-  title={AgenticPayGym: A Multi-Agent Negotiation Framework},
-  author={Name},
-  year={2025},
-  url={https://github.com/username/AgenticPayGym}
+@misc{agenticpaygym2025,
+    title={AgenticPayGym: A Multi-Agent LLM Negotiation System for Buyer–Seller Transactions},
+    author={The AgenticPayGym Team},
+    year = {2025},
+    publisher = {GitHub},
+    journal = {GitHub repository},
+    howpublished = {\url{https://github.com/SafeRL-Lab/AgenticPayGym}},
 }
 ```
 
