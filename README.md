@@ -514,11 +514,13 @@ Contributions are welcome! Please feel free to submit issues or pull requests.
 If you use AgenticPayGym in your research, please cite:
 
 ```bibtex
-@software{agenticpaygym2025,
-  title={AgenticPayGym: A Multi-Agent LLM Negotiation System for Buyer–Seller Transactions},
-  author={The AgenticPayGym Team},
-  year={2025},
-  url={https://github.com/SafeRL-Lab/AgenticPayGym}
+@misc{agenticpaygym2025,
+    title={AgenticPayGym: A Multi-Agent LLM Negotiation System for Buyer–Seller Transactions},
+    author={The AgenticPayGym Team},
+    year = {2025},
+    publisher = {GitHub},
+    journal = {GitHub repository},
+    howpublished = {\url{https://github.com/SafeRL-Lab/AgenticPayGym}},
 }
 ```
 
