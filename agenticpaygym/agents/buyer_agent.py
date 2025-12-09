@@ -1,0 +1,100 @@
+"""Buyer Agent Implementation"""
+
+from typing import Dict, List, Any, Optional
+from agenticpaygym.agents.base_agent import BaseAgent
+from agenticpaygym.llm.base_llm import BaseLLM
+from agenticpaygym.utils.user_profile import UserProfile, StylePreference, ShoppingHabit
+
+
+class BuyerAgent(BaseAgent):
+    """Buyer Agent
+    
+    Represents the buyer, negotiates with the seller based on user requirements and budget.
+    """
+    
+    def __init__(
+        self,
+        llm: BaseLLM,
+        name: str = "Buyer",
+        role_description: str = "a buyer looking for a good deal. You are polite, strategic, and want to get the best price within your budget.",
+        buyer_max_price: Optional[float] = None,
+    ):
+        """Initialize Buyer Agent
+        
+        Args:
+            llm: LLM interface
+            name: Agent name
+            role_description: Role description
+            buyer_max_price: Maximum acceptable purchase price for buyer (bottom price, confidential information)
+        """
+        super().__init__(llm, role_description, name)
+        self.buyer_max_price = buyer_max_price
+    
+    def respond(
+        self,
+        conversation_history: List[Dict[str, Any]],
+        current_state: Dict[str, Any],
+    ) -> str:
+        """Generate Buyer response
+        
+        Args:
+            conversation_history: Conversation history
+            current_state: Current state
+            
+        Returns:
+            Buyer's response text
+        """
+        if not self.initialized:
+            raise ValueError("Agent not initialized. Call initialize() first.")
+        
+        prompt = self._build_prompt(conversation_history, current_state)
+        
+        # Get buyer's maximum acceptable price (bottom price)
+        max_price = self.buyer_max_price or self.context.get('max_price', 'unknown')
+        
+        # Get user profile information
+        user_profile: Optional[UserProfile] = self.context.get('user_profile')
+        
+        # Build user preference-related guidance
+        preference_guidance = ""
+        if user_profile:
+            preference_guidance = "\nUSER PREFERENCES:\n"
+            
+            # Style preference guidance
+            if user_profile.style_preference:
+                style = user_profile.style_preference
+                if style == StylePreference.SIMPLE:
+                    preference_guidance += "- Style preference: You prefer SIMPLE/MINIMALIST styles. Focus on clean, simple designs without excessive decoration.\n"
+                elif style == StylePreference.BUSINESS:
+                    preference_guidance += "- Style preference: You prefer BUSINESS/PROFESSIONAL styles. Focus on formal, professional-looking items suitable for work.\n"
+                elif style == StylePreference.TRADITIONAL:
+                    preference_guidance += "- Style preference: You prefer TRADITIONAL/CLASSIC styles. Focus on timeless, classic designs with traditional elements.\n"
+            
+            # Shopping habit guidance
+            if user_profile.shopping_habit:
+                habit = user_profile.shopping_habit
+                if habit == ShoppingHabit.COMPARE:
+                    preference_guidance += "- Shopping habit: You like to COMPARE PRICES and shop around. You may mention that you're comparing options, ask for better deals, or reference other sellers. Take your time in negotiations.\n"
+                elif habit == ShoppingHabit.DIRECT:
+                    preference_guidance += "- Shopping habit: You prefer DIRECT PURCHASES. You value efficiency and may be willing to pay a fair price quickly if the deal is reasonable. Don't waste too much time haggling.\n"
+        
+        # Add Buyer-specific guidance
+        buyer_guidance = f"""
+
+IMPORTANT REMINDERS:
+- Your maximum acceptable price (confidential - do not reveal this to the seller) is ${max_price}
+- You want to negotiate a fair price that fits your needs
+- Consider the environment factors: {self.context.get('environment_info', {})}
+- Be polite but firm in your negotiations
+- Try to find a win-win solution
+- If the seller's price is too high, suggest a reasonable counter-offer
+- Always mention specific prices when making offers (e.g., "I can offer $X")
+- NEVER reveal your maximum acceptable price to the seller - keep it confidential
+{preference_guidance}
+Now, respond as {self.name}:
+"""
+        full_prompt = prompt + buyer_guidance
+        
+        response = self.llm.generate(full_prompt, temperature=0.7)
+        return response.strip()
+

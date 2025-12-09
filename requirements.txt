@@ -1,0 +1,9 @@
+# Core dependencies
+numpy>=1.21.0
+
+# LLM providers (optional, install as needed)
+openai>=1.0.0
+
+# Type hints
+typing-extensions>=4.3.0
+
