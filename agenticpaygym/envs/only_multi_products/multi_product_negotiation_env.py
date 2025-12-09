@@ -487,20 +487,33 @@ class MultiProductNegotiationEnv(BaseEnv):
         """Calculate reward
         
         Calculate reward value based on negotiation result.
-        If deal is reached: reward = buyer savings + seller profit + deal bonus (1 if deal, 0 if no deal)
-        - buyer savings = buyer_max_price - deal_price (money saved by buyer)
-        - seller profit = deal_price - seller_min_price (extra profit for seller)
+        
+        If deal is reached:
+            reward = buyer savings + seller profit + time cost (negative, based on rounds)
+            - buyer savings = buyer_max_price - deal_price (money saved by buyer)
+            - seller profit = deal_price - seller_min_price (extra profit for seller)
+            - time cost = -current_round (penalty for number of rounds taken)
+        
+        If deal is not reached:
+            reward = time cost (negative, based on rounds)
+            - time cost = -current_round (penalty for number of rounds taken)
         
         Returns:
             Reward value
         """
+        # Time cost: negative value based on number of rounds
+        time_cost = -self.current_round
+        
         if self.negotiation_info.status == NegotiationStatus.AGREED:
-            # Agreement reached
+            # Deal reached: buyer savings + seller profit + time cost
             if self.current_product_state.agreed_price is None:
-                return 0.0
+                print(f"Reward = time_cost = {time_cost:.2f} (round={self.current_round})")
+                return time_cost
             
             deal_price = self.current_product_state.agreed_price
             reward = 0.0
+            buyer_savings = 0.0
+            seller_profit = 0.0
             
             # Calculate buyer savings: buyer_max_price - deal_price
             if self.buyer_max_price is not None:
@@ -512,16 +525,15 @@ class MultiProductNegotiationEnv(BaseEnv):
                 seller_profit = deal_price - self.seller_min_price
                 reward += seller_profit
             
-            # Deal bonus: 1 if deal is reached, 0 if no deal
-            reward += 1.0
+            # Add time cost (negative penalty)
+            reward += time_cost
+            
+            print(f"Reward = buyer_savings({buyer_savings:.2f}) + seller_profit({seller_profit:.2f}) + time_cost({time_cost:.2f}) = {reward:.2f} (buyer_max={self.buyer_max_price}, deal_price={deal_price:.2f}, seller_min={self.seller_min_price}, round={self.current_round})")
             
             return reward
         
-        elif self.negotiation_info.status == NegotiationStatus.TIMEOUT:
-            # Timeout: No deal, so deal bonus is 0
-            return 0.0
-        
         else:
-            # Failure: No deal, so deal bonus is 0
-            return 0.0
+            # Deal not reached: only time cost (negative penalty)
+            print(f"Reward = time_cost = {time_cost:.2f} (round={self.current_round}, deal not reached)")
+            return time_cost
 
