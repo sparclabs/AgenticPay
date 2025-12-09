@@ -1,4 +1,6 @@
-# AgenticPayGym: Modeling Buyer–Seller Negotiations with Multi-Agent LLM Systems
+
+
+<h1 align="center" style="font-size: 30px;"><strong><em>AgenticPayGym</em></strong>: A Multi-Agent LLM Negotiation System for Buyer–Seller Transactions</h1>
 
 **A Multi-Agent Negotiation Framework for Buyer-Seller Transactions using LLM-based Agents.**
 
@@ -513,7 +515,7 @@ If you use AgenticPayGym in your research, please cite:
 
 ```bibtex
 @software{agenticpaygym2025,
-  title={AgenticPayGym: Modeling Buyer–Seller Negotiations with Multi-Agent LLM Systems},
+  title={AgenticPayGym: A Multi-Agent LLM Negotiation System for Buyer–Seller Transactions},
   author={The AgenticPayGym Team},
   year={2025},
   url={https://github.com/SafeRL-Lab/AgenticPayGym}
