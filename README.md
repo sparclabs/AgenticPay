@@ -1,4 +1,4 @@
-# AgenticPayGym
+# AgenticPayGym: Modeling Buyer–Seller Negotiations with Multi-Agent LLM Systems
 
 **A Multi-Agent Negotiation Framework for Buyer-Seller Transactions using LLM-based Agents.**
 
