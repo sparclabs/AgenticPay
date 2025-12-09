@@ -24,19 +24,19 @@ __all__ = [
 ]
 
 # Import environment classes
-from agenticpaygym.envs.negotiation_env import NegotiationEnv
-from agenticpaygym.envs.multi_product_negotiation_env import MultiProductNegotiationEnv
+from agenticpaygym.envs.single_buyer_product_seller.negotiation_env import NegotiationEnv
+from agenticpaygym.envs.only_multi_products.multi_product_negotiation_env import MultiProductNegotiationEnv
 
 # Automatically register all environments
 register(
     id="Negotiation-v0",
-    entry_point="agenticpaygym.envs.negotiation_env:NegotiationEnv",
+    entry_point="agenticpaygym.envs.single_buyer_product_seller.negotiation_env:NegotiationEnv",
     max_episode_steps=20,
 )
 
 register(
     id="MultiProductNegotiation-v0",
-    entry_point="agenticpaygym.envs.multi_product_negotiation_env:MultiProductNegotiationEnv",
+    entry_point="agenticpaygym.envs.only_multi_products.multi_product_negotiation_env:MultiProductNegotiationEnv",
     max_episode_steps=20,
 )
 
