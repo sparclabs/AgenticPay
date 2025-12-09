@@ -516,7 +516,7 @@ If you use AgenticPayGym in your research, please cite:
   title={AgenticPayGym: A Multi-Agent Negotiation Framework},
   author={The AgenticPayGym Team},
   year={2025},
-  url={https://github.com/username/AgenticPayGym}
+  url={https://github.com/SafeRL-Lab/AgenticPayGym}
 }
 ```
 
