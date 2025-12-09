@@ -53,7 +53,7 @@ def main():
             "season": "summer",
             "weather": "sunny",
         },
-        price_tolerance=1.0,
+        price_tolerance=5.0,
     )
     
     # Method 2: Direct instantiation (backward compatible, but not recommended)
