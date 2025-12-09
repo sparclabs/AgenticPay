@@ -513,7 +513,7 @@ If you use AgenticPayGym in your research, please cite:
 
 ```bibtex
 @software{agenticpaygym2025,
-  title={AgenticPayGym: A Multi-Agent Negotiation Framework},
+  title={AgenticPayGym: Modeling Buyer–Seller Negotiations with Multi-Agent LLM Systems},
   author={The AgenticPayGym Team},
   year={2025},
   url={https://github.com/SafeRL-Lab/AgenticPayGym}
