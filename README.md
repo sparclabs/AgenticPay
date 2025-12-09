@@ -1,6 +1,6 @@
 # AgenticPayGym
 
-A Multi-Agent Negotiation Framework for Buyer-Seller Transactions using LLM-based Agents.
+**A Multi-Agent Negotiation Framework for Buyer-Seller Transactions using LLM-based Agents.**
 
 - [Overview](#overview)
 - [Features](#features)
