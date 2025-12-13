@@ -10,7 +10,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from agenticpaygym import make, register, spec, pprint_registry
-from agenticpaygym.envs.single_buyer_product_seller.negotiation_env import NegotiationEnv
+from agenticpaygym.envs.single_buyer_product_seller.Task1_basic_price_negotiation import Task1BasicPriceNegotiation
 from agenticpaygym.agents.buyer_agent import BuyerAgent
 from agenticpaygym.agents.seller_agent import SellerAgent
 from agenticpaygym.llm.openai_llm import OpenAILLM
@@ -29,7 +29,7 @@ def example_basic_usage():
     # Use make() to create environment
     # Note: Required parameters (buyer_agent, seller_agent, etc.) need to be provided here
     print("\nUsing make() to create environment:")
-    print("env = make('Negotiation-v0', buyer_agent=..., seller_agent=...)")
+    print("env = make('Task1_basic_price_negotiation-v0', buyer_agent=..., seller_agent=...)")
     
 
 def example_custom_registration():
@@ -40,16 +40,16 @@ def example_custom_registration():
     
     # Method 1: Register using class object
     register(
-        id="my_custom/Negotiation-v1",
-        entry_point=NegotiationEnv,
+        id="my_custom/Task1_basic_price_negotiation-v1",
+        entry_point=Task1BasicPriceNegotiation,
         max_episode_steps=30,
         kwargs={"price_tolerance": 2.0},  # Default parameters
     )
     
     # Method 2: Register using string path
     register(
-        id="my_custom/Negotiation-v2",
-        entry_point="agenticpaygym.envs.negotiation_env:NegotiationEnv",
+        id="my_custom/Task1_basic_price_negotiation-v2",
+        entry_point="agenticpaygym.envs.single_buyer_product_seller.Task1_basic_price_negotiation:Task1BasicPriceNegotiation",
         max_episode_steps=25,
     )
     
@@ -57,7 +57,7 @@ def example_custom_registration():
     pprint_registry()
     
     # Get environment specification
-    env_spec = spec("my_custom/Negotiation-v1")
+    env_spec = spec("my_custom/Task1_basic_price_negotiation-v1")
     print(f"\nEnvironment specification: {env_spec.id}")
     print(f"Max episode steps: {env_spec.max_episode_steps}")
     print(f"Default parameters: {env_spec.kwargs}")
@@ -75,7 +75,7 @@ def example_namespace():
     with namespace("my_company"):
         register(
             id="ProductNegotiation-v0",
-            entry_point=NegotiationEnv,
+            entry_point=Task1BasicPriceNegotiation,
         )
         # The actual registered ID is "my_company/ProductNegotiation-v0"
     
@@ -90,9 +90,9 @@ def example_version_management():
     print("=" * 60)
     
     # Register multiple versions
-    register(id="VersionedEnv-v1", entry_point=NegotiationEnv)
-    register(id="VersionedEnv-v2", entry_point=NegotiationEnv)
-    register(id="VersionedEnv-v3", entry_point=NegotiationEnv)
+    register(id="VersionedEnv-v1", entry_point=Task1BasicPriceNegotiation)
+    register(id="VersionedEnv-v2", entry_point=Task1BasicPriceNegotiation)
+    register(id="VersionedEnv-v3", entry_point=Task1BasicPriceNegotiation)
     
     # When creating environment, if version is not specified, the latest version will be used automatically
     print("\nEnvironments with multiple versions registered:")

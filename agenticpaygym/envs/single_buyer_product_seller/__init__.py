@@ -6,7 +6,7 @@ This category includes environments with:
 - Single seller agent
 """
 
-from agenticpaygym.envs.single_buyer_product_seller.negotiation_env import NegotiationEnv
+from agenticpaygym.envs.single_buyer_product_seller.Task1_basic_price_negotiation import Task1BasicPriceNegotiation
 
-__all__ = ["NegotiationEnv"]
+__all__ = ["Task1BasicPriceNegotiation"]
 

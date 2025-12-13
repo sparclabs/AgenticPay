@@ -11,7 +11,7 @@ from agenticpaygym.memory.conversation_memory import ConversationMemory
 from agenticpaygym.utils.negotiation_state import NegotiationState
 
 
-class NegotiationEnv(BaseEnv):
+class Task1BasicPriceNegotiation(BaseEnv):
     """Negotiation Environment
     
     Manages multi-round negotiation process between buyer and seller.

@@ -1,4 +1,4 @@
-"""Simple Negotiation Example
+"""Task1 Basic Price Negotiation Example
 
 Demonstrates how to use the registration system to create and use negotiation environments.
 """
@@ -9,7 +9,7 @@ import sys
 # Add project path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from agenticpaygym import make, NegotiationEnv  # Use registration system
+from agenticpaygym import make, Task1BasicPriceNegotiation  # Use registration system
 from agenticpaygym.agents.buyer_agent import BuyerAgent
 from agenticpaygym.agents.seller_agent import SellerAgent
 from agenticpaygym.llm.openai_llm import OpenAILLM
@@ -41,7 +41,7 @@ def main():
     # Method 1: Create environment using registration system (recommended)
     print("Creating negotiation environment using registration system...")
     env = make(
-        "Negotiation-v0",
+        "Task1_basic_price_negotiation-v0",
         buyer_agent=buyer,
         seller_agent=seller,
         max_rounds=20,
@@ -57,7 +57,7 @@ def main():
     )
     
     # Method 2: Direct instantiation (backward compatible, but not recommended)
-    # env = NegotiationEnv(
+    # env = Task1BasicPriceNegotiation(
     #     buyer_agent=buyer,
     #     seller_agent=seller,
     #     max_rounds=20,

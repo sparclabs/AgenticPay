@@ -19,18 +19,18 @@ __all__ = [
     "pprint_registry",
     "registry",
     "EnvSpec",
-    "NegotiationEnv",
+    "Task1BasicPriceNegotiation",
     "MultiProductNegotiationEnv",
 ]
 
 # Import environment classes
-from agenticpaygym.envs.single_buyer_product_seller.negotiation_env import NegotiationEnv
+from agenticpaygym.envs.single_buyer_product_seller.Task1_basic_price_negotiation import Task1BasicPriceNegotiation
 from agenticpaygym.envs.only_multi_products.multi_product_negotiation_env import MultiProductNegotiationEnv
 
 # Automatically register all environments
 register(
-    id="Negotiation-v0",
-    entry_point="agenticpaygym.envs.single_buyer_product_seller.negotiation_env:NegotiationEnv",
+    id="Task1_basic_price_negotiation-v0",
+    entry_point="agenticpaygym.envs.single_buyer_product_seller.Task1_basic_price_negotiation:Task1BasicPriceNegotiation",
     max_episode_steps=20,
 )
 
