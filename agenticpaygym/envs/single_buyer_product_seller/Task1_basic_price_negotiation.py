@@ -88,6 +88,7 @@ class Task1BasicPriceNegotiation(BaseEnv):
             "max_price": self.buyer_max_price,
             "user_profile": user_profile,
             "environment_info": self.environment_info,
+            "product_info": product_info or {},  # Buyer can now see product information
         }
         self.buyer_agent.initialize(buyer_context)
         

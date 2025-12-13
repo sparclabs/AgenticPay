@@ -128,6 +128,7 @@ class MultiProductNegotiationEnv(BaseEnv):
             "user_profile": user_profile,
             "environment_info": self.environment_info,
             "previous_negotiations": self._get_previous_negotiations_summary(),
+            "product_info": product_info or {},  # Buyer can now see product information
         }
         self.buyer_agent.initialize(buyer_context)
         
