@@ -16,6 +16,8 @@ from agenticpaygym.envs import (
     registry,
     EnvSpec,
     Task1BasicPriceNegotiation,  # Backward compatibility
+    Task2ClosePriceNegotiation,  # Backward compatibility
+    Task3CloseToMarketPriceNegotiation,  # Backward compatibility
 )
 
 __version__ = "0.1.0"
@@ -42,6 +44,8 @@ __all__ = [
     "EnvSpec",
     # Environment classes (backward compatibility)
     "Task1BasicPriceNegotiation",
+    "Task2ClosePriceNegotiation",
+    "Task3CloseToMarketPriceNegotiation",
 ]
 
 # Try to import OpenAI LLM if available
