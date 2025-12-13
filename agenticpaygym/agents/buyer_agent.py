@@ -53,30 +53,35 @@ class BuyerAgent(BaseAgent):
         max_price = self.buyer_max_price or self.context.get('max_price', 'unknown')
         
         # Get user profile information
-        user_profile: Optional[UserProfile] = self.context.get('user_profile')
+        user_profile = self.context.get('user_profile')
         
         # Build user preference-related guidance
         preference_guidance = ""
         if user_profile:
             preference_guidance = "\nUSER PREFERENCES:\n"
             
-            # Style preference guidance
-            if user_profile.style_preference:
-                style = user_profile.style_preference
-                if style == StylePreference.SIMPLE:
-                    preference_guidance += "- Style preference: You prefer SIMPLE/MINIMALIST styles. Focus on clean, simple designs without excessive decoration.\n"
-                elif style == StylePreference.BUSINESS:
-                    preference_guidance += "- Style preference: You prefer BUSINESS/PROFESSIONAL styles. Focus on formal, professional-looking items suitable for work.\n"
-                elif style == StylePreference.TRADITIONAL:
-                    preference_guidance += "- Style preference: You prefer TRADITIONAL/CLASSIC styles. Focus on timeless, classic designs with traditional elements.\n"
-            
-            # Shopping habit guidance
-            if user_profile.shopping_habit:
-                habit = user_profile.shopping_habit
-                if habit == ShoppingHabit.COMPARE:
-                    preference_guidance += "- Shopping habit: You like to COMPARE PRICES and shop around. You may mention that you're comparing options, ask for better deals, or reference other sellers. Take your time in negotiations.\n"
-                elif habit == ShoppingHabit.DIRECT:
-                    preference_guidance += "- Shopping habit: You prefer DIRECT PURCHASES. You value efficiency and may be willing to pay a fair price quickly if the deal is reasonable. Don't waste too much time haggling.\n"
+            # If user_profile is a string (text description), use it directly
+            if isinstance(user_profile, str):
+                preference_guidance += f"- {user_profile}\n"
+            # If user_profile is a UserProfile object, use the original logic
+            elif isinstance(user_profile, UserProfile):
+                # Style preference guidance
+                if user_profile.style_preference:
+                    style = user_profile.style_preference
+                    if style == StylePreference.SIMPLE:
+                        preference_guidance += "- Style preference: You prefer SIMPLE/MINIMALIST styles. Focus on clean, simple designs without excessive decoration.\n"
+                    elif style == StylePreference.BUSINESS:
+                        preference_guidance += "- Style preference: You prefer BUSINESS/PROFESSIONAL styles. Focus on formal, professional-looking items suitable for work.\n"
+                    elif style == StylePreference.TRADITIONAL:
+                        preference_guidance += "- Style preference: You prefer TRADITIONAL/CLASSIC styles. Focus on timeless, classic designs with traditional elements.\n"
+                
+                # Shopping habit guidance
+                if user_profile.shopping_habit:
+                    habit = user_profile.shopping_habit
+                    if habit == ShoppingHabit.COMPARE:
+                        preference_guidance += "- Shopping habit: You like to COMPARE PRICES and shop around. You may mention that you're comparing options, ask for better deals, or reference other sellers. Take your time in negotiations.\n"
+                    elif habit == ShoppingHabit.DIRECT:
+                        preference_guidance += "- Shopping habit: You prefer DIRECT PURCHASES. You value efficiency and may be willing to pay a fair price quickly if the deal is reasonable. Don't waste too much time haggling.\n"
         
         # Add Buyer-specific guidance
         buyer_guidance = f"""

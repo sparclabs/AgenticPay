@@ -13,7 +13,6 @@ from agenticpaygym import make, Task1BasicPriceNegotiation  # Use registration s
 from agenticpaygym.agents.buyer_agent import BuyerAgent
 from agenticpaygym.agents.seller_agent import SellerAgent
 from agenticpaygym.llm.openai_llm import OpenAILLM
-from agenticpaygym.utils.user_profile import UserProfile, StylePreference, ShoppingHabit
 
 
 def main():
@@ -72,12 +71,9 @@ def main():
     #     price_tolerance=1.0,
     # )
     
-    # Create user profile (contains personal preferences)
-    user_profile = UserProfile(
-        style_preference=StylePreference.BUSINESS,  # Business style
-        shopping_habit=ShoppingHabit.COMPARE,  # Likes to compare prices
-    )
-    print(f"User Profile: {user_profile.get_description()}")
+    # Create user profile (text description of personal preferences)
+    user_profile = "User prefers business/professional style and likes to compare prices before making purchases. In negotiations, they may mention comparing other options and seek better deals."
+    print(f"User Profile: {user_profile}")
     
     # Get user requirement
     print("\n" + "="*60)
