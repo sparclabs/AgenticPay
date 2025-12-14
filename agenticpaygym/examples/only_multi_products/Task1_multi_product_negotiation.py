@@ -93,6 +93,7 @@ def main():
     if not user_requirement:
         print("No requirement entered, using default requirement...")
         user_requirement = "I need a high-quality winter jacket for cold weather"
+        print(f"Using default requirement: {user_requirement}")
     
     # Reset environment
     print("\n" + "="*60)

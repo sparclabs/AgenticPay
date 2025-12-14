@@ -1,6 +1,6 @@
-"""Task1 Multi-Seller Negotiation Example
+"""Task1 Parallel Two-Seller Negotiation Example
 
-Demonstrates how to use the Task1MultiSellerNegotiation to negotiate with two sellers
+Demonstrates how to use the Task1ParallelTwoSellerNegotiation to negotiate with two sellers
 in parallel for the same product, and choose the seller with the lower price.
 """
 
@@ -10,7 +10,7 @@ import sys
 # Add project path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from agenticpaygym.envs.only_multi_seller.Task1_multi_seller_negotiation import Task1MultiSellerNegotiation
+from agenticpaygym.envs.only_multi_seller.Task1_parallel_two_seller_negotiation import Task1ParallelTwoSellerNegotiation
 from agenticpaygym.agents.buyer_agent import BuyerAgent
 from agenticpaygym.agents.seller_agent import SellerAgent
 from agenticpaygym.llm.openai_llm import OpenAILLM
@@ -42,7 +42,7 @@ def main():
     
     # Create environment
     print("Creating multi-seller negotiation environment...")
-    env = Task1MultiSellerNegotiation(
+    env = Task1ParallelTwoSellerNegotiation(
         buyer_agent=buyer,
         seller1_agent=seller1,
         seller2_agent=seller2,
@@ -71,6 +71,7 @@ def main():
     if not user_requirement:
         print("No requirement entered, using default requirement...")
         user_requirement = "I need a high-quality winter jacket for cold weather"
+        print(f"Using default requirement: {user_requirement}")
     
     # Reset environment
     print("\n" + "="*60)

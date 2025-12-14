@@ -1,7 +1,7 @@
-"""Task1 Multi-Seller Negotiation Environment Implementation
+"""Task4 Sequential Three-Seller Negotiation Environment Implementation
 
-Supports parallel negotiation between one buyer and two sellers for the same product.
-Buyer can choose to make a deal with the seller offering the lower price.
+Supports sequential negotiation where buyer chooses one seller per round to negotiate with.
+Buyer can switch between three sellers and make a deal with any of the three sellers.
 """
 
 from __future__ import annotations
@@ -15,11 +15,11 @@ from agenticpaygym.memory.conversation_memory import ConversationMemory
 from agenticpaygym.utils.negotiation_state import NegotiationState
 
 
-class Task1MultiSellerNegotiation(BaseEnv):
-    """Task1 Multi-Seller Negotiation Environment
+class Task4SequentialThreeSellerNegotiation(BaseEnv):
+    """Task4 Sequential Three-Seller Negotiation Environment
     
-    Manages parallel negotiation process between one buyer and two sellers for the same product.
-    Buyer negotiates with both sellers simultaneously and can choose to make a deal with the lower price.
+    Manages sequential negotiation process where buyer chooses one seller per round to negotiate with.
+    Buyer can switch between three sellers and make a deal with any seller.
     """
     
     def __init__(
@@ -27,39 +27,48 @@ class Task1MultiSellerNegotiation(BaseEnv):
         buyer_agent: BaseAgent,
         seller1_agent: BaseAgent,
         seller2_agent: BaseAgent,
+        seller3_agent: BaseAgent,
         max_rounds: int = 20,
         initial_seller1_price: float = 100.0,
         initial_seller2_price: float = 110.0,
+        initial_seller3_price: float = 120.0,
         buyer_max_price: Optional[float] = None,
         seller1_min_price: Optional[float] = None,
         seller2_min_price: Optional[float] = None,
+        seller3_min_price: Optional[float] = None,
         environment_info: Optional[Dict[str, Any]] = None,
         price_tolerance: float = 1.0,
     ):
-        """Initialize multi-seller negotiation environment
+        """Initialize sequential multi-seller negotiation environment
         
         Args:
             buyer_agent: Buyer Agent
             seller1_agent: First Seller Agent
             seller2_agent: Second Seller Agent
+            seller3_agent: Third Seller Agent
             max_rounds: Maximum number of negotiation rounds
             initial_seller1_price: Initial price offered by seller1
             initial_seller2_price: Initial price offered by seller2
+            initial_seller3_price: Initial price offered by seller3
             buyer_max_price: Maximum acceptable price for buyer (confidential)
             seller1_min_price: Minimum acceptable price for seller1 (confidential)
             seller2_min_price: Minimum acceptable price for seller2 (confidential)
+            seller3_min_price: Minimum acceptable price for seller3 (confidential)
             environment_info: Environment information (e.g., season, weather, etc.)
             price_tolerance: Price tolerance for determining agreement
         """
         self.buyer_agent = buyer_agent
         self.seller1_agent = seller1_agent
         self.seller2_agent = seller2_agent
+        self.seller3_agent = seller3_agent
         self.max_rounds = max_rounds
         self.initial_seller1_price = initial_seller1_price
         self.initial_seller2_price = initial_seller2_price
+        self.initial_seller3_price = initial_seller3_price
         self.buyer_max_price = buyer_max_price
         self.seller1_min_price = seller1_min_price
         self.seller2_min_price = seller2_min_price
+        self.seller3_min_price = seller3_min_price
         self.environment_info = environment_info or {}
         self.price_tolerance = price_tolerance
         
@@ -69,13 +78,16 @@ class Task1MultiSellerNegotiation(BaseEnv):
         # State management - separate for each seller
         self.memory_seller1 = ConversationMemory()
         self.memory_seller2 = ConversationMemory()
+        self.memory_seller3 = ConversationMemory()
         self.state_seller1 = NegotiationState()
         self.state_seller2 = NegotiationState()
+        self.state_seller3 = NegotiationState()
         self.current_round = 0
         self.negotiation_info = NegotiationInfo()
         
-        # Track which seller was chosen for the deal
-        self.selected_seller: Optional[int] = None  # 1 or 2
+        # Track which seller is currently selected and which seller was chosen for the deal
+        self.current_selected_seller: Optional[int] = None  # 1, 2, or 3, selected for current round
+        self.final_selected_seller: Optional[int] = None  # 1, 2, or 3, chosen for final deal
         self.final_deal_price: Optional[float] = None
     
     def reset(
@@ -99,21 +111,25 @@ class Task1MultiSellerNegotiation(BaseEnv):
         # Reset state
         self.memory_seller1.clear()
         self.memory_seller2.clear()
+        self.memory_seller3.clear()
         self.state_seller1 = NegotiationState()
         self.state_seller2 = NegotiationState()
+        self.state_seller3 = NegotiationState()
         self.current_round = 0
         self.negotiation_info = NegotiationInfo()
-        self.selected_seller = None
+        self.current_selected_seller = None
+        self.final_selected_seller = None
         self.final_deal_price = None
         
-        # Initialize Buyer Agent (buyer knows about both sellers)
+        # Initialize Buyer Agent (buyer knows about all three sellers)
         buyer_context = {
             "user_requirement": user_requirement,
             "max_price": self.buyer_max_price,
             "user_profile": user_profile,
             "environment_info": self.environment_info,
             "product_info": product_info or {},
-            "num_sellers": 2,  # Inform buyer there are 2 sellers
+            "num_sellers": 3,  # Inform buyer there are 3 sellers
+            "negotiation_mode": "sequential",  # Inform buyer this is sequential negotiation
         }
         self.buyer_agent.initialize(buyer_context)
         
@@ -137,6 +153,16 @@ class Task1MultiSellerNegotiation(BaseEnv):
         }
         self.seller2_agent.initialize(seller2_context)
         
+        # Initialize Seller3 Agent
+        seller3_context = {
+            "product_info": product_info or {},
+            "initial_price": self.initial_seller3_price,
+            "min_price": self.seller3_min_price,
+            "environment_info": self.environment_info,
+            "seller_id": 3,  # Identify as seller 3
+        }
+        self.seller3_agent.initialize(seller3_context)
+        
         # Sellers give initial offers
         initial_message_seller1 = f"I'm offering this product for ${self.initial_seller1_price:.2f}."
         self.memory_seller1.add_message("seller", initial_message_seller1, self.current_round)
@@ -146,6 +172,10 @@ class Task1MultiSellerNegotiation(BaseEnv):
         self.memory_seller2.add_message("seller", initial_message_seller2, self.current_round)
         self.state_seller2.update(seller_price=self.initial_seller2_price)
         
+        initial_message_seller3 = f"I'm offering this product for ${self.initial_seller3_price:.2f}."
+        self.memory_seller3.add_message("seller", initial_message_seller3, self.current_round)
+        self.state_seller3.update(seller_price=self.initial_seller3_price)
+        
         # Build observation
         observation = self._get_observation()
         info = self._get_info()
@@ -154,100 +184,104 @@ class Task1MultiSellerNegotiation(BaseEnv):
     
     def step(
         self, 
-        buyer_action_seller1: Optional[str] = None,
-        buyer_action_seller2: Optional[str] = None,
-        seller1_action: Optional[str] = None,
-        seller2_action: Optional[str] = None,
+        selected_seller: int,  # 1, 2, or 3, which seller buyer chooses to negotiate with this round
+        buyer_action: Optional[str] = None,
+        seller_action: Optional[str] = None,
     ) -> Tuple[Dict[str, Any], float, bool, bool, Dict[str, Any]]:
         """Execute one negotiation step
         
-        Each round, buyer responds to both sellers first, then both sellers respond.
+        Each round, buyer chooses one seller to negotiate with, then buyer and that seller exchange messages.
         Order: buyer -> seller
-        Buyer can choose to make a deal with either seller.
         
         Args:
-            buyer_action_seller1: Buyer's response to seller1 (optional)
-            buyer_action_seller2: Buyer's response to seller2 (optional)
-            seller1_action: Seller1's response (optional)
-            seller2_action: Seller2's response (optional)
+            selected_seller: Which seller (1, 2, or 3) buyer chooses to negotiate with this round
+            buyer_action: Buyer's response (optional)
+            seller_action: Selected seller's response (optional)
             
         Returns:
             (observation, reward, terminated, truncated, info)
         """
+        if selected_seller not in [1, 2, 3]:
+            raise ValueError(f"selected_seller must be 1, 2, or 3, got {selected_seller}")
+        
+        self.current_selected_seller = selected_seller
+        
         # Add messages to memory in order: buyer -> seller
-        # Process buyer actions first (seller1 conversation)
-        if buyer_action_seller1 is not None:
-            self.memory_seller1.add_message("buyer", buyer_action_seller1, self.current_round)
-            buyer_price_seller1 = self._extract_price(buyer_action_seller1)
-            if buyer_price_seller1 is not None:
-                self.state_seller1.update(buyer_price=buyer_price_seller1)
+        # Process buyer action first
+        if buyer_action is not None:
+            if selected_seller == 1:
+                self.memory_seller1.add_message("buyer", buyer_action, self.current_round)
+                buyer_price = self._extract_price(buyer_action)
+                if buyer_price is not None:
+                    self.state_seller1.update(buyer_price=buyer_price)
+            elif selected_seller == 2:
+                self.memory_seller2.add_message("buyer", buyer_action, self.current_round)
+                buyer_price = self._extract_price(buyer_action)
+                if buyer_price is not None:
+                    self.state_seller2.update(buyer_price=buyer_price)
+            else:  # selected_seller == 3
+                self.memory_seller3.add_message("buyer", buyer_action, self.current_round)
+                buyer_price = self._extract_price(buyer_action)
+                if buyer_price is not None:
+                    self.state_seller3.update(buyer_price=buyer_price)
         
-        # Process buyer actions (seller2 conversation)
-        if buyer_action_seller2 is not None:
-            self.memory_seller2.add_message("buyer", buyer_action_seller2, self.current_round)
-            buyer_price_seller2 = self._extract_price(buyer_action_seller2)
-            if buyer_price_seller2 is not None:
-                self.state_seller2.update(buyer_price=buyer_price_seller2)
+        # Process seller action after buyer
+        if seller_action is not None:
+            if selected_seller == 1:
+                self.memory_seller1.add_message("seller", seller_action, self.current_round)
+                seller_price = self._extract_price(seller_action)
+                if seller_price is not None:
+                    self.state_seller1.update(seller_price=seller_price)
+            elif selected_seller == 2:
+                self.memory_seller2.add_message("seller", seller_action, self.current_round)
+                seller_price = self._extract_price(seller_action)
+                if seller_price is not None:
+                    self.state_seller2.update(seller_price=seller_price)
+            else:  # selected_seller == 3
+                self.memory_seller3.add_message("seller", seller_action, self.current_round)
+                seller_price = self._extract_price(seller_action)
+                if seller_price is not None:
+                    self.state_seller3.update(seller_price=seller_price)
         
-        # Process seller actions after buyer (seller1 conversation)
-        if seller1_action is not None:
-            self.memory_seller1.add_message("seller", seller1_action, self.current_round)
-            seller1_price = self._extract_price(seller1_action)
-            if seller1_price is not None:
-                self.state_seller1.update(seller_price=seller1_price)
-        
-        # Process seller actions after buyer (seller2 conversation)
-        if seller2_action is not None:
-            self.memory_seller2.add_message("seller", seller2_action, self.current_round)
-            seller2_price = self._extract_price(seller2_action)
-            if seller2_price is not None:
-                self.state_seller2.update(seller_price=seller2_price)
-        
-        # After processing all actions, check if buyer wants to make a deal
-        # Compare both sellers' prices and choose the one with lower price
-        make_deal_seller1 = buyer_action_seller1 is not None and self._check_make_deal(buyer_action_seller1)
-        make_deal_seller2 = buyer_action_seller2 is not None and self._check_make_deal(buyer_action_seller2)
-        
-        if make_deal_seller1 or make_deal_seller2:
-            # Buyer wants to make a deal, choose the seller with lower price
-            price1 = self._get_effective_price_seller1()
-            price2 = self._get_effective_price_seller2()
-            
-            if price1 is not None and price2 is not None:
-                # Both prices available, choose the lower one
-                if price1 <= price2:
-                    self.selected_seller = 1
-                    if self.state_seller1.buyer_price is not None and self.state_seller1.seller_price is not None:
-                        self.final_deal_price = (self.state_seller1.buyer_price + self.state_seller1.seller_price) / 2
-                    else:
-                        self.final_deal_price = price1
-                else:
-                    self.selected_seller = 2
-                    if self.state_seller2.buyer_price is not None and self.state_seller2.seller_price is not None:
-                        self.final_deal_price = (self.state_seller2.buyer_price + self.state_seller2.seller_price) / 2
-                    else:
-                        self.final_deal_price = price2
-            elif price1 is not None:
-                # Only seller1 price available
-                self.selected_seller = 1
-                if self.state_seller1.buyer_price is not None and self.state_seller1.seller_price is not None:
+        # Check if deal can be made with the selected seller
+        # Buyer must explicitly express make deal intent AND price_tolerance condition must be satisfied
+        if selected_seller == 1:
+            if (buyer_action is not None and 
+                self._check_make_deal(buyer_action) and
+                self.state_seller1.buyer_price is not None and 
+                self.state_seller1.seller_price is not None):
+                price_diff = abs(self.state_seller1.buyer_price - self.state_seller1.seller_price)
+                # Only make deal if buyer wants to make deal AND prices are within tolerance
+                if price_diff <= self.price_tolerance:
+                    self.final_selected_seller = 1
                     self.final_deal_price = (self.state_seller1.buyer_price + self.state_seller1.seller_price) / 2
-                else:
-                    self.final_deal_price = price1
-            elif price2 is not None:
-                # Only seller2 price available
-                self.selected_seller = 2
-                if self.state_seller2.buyer_price is not None and self.state_seller2.seller_price is not None:
+        elif selected_seller == 2:
+            if (buyer_action is not None and 
+                self._check_make_deal(buyer_action) and
+                self.state_seller2.buyer_price is not None and 
+                self.state_seller2.seller_price is not None):
+                price_diff = abs(self.state_seller2.buyer_price - self.state_seller2.seller_price)
+                # Only make deal if buyer wants to make deal AND prices are within tolerance
+                if price_diff <= self.price_tolerance:
+                    self.final_selected_seller = 2
                     self.final_deal_price = (self.state_seller2.buyer_price + self.state_seller2.seller_price) / 2
-                else:
-                    self.final_deal_price = price2
+        else:  # selected_seller == 3
+            if (buyer_action is not None and 
+                self._check_make_deal(buyer_action) and
+                self.state_seller3.buyer_price is not None and 
+                self.state_seller3.seller_price is not None):
+                price_diff = abs(self.state_seller3.buyer_price - self.state_seller3.seller_price)
+                # Only make deal if buyer wants to make deal AND prices are within tolerance
+                if price_diff <= self.price_tolerance:
+                    self.final_selected_seller = 3
+                    self.final_deal_price = (self.state_seller3.buyer_price + self.state_seller3.seller_price) / 2
         
-        # Check if deal is made (buyer chose a seller)
+        # Check if deal is made
         terminated = False
         truncated = False
         reward = 0.0
         
-        if self.selected_seller is not None and self.final_deal_price is not None:
+        if self.final_selected_seller is not None and self.final_deal_price is not None:
             terminated = True
             self.negotiation_info.status = NegotiationStatus.AGREED
             reward = self._calculate_reward()
@@ -266,7 +300,7 @@ class Task1MultiSellerNegotiation(BaseEnv):
         if terminated or truncated:
             info["termination_reason"] = "agreed" if terminated else "timeout"
             if terminated:
-                info["selected_seller"] = self.selected_seller
+                info["selected_seller"] = self.final_selected_seller
                 info["final_deal_price"] = self.final_deal_price
         
         return observation, reward, terminated, truncated, info
@@ -286,30 +320,48 @@ class Task1MultiSellerNegotiation(BaseEnv):
         output_lines = []
         
         output_lines.append(f"\n{'='*60}")
-        output_lines.append(f"Round {self.current_round} - Parallel Negotiation Output")
+        output_lines.append(f"Round {self.current_round} - Sequential Negotiation Output")
         output_lines.append(f"{'='*60}")
         
-        # Display Seller1 conversation
-        output_lines.append(f"\n[SELLER 1 Conversation]:")
-        history_seller1 = self.memory_seller1.get_history()
-        if history_seller1:
-            current_round_messages_s1 = [
-                msg for msg in history_seller1 if msg["round"] == self.current_round
-            ]
-            for msg in current_round_messages_s1:
-                role = msg["role"].upper()
-                output_lines.append(f"  [{role}]: {msg['content']}")
+        # Display which seller was selected this round
+        if self.current_selected_seller is not None:
+            output_lines.append(f"\n[Selected Seller: Seller {self.current_selected_seller}]")
         
-        # Display Seller2 conversation
-        output_lines.append(f"\n[SELLER 2 Conversation]:")
-        history_seller2 = self.memory_seller2.get_history()
-        if history_seller2:
-            current_round_messages_s2 = [
-                msg for msg in history_seller2 if msg["round"] == self.current_round
-            ]
-            for msg in current_round_messages_s2:
-                role = msg["role"].upper()
-                output_lines.append(f"  [{role}]: {msg['content']}")
+        # Display Seller1 conversation (if this round negotiated with seller1)
+        if self.current_selected_seller == 1:
+            output_lines.append(f"\n[SELLER 1 Conversation]:")
+            history_seller1 = self.memory_seller1.get_history()
+            if history_seller1:
+                current_round_messages_s1 = [
+                    msg for msg in history_seller1 if msg["round"] == self.current_round
+                ]
+                for msg in current_round_messages_s1:
+                    role = msg["role"].upper()
+                    output_lines.append(f"  [{role}]: {msg['content']}")
+        
+        # Display Seller2 conversation (if this round negotiated with seller2)
+        if self.current_selected_seller == 2:
+            output_lines.append(f"\n[SELLER 2 Conversation]:")
+            history_seller2 = self.memory_seller2.get_history()
+            if history_seller2:
+                current_round_messages_s2 = [
+                    msg for msg in history_seller2 if msg["round"] == self.current_round
+                ]
+                for msg in current_round_messages_s2:
+                    role = msg["role"].upper()
+                    output_lines.append(f"  [{role}]: {msg['content']}")
+        
+        # Display Seller3 conversation (if this round negotiated with seller3)
+        if self.current_selected_seller == 3:
+            output_lines.append(f"\n[SELLER 3 Conversation]:")
+            history_seller3 = self.memory_seller3.get_history()
+            if history_seller3:
+                current_round_messages_s3 = [
+                    msg for msg in history_seller3 if msg["round"] == self.current_round
+                ]
+                for msg in current_round_messages_s3:
+                    role = msg["role"].upper()
+                    output_lines.append(f"  [{role}]: {msg['content']}")
         
         # Round summary section
         output_lines.append(f"\n{'-'*60}")
@@ -338,9 +390,20 @@ class Task1MultiSellerNegotiation(BaseEnv):
         else:
             output_lines.append(f"  Seller Price: Not specified")
         
+        # Display Seller3 prices
+        output_lines.append(f"\nSeller 3:")
+        if self.state_seller3.buyer_price is not None:
+            output_lines.append(f"  Buyer Price: ${self.state_seller3.buyer_price:.2f}")
+        else:
+            output_lines.append(f"  Buyer Price: Not specified")
+        if self.state_seller3.seller_price is not None:
+            output_lines.append(f"  Seller Price: ${self.state_seller3.seller_price:.2f}")
+        else:
+            output_lines.append(f"  Seller Price: Not specified")
+        
         # Display deal status
-        if self.selected_seller is not None:
-            output_lines.append(f"\n  ✓ DEAL MADE with Seller {self.selected_seller}")
+        if self.final_selected_seller is not None:
+            output_lines.append(f"\n  ✓ DEAL MADE with Seller {self.final_selected_seller}")
             if self.final_deal_price is not None:
                 output_lines.append(f"  Final Deal Price: ${self.final_deal_price:.2f}")
         else:
@@ -369,21 +432,27 @@ class Task1MultiSellerNegotiation(BaseEnv):
         """Close environment, cleanup resources"""
         self.memory_seller1.clear()
         self.memory_seller2.clear()
+        self.memory_seller3.clear()
         self.state_seller1 = NegotiationState()
         self.state_seller2 = NegotiationState()
+        self.state_seller3 = NegotiationState()
     
     def _get_observation(self) -> Dict[str, Any]:
         """Get current observation"""
         return {
             "conversation_history_seller1": self.memory_seller1.get_history(),
             "conversation_history_seller2": self.memory_seller2.get_history(),
+            "conversation_history_seller3": self.memory_seller3.get_history(),
             "current_round": self.current_round,
+            "current_selected_seller": self.current_selected_seller,
             "seller1_price": self.state_seller1.seller_price,
             "buyer_price_seller1": self.state_seller1.buyer_price,
             "seller2_price": self.state_seller2.seller_price,
             "buyer_price_seller2": self.state_seller2.buyer_price,
+            "seller3_price": self.state_seller3.seller_price,
+            "buyer_price_seller3": self.state_seller3.buyer_price,
             "status": self.negotiation_info.status.value,
-            "selected_seller": self.selected_seller,
+            "final_selected_seller": self.final_selected_seller,
             "final_deal_price": self.final_deal_price,
         }
     
@@ -392,11 +461,14 @@ class Task1MultiSellerNegotiation(BaseEnv):
         return {
             "round": self.current_round,
             "status": self.negotiation_info.status.value,
+            "current_selected_seller": self.current_selected_seller,
             "seller1_price": self.state_seller1.seller_price,
             "buyer_price_seller1": self.state_seller1.buyer_price,
             "seller2_price": self.state_seller2.seller_price,
             "buyer_price_seller2": self.state_seller2.buyer_price,
-            "selected_seller": self.selected_seller,
+            "seller3_price": self.state_seller3.seller_price,
+            "buyer_price_seller3": self.state_seller3.buyer_price,
+            "final_selected_seller": self.final_selected_seller,
             "final_deal_price": self.final_deal_price,
             "negotiation_info": self.negotiation_info,
         }
@@ -440,53 +512,54 @@ class Task1MultiSellerNegotiation(BaseEnv):
         Returns:
             Whether buyer wants to make a deal
         """
+        # First check for the fixed format "MAKE_DEAL"
+        if 'MAKE_DEAL' in text.upper():
+            return True
+        
+        # More specific patterns to avoid false positives
+        # Exclude phrases like "I hope we can reach an agreement" which are just expressions of hope
         make_deal_patterns = [
-            r'make\s+deal',
-            r'accept',
-            r'agree',
-            r'deal',
-            r'let\'?s\s+do\s+it',
-            r'i\'?ll\s+take\s+it',
-            r'we\s+have\s+a\s+deal',
+            r'\bi\s+accept\b',  # "I accept"
+            r'\bi\s+agree\b',  # "I agree"
+            r'\baccept\s+your\s+offer\b',  # "accept your offer"
+            r'\bagree\s+to\s+the\s+deal\b',  # "agree to the deal"
+            r'\bmake\s+a\s+deal\b',  # "make a deal"
+            r'\bwe\s+have\s+a\s+deal\b',  # "we have a deal"
+            r'\blet\'?s\s+do\s+it\b',  # "let's do it"
+            r'\bi\'?ll\s+take\s+it\b',  # "I'll take it"
+            r'\bi\'?m\s+accepting\b',  # "I'm accepting"
+            r'\bi\'?m\s+agreeing\b',  # "I'm agreeing"
+            r'\bdeal\s*!',  # "deal!"
+            r'\bi\s+accept\s+the\s+price\b',  # "I accept the price"
         ]
         
         text_lower = text.lower()
+        
+        # Exclude common false positive patterns
+        false_positive_patterns = [
+            r'hope\s+.*\s+agreement',  # "hope ... agreement"
+            r'hoping\s+.*\s+agreement',  # "hoping ... agreement"
+            r'would\s+like\s+.*\s+agreement',  # "would like ... agreement"
+            r'looking\s+forward\s+.*\s+agreement',  # "looking forward ... agreement"
+        ]
+        
+        # Check for false positives first
+        for pattern in false_positive_patterns:
+            if re.search(pattern, text_lower):
+                return False
+        
+        # Check for actual deal patterns
         for pattern in make_deal_patterns:
             if re.search(pattern, text_lower):
                 return True
         
         return False
     
-    def _get_effective_price_seller1(self) -> Optional[float]:
-        """Get effective price for seller1 (agreed price if available, otherwise seller price)
-        
-        Returns:
-            Effective price for seller1
-        """
-        if self.state_seller1.buyer_price is not None and self.state_seller1.seller_price is not None:
-            price_diff = abs(self.state_seller1.buyer_price - self.state_seller1.seller_price)
-            if price_diff <= self.price_tolerance:
-                return (self.state_seller1.buyer_price + self.state_seller1.seller_price) / 2
-        return self.state_seller1.seller_price
-    
-    def _get_effective_price_seller2(self) -> Optional[float]:
-        """Get effective price for seller2 (agreed price if available, otherwise seller price)
-        
-        Returns:
-            Effective price for seller2
-        """
-        if self.state_seller2.buyer_price is not None and self.state_seller2.seller_price is not None:
-            price_diff = abs(self.state_seller2.buyer_price - self.state_seller2.seller_price)
-            if price_diff <= self.price_tolerance:
-                return (self.state_seller2.buyer_price + self.state_seller2.seller_price) / 2
-        return self.state_seller2.seller_price
-    
     def _calculate_reward(self) -> float:
         """Calculate reward
         
         Calculate reward value based on negotiation result.
         If deal is reached with a seller, use that seller's min_price for calculation.
-        Reward is based on the lower price deal if buyer made deals with both sellers.
         
         If deal is reached:
             reward = buyer savings + seller profit + time cost (negative, based on rounds)
@@ -504,7 +577,7 @@ class Task1MultiSellerNegotiation(BaseEnv):
         # Time cost: negative value based on number of rounds
         time_cost = -self.current_round
         
-        if self.negotiation_info.status == NegotiationStatus.AGREED and self.selected_seller is not None and self.final_deal_price is not None:
+        if self.negotiation_info.status == NegotiationStatus.AGREED and self.final_selected_seller is not None and self.final_deal_price is not None:
             # Deal reached: buyer savings + seller profit + time cost
             deal_price = self.final_deal_price
             reward = 0.0
@@ -513,10 +586,12 @@ class Task1MultiSellerNegotiation(BaseEnv):
             
             # Get the selected seller's min_price
             selected_seller_min_price = None
-            if self.selected_seller == 1:
+            if self.final_selected_seller == 1:
                 selected_seller_min_price = self.seller1_min_price
-            elif self.selected_seller == 2:
+            elif self.final_selected_seller == 2:
                 selected_seller_min_price = self.seller2_min_price
+            elif self.final_selected_seller == 3:
+                selected_seller_min_price = self.seller3_min_price
             
             # Calculate buyer savings: buyer_max_price - deal_price
             if self.buyer_max_price is not None:
@@ -531,7 +606,7 @@ class Task1MultiSellerNegotiation(BaseEnv):
             # Add time cost (negative penalty)
             reward += time_cost
             
-            print(f"Reward = buyer_savings({buyer_savings:.2f}) + seller{self.selected_seller}_profit({seller_profit:.2f}) + time_cost({time_cost:.2f}) = {reward:.2f} (buyer_max={self.buyer_max_price}, deal_price={deal_price:.2f}, seller{self.selected_seller}_min={selected_seller_min_price}, round={self.current_round})")
+            print(f"Reward = buyer_savings({buyer_savings:.2f}) + seller{self.final_selected_seller}_profit({seller_profit:.2f}) + time_cost({time_cost:.2f}) = {reward:.2f} (buyer_max={self.buyer_max_price}, deal_price={deal_price:.2f}, seller{self.final_selected_seller}_min={selected_seller_min_price}, round={self.current_round})")
             
             return reward
         

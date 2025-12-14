@@ -26,7 +26,10 @@ __all__ = [
     "Task2TwoProductNegotiation",
     "Task3FiveProductNegotiation",
     "Task4SelectThreeFromFiveNegotiation",
-    "Task1MultiSellerNegotiation",
+    "Task1ParallelTwoSellerNegotiation",
+    "Task2ParallelThreeSellerNegotiation",
+    "Task3SequentialTwoSellerNegotiation",
+    "Task4SequentialThreeSellerNegotiation",
 ]
 
 # Import environment classes
@@ -37,7 +40,10 @@ from agenticpaygym.envs.only_multi_products.Task1_multi_product_negotiation impo
 from agenticpaygym.envs.only_multi_products.Task2_two_product_negotiation import Task2TwoProductNegotiation
 from agenticpaygym.envs.only_multi_products.Task3_five_product_negotiation import Task3FiveProductNegotiation
 from agenticpaygym.envs.only_multi_products.Task4_select_three_from_five_negotiation import Task4SelectThreeFromFiveNegotiation
-from agenticpaygym.envs.only_multi_seller.Task1_multi_seller_negotiation import Task1MultiSellerNegotiation
+from agenticpaygym.envs.only_multi_seller.Task1_parallel_two_seller_negotiation import Task1ParallelTwoSellerNegotiation
+from agenticpaygym.envs.only_multi_seller.Task2_parallel_three_seller_negotiation import Task2ParallelThreeSellerNegotiation
+from agenticpaygym.envs.only_multi_seller.Task3_sequential_two_seller_negotiation import Task3SequentialTwoSellerNegotiation
+from agenticpaygym.envs.only_multi_seller.Task4_sequential_three_seller_negotiation import Task4SequentialThreeSellerNegotiation
 
 # Automatically register all environments
 register(
@@ -83,8 +89,26 @@ register(
 )
 
 register(
-    id="Task1_multi_seller_negotiation-v0",
-    entry_point="agenticpaygym.envs.only_multi_seller.Task1_multi_seller_negotiation:Task1MultiSellerNegotiation",
+    id="Task1_parallel_two_seller_negotiation-v0",
+    entry_point="agenticpaygym.envs.only_multi_seller.Task1_parallel_two_seller_negotiation:Task1ParallelTwoSellerNegotiation",
+    max_episode_steps=20,
+)
+
+register(
+    id="Task2_parallel_three_seller_negotiation-v0",
+    entry_point="agenticpaygym.envs.only_multi_seller.Task2_parallel_three_seller_negotiation:Task2ParallelThreeSellerNegotiation",
+    max_episode_steps=20,
+)
+
+register(
+    id="Task3_sequential_two_seller_negotiation-v0",
+    entry_point="agenticpaygym.envs.only_multi_seller.Task3_sequential_two_seller_negotiation:Task3SequentialTwoSellerNegotiation",
+    max_episode_steps=20,
+)
+
+register(
+    id="Task4_sequential_three_seller_negotiation-v0",
+    entry_point="agenticpaygym.envs.only_multi_seller.Task4_sequential_three_seller_negotiation:Task4SequentialThreeSellerNegotiation",
     max_episode_steps=20,
 )
 

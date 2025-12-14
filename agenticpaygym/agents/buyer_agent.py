@@ -95,6 +95,12 @@ IMPORTANT REMINDERS:
 - If the seller's price is too high, suggest a reasonable counter-offer
 - Always mention specific prices when making offers (e.g., "I can offer $X")
 - NEVER reveal your maximum acceptable price to the seller - keep it confidential
+
+DEAL AGREEMENT INSTRUCTION:
+- If you decide to accept the deal and want to make a transaction, you MUST include the exact phrase "MAKE_DEAL" in your response
+- This phrase should appear when you are ready to finalize the agreement
+- Example: "That sounds good! I accept your offer. MAKE_DEAL"
+- Only use "MAKE_DEAL" when you are genuinely ready to complete the transaction
 {preference_guidance}
 Now, respond as {self.name}:
 """
