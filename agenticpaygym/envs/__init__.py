@@ -22,14 +22,20 @@ __all__ = [
     "Task1BasicPriceNegotiation",
     "Task2ClosePriceNegotiation",
     "Task3CloseToMarketPriceNegotiation",
-    "MultiProductNegotiationEnv",
+    "Task1MultiProductNegotiation",
+    "Task2TwoProductNegotiation",
+    "Task3FiveProductNegotiation",
+    "Task4SelectThreeFromFiveNegotiation",
 ]
 
 # Import environment classes
 from agenticpaygym.envs.single_buyer_product_seller.Task1_basic_price_negotiation import Task1BasicPriceNegotiation
 from agenticpaygym.envs.single_buyer_product_seller.Task2_close_price_negotiation import Task2ClosePriceNegotiation
 from agenticpaygym.envs.single_buyer_product_seller.Task3_close_to_market_price_negotiation import Task3CloseToMarketPriceNegotiation
-from agenticpaygym.envs.only_multi_products.multi_product_negotiation_env import MultiProductNegotiationEnv
+from agenticpaygym.envs.only_multi_products.Task1_multi_product_negotiation import Task1MultiProductNegotiation
+from agenticpaygym.envs.only_multi_products.Task2_two_product_negotiation import Task2TwoProductNegotiation
+from agenticpaygym.envs.only_multi_products.Task3_five_product_negotiation import Task3FiveProductNegotiation
+from agenticpaygym.envs.only_multi_products.Task4_select_three_from_five_negotiation import Task4SelectThreeFromFiveNegotiation
 
 # Automatically register all environments
 register(
@@ -51,8 +57,26 @@ register(
 )
 
 register(
-    id="MultiProductNegotiation-v0",
-    entry_point="agenticpaygym.envs.only_multi_products.multi_product_negotiation_env:MultiProductNegotiationEnv",
+    id="Task1_multi_product_negotiation-v0",
+    entry_point="agenticpaygym.envs.only_multi_products.Task1_multi_product_negotiation:Task1MultiProductNegotiation",
+    max_episode_steps=20,
+)
+
+register(
+    id="Task2_two_product_negotiation-v0",
+    entry_point="agenticpaygym.envs.only_multi_products.Task2_two_product_negotiation:Task2TwoProductNegotiation",
+    max_episode_steps=20,
+)
+
+register(
+    id="Task3_five_product_negotiation-v0",
+    entry_point="agenticpaygym.envs.only_multi_products.Task3_five_product_negotiation:Task3FiveProductNegotiation",
+    max_episode_steps=20,
+)
+
+register(
+    id="Task4_select_three_from_five_negotiation-v0",
+    entry_point="agenticpaygym.envs.only_multi_products.Task4_select_three_from_five_negotiation:Task4SelectThreeFromFiveNegotiation",
     max_episode_steps=20,
 )
 

@@ -1,6 +1,6 @@
-"""Multi-Product Negotiation Example
+"""Task1 Multi-Product Negotiation Example
 
-Demonstrates how to use the MultiProductNegotiationEnv to negotiate multiple products
+Demonstrates how to use the Task1MultiProductNegotiation to negotiate multiple products
 while preserving conversation context across different products.
 """
 
@@ -15,7 +15,6 @@ from agenticpaygym.agents.buyer_agent import BuyerAgent
 from agenticpaygym.agents.seller_agent import SellerAgent
 from agenticpaygym.agents.product_selector_agent import ProductSelectorAgent
 from agenticpaygym.llm.openai_llm import OpenAILLM
-from agenticpaygym.utils.user_profile import UserProfile, StylePreference, ShoppingHabit
 
 
 def main():
@@ -44,7 +43,7 @@ def main():
     # Create environment using registration system
     print("Creating multi-product negotiation environment...")
     env = make(
-        "MultiProductNegotiation-v0",
+        "Task1_multi_product_negotiation-v0",
         buyer_agent=buyer,
         seller_agent=seller,
         max_rounds_per_product=20,
@@ -59,12 +58,9 @@ def main():
         price_tolerance=5.0,
     )
     
-    # Create user profile (contains personal preferences)
-    user_profile = UserProfile(
-        style_preference=StylePreference.BUSINESS,  # Business style
-        shopping_habit=ShoppingHabit.COMPARE,  # Likes to compare prices
-    )
-    print(f"User Profile: {user_profile.get_description()}")
+    # Create user profile (text description of personal preferences)
+    user_profile = "User prefers business/professional style and likes to compare prices before making purchases. In negotiations, they may mention comparing other options and seek better deals."
+    print(f"User Profile: {user_profile}")
     
     # Define available products (similar to simple_negotiation.py structure)
     products = [
@@ -273,3 +269,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
