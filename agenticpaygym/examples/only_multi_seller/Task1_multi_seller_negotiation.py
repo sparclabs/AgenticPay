@@ -1,6 +1,7 @@
-"""Task1 Basic Price Negotiation Example
+"""Task1 Multi-Seller Negotiation Example
 
-Demonstrates how to use the registration system to create and use negotiation environments.
+Demonstrates how to use the Task1MultiSellerNegotiation to negotiate with two sellers
+in parallel for the same product, and choose the seller with the lower price.
 """
 
 import os
@@ -9,14 +10,14 @@ import sys
 # Add project path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from agenticpaygym import make, Task1BasicPriceNegotiation  # Use registration system
+from agenticpaygym.envs.only_multi_seller.Task1_multi_seller_negotiation import Task1MultiSellerNegotiation
 from agenticpaygym.agents.buyer_agent import BuyerAgent
 from agenticpaygym.agents.seller_agent import SellerAgent
 from agenticpaygym.llm.openai_llm import OpenAILLM
 
 
 def main():
-    """Main function: Demonstrates basic negotiation flow"""
+    """Main function: Demonstrates multi-seller negotiation flow"""
     
     # Check API key
     api_key = os.getenv("OPENAI_API_KEY")
@@ -27,26 +28,30 @@ def main():
     
     # Initialize LLM
     print("Initializing LLM...")
-    llm = OpenAILLM(api_key=api_key, model="gpt-4o-mini-2024-07-18") # gpt-4o-mini-2024-07-18, gpt-3.5-turbo
+    llm = OpenAILLM(api_key=api_key, model="gpt-4o-mini-2024-07-18")  # gpt-4o-mini-2024-07-18, gpt-3.5-turbo
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
     print("Creating agents...")
     buyer_max_price = 120.0  # Maximum acceptable purchase price for buyer (confidential)
-    seller_min_price = 80.0  # Minimum acceptable selling price for seller (confidential)
+    seller1_min_price = 80.0  # Minimum acceptable selling price for seller1 (confidential)
+    seller2_min_price = 85.0  # Minimum acceptable selling price for seller2 (confidential, different from seller1)
     
     buyer = BuyerAgent(llm=llm, buyer_max_price=buyer_max_price)
-    seller = SellerAgent(llm=llm, seller_min_price=seller_min_price)
+    seller1 = SellerAgent(llm=llm, seller_min_price=seller1_min_price)
+    seller2 = SellerAgent(llm=llm, seller_min_price=seller2_min_price)
     
-    # Method 1: Create environment using registration system (recommended)
-    print("Creating negotiation environment using registration system...")
-    env = make(
-        "Task1_basic_price_negotiation-v0",
+    # Create environment
+    print("Creating multi-seller negotiation environment...")
+    env = Task1MultiSellerNegotiation(
         buyer_agent=buyer,
-        seller_agent=seller,
+        seller1_agent=seller1,
+        seller2_agent=seller2,
         max_rounds=20,
-        initial_seller_price=150.0,  # Initial price offered by seller
+        initial_seller1_price=150.0,  # Initial price offered by seller1
+        initial_seller2_price=160.0,  # Initial price offered by seller2 (higher)
         buyer_max_price=buyer_max_price,  # Buyer bottom price (confidential)
-        seller_min_price=seller_min_price,  # Seller bottom price (confidential)
+        seller1_min_price=seller1_min_price,  # Seller1 bottom price (confidential)
+        seller2_min_price=seller2_min_price,  # Seller2 bottom price (confidential)
         environment_info={
             "temperature": "warm",
             "season": "summer",
@@ -54,22 +59,6 @@ def main():
         },
         price_tolerance=5.0,
     )
-    
-    # Method 2: Direct instantiation (backward compatible, but not recommended)
-    # env = Task1BasicPriceNegotiation(
-    #     buyer_agent=buyer,
-    #     seller_agent=seller,
-    #     max_rounds=20,
-    #     initial_seller_price=150.0,
-    #     buyer_max_price=buyer_max_price,
-    #     seller_min_price=seller_min_price,
-    #     environment_info={
-    #         "temperature": "warm",
-    #         "season": "summer",
-    #         "weather": "sunny",
-    #     },
-    #     price_tolerance=1.0,
-    # )
     
     # Create user profile (text description of personal preferences)
     user_profile = "User prefers business/professional style and likes to compare prices before making purchases. In negotiations, they may mention comparing other options and seek better deals."
@@ -85,7 +74,7 @@ def main():
     
     # Reset environment
     print("\n" + "="*60)
-    print("Starting new negotiation...")
+    print("Starting new negotiation with two sellers...")
     print("="*60)
     
     observation, info = env.reset(
@@ -105,23 +94,37 @@ def main():
     done = False
     
     while not done:
-        # Each round, both buyer and seller respond
-        # Get buyer's response
-        buyer_action = buyer.respond(
-            conversation_history=observation["conversation_history"],
+        # Each round, order is: buyer -> seller
+        # Get buyer's response to seller1 first
+        buyer_action_seller1 = buyer.respond(
+            conversation_history=observation["conversation_history_seller1"],
             current_state=observation
         )
         
-        # Get seller's response
-        seller_action = seller.respond(
-            conversation_history=observation["conversation_history"],
+        # Get buyer's response to seller2
+        buyer_action_seller2 = buyer.respond(
+            conversation_history=observation["conversation_history_seller2"],
             current_state=observation
         )
         
-        # Execute step with both actions
+        # Then get seller1's response
+        seller1_action = seller1.respond(
+            conversation_history=observation["conversation_history_seller1"],
+            current_state=observation
+        )
+        
+        # Get seller2's response
+        seller2_action = seller2.respond(
+            conversation_history=observation["conversation_history_seller2"],
+            current_state=observation
+        )
+        
+        # Execute step with all actions
         observation, reward, terminated, truncated, info = env.step(
-            buyer_action=buyer_action,
-            seller_action=seller_action
+            buyer_action_seller1=buyer_action_seller1,
+            buyer_action_seller2=buyer_action_seller2,
+            seller1_action=seller1_action,
+            seller2_action=seller2_action
         )
         done = terminated or truncated
         
@@ -133,7 +136,11 @@ def main():
             print("Negotiation Ended")
             print("="*60)
             print(f"Status: {info['status']}")
-            print(f"Final Prices: Seller=${info.get('seller_price', 0):.2f} | Buyer=${info.get('buyer_price', 0):.2f}")
+            if info.get('selected_seller'):
+                print(f"Selected Seller: Seller {info['selected_seller']}")
+                print(f"Final Deal Price: ${info.get('final_deal_price', 0):.2f}")
+            print(f"Seller1 Prices: Seller=${info.get('seller1_price', 0):.2f} | Buyer=${info.get('buyer_price_seller1', 0):.2f}")
+            print(f"Seller2 Prices: Seller=${info.get('seller2_price', 0):.2f} | Buyer=${info.get('buyer_price_seller2', 0):.2f}")
             print(f"Total Rounds: {info['round']}")
             print(f"Reward: {reward:.3f}")
             if info.get('termination_reason'):
@@ -148,4 +155,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

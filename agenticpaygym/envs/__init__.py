@@ -26,6 +26,7 @@ __all__ = [
     "Task2TwoProductNegotiation",
     "Task3FiveProductNegotiation",
     "Task4SelectThreeFromFiveNegotiation",
+    "Task1MultiSellerNegotiation",
 ]
 
 # Import environment classes
@@ -36,6 +37,7 @@ from agenticpaygym.envs.only_multi_products.Task1_multi_product_negotiation impo
 from agenticpaygym.envs.only_multi_products.Task2_two_product_negotiation import Task2TwoProductNegotiation
 from agenticpaygym.envs.only_multi_products.Task3_five_product_negotiation import Task3FiveProductNegotiation
 from agenticpaygym.envs.only_multi_products.Task4_select_three_from_five_negotiation import Task4SelectThreeFromFiveNegotiation
+from agenticpaygym.envs.only_multi_seller.Task1_multi_seller_negotiation import Task1MultiSellerNegotiation
 
 # Automatically register all environments
 register(
@@ -77,6 +79,12 @@ register(
 register(
     id="Task4_select_three_from_five_negotiation-v0",
     entry_point="agenticpaygym.envs.only_multi_products.Task4_select_three_from_five_negotiation:Task4SelectThreeFromFiveNegotiation",
+    max_episode_steps=20,
+)
+
+register(
+    id="Task1_multi_seller_negotiation-v0",
+    entry_point="agenticpaygym.envs.only_multi_seller.Task1_multi_seller_negotiation:Task1MultiSellerNegotiation",
     max_episode_steps=20,
 )
 

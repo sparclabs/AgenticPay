@@ -119,14 +119,14 @@ def main():
     
     while not done:
         # Each round, both buyer and seller respond
-        # Get seller's response
-        seller_action = seller.respond(
+        # Get buyer's response
+        buyer_action = buyer.respond(
             conversation_history=observation["conversation_history"],
             current_state=observation
         )
         
-        # Get buyer's response
-        buyer_action = buyer.respond(
+        # Get seller's response
+        seller_action = seller.respond(
             conversation_history=observation["conversation_history"],
             current_state=observation
         )

@@ -6,5 +6,7 @@ This category includes environments with:
 - Multiple seller agents
 """
 
-__all__ = []
+from agenticpaygym.envs.only_multi_seller.Task1_multi_seller_negotiation import Task1MultiSellerNegotiation
+
+__all__ = ["Task1MultiSellerNegotiation"]
 
