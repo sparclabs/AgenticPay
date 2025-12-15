@@ -22,3 +22,4 @@ This environment manages sequential negotiation where the buyer chooses one sell
 ### Task4: Sequential Three-Seller Negotiation
 
 This environment manages sequential negotiation where the buyer chooses one seller per round to negotiate with. The buyer can switch between three sellers and make a deal with any of the three sellers. This task challenges agents to handle more complex sequential decision-making scenarios with a larger number of sellers to choose from.
+
