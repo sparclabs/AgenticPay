@@ -6,5 +6,15 @@ This category includes environments with:
 - Multiple seller agents
 """
 
-__all__ = []
+from agenticpaygym.envs.multi_products_multi_seller.Task1_parallel_two_seller_per_one_product_negotiation import Task1ParallelTwoSellerPerOneProductNegotiation
+from agenticpaygym.envs.multi_products_multi_seller.Task2_parallel_three_seller_per_one_product_negotiation import Task2ParallelThreeSellerPerOneProductNegotiation
+from agenticpaygym.envs.multi_products_multi_seller.Task3_sequential_two_seller_per_one_product_negotiation import Task3SequentialTwoSellerPerOneProductNegotiation
+from agenticpaygym.envs.multi_products_multi_seller.Task4_sequential_three_seller_per_one_product_negotiation import Task4SequentialThreeSellerPerOneProductNegotiation
+
+__all__ = [
+    "Task1ParallelTwoSellerPerOneProductNegotiation",
+    "Task2ParallelThreeSellerPerOneProductNegotiation",
+    "Task3SequentialTwoSellerPerOneProductNegotiation",
+    "Task4SequentialThreeSellerPerOneProductNegotiation",
+]
 
