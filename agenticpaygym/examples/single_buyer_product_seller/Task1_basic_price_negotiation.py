@@ -128,6 +128,41 @@ def main():
         # Render current state (includes all print information)
         env.render()
         
+        # Display step rewards for each round with detailed calculation
+        if 'step_seller_reward' in info or 'step_buyer_reward' in info:
+            print(f"\n[Step Rewards] ", end="")
+            if 'step_seller_reward' in info:
+                print(f"Seller: {info['step_seller_reward']:.3f}", end="")
+            if 'step_buyer_reward' in info:
+                if 'step_seller_reward' in info:
+                    print(f" | ", end="")
+                print(f"Buyer: {info['step_buyer_reward']:.3f}", end="")
+            print()
+            
+            # Display detailed calculation
+            round_cost = -info['round']
+            if 'step_seller_reward' in info and info.get('seller_price') is not None:
+                seller_price = info.get('seller_price', 0)
+                seller_min = env.seller_min_price
+                if seller_min is not None:
+                    seller_profit = seller_price - seller_min
+                    print(f"  Seller Step Reward = seller_profit({seller_profit:.2f}) + round_cost({round_cost:.2f}) = {info['step_seller_reward']:.2f} (seller_price={seller_price:.2f}, seller_min={seller_min}, round={info['round']})")
+                else:
+                    print(f"  Seller Step Reward = round_cost = {round_cost:.2f} (seller_price={seller_price:.2f}, seller_min not specified, round={info['round']})")
+            elif 'step_seller_reward' in info:
+                print(f"  Seller Step Reward = round_cost = {round_cost:.2f} (seller_price not specified, round={info['round']})")
+            
+            if 'step_buyer_reward' in info and info.get('buyer_price') is not None:
+                buyer_price = info.get('buyer_price', 0)
+                buyer_max = env.buyer_max_price
+                if buyer_max is not None:
+                    buyer_savings = buyer_max - buyer_price
+                    print(f"  Buyer Step Reward = buyer_savings({buyer_savings:.2f}) + round_cost({round_cost:.2f}) = {info['step_buyer_reward']:.2f} (buyer_max={buyer_max}, buyer_price={buyer_price:.2f}, round={info['round']})")
+                else:
+                    print(f"  Buyer Step Reward = round_cost = {round_cost:.2f} (buyer_price={buyer_price:.2f}, buyer_max not specified, round={info['round']})")
+            elif 'step_buyer_reward' in info:
+                print(f"  Buyer Step Reward = round_cost = {round_cost:.2f} (buyer_price not specified, round={info['round']})")
+        
         if done:
             print("\n" + "="*60)
             print("Negotiation Ended")
@@ -135,7 +170,11 @@ def main():
             print(f"Status: {info['status']}")
             print(f"Final Prices: Seller=${info.get('seller_price', 0):.2f} | Buyer=${info.get('buyer_price', 0):.2f}")
             print(f"Total Rounds: {info['round']}")
-            print(f"Reward: {reward:.3f}")
+            print(f"Total Reward: {reward:.3f}")
+            if 'seller_reward' in info:
+                print(f"Seller Reward: {info['seller_reward']:.3f}")
+            if 'buyer_reward' in info:
+                print(f"Buyer Reward: {info['buyer_reward']:.3f}")
             if info.get('termination_reason'):
                 print(f"Reason: {info['termination_reason']}")
             print("="*60)
