@@ -30,6 +30,7 @@ class Task3CloseToMarketPriceNegotiation(Task1BasicPriceNegotiation):
         seller_min_price=None,
         environment_info=None,
         price_tolerance: float = 1.0,
+        reward_weights=None,
     ):
         """Initialize Task3 negotiation environment
         
@@ -42,6 +43,10 @@ class Task3CloseToMarketPriceNegotiation(Task1BasicPriceNegotiation):
             seller_min_price: Minimum acceptable price for seller (confidential)
             environment_info: Environment information (e.g., season, weather, etc.)
             price_tolerance: Price tolerance for determining agreement
+            reward_weights: Reward weights configuration dict with keys:
+                - buyer_savings: weight for buyer savings (default: 1.0)
+                - seller_profit: weight for seller profit (default: 1.0)
+                - time_cost: weight for time cost (default: 0.1)
         """
         super().__init__(
             buyer_agent=buyer_agent,
@@ -52,5 +57,6 @@ class Task3CloseToMarketPriceNegotiation(Task1BasicPriceNegotiation):
             seller_min_price=seller_min_price,
             environment_info=environment_info,
             price_tolerance=price_tolerance,
+            reward_weights=reward_weights,
         )
 
