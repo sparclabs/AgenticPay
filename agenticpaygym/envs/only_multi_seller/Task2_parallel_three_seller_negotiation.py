@@ -38,6 +38,9 @@ class Task2ParallelThreeSellerNegotiation(BaseEnv):
         seller3_min_price: Optional[float] = None,
         environment_info: Optional[Dict[str, Any]] = None,
         price_tolerance: float = 1.0,
+        reward_weights: Optional[Dict[str, float]] = None,
+        buyer_reward_aggregation: str = "average",
+        seller_reward_aggregation: str = "average",
     ):
         """Initialize multi-seller negotiation environment
         
@@ -56,6 +59,14 @@ class Task2ParallelThreeSellerNegotiation(BaseEnv):
             seller3_min_price: Minimum acceptable price for seller3 (confidential)
             environment_info: Environment information (e.g., season, weather, etc.)
             price_tolerance: Price tolerance for determining agreement
+            reward_weights: Reward weights configuration dict with keys:
+                - buyer_savings: weight for buyer savings (default: 1.0)
+                - seller_profit: weight for seller profit (default: 1.0)
+                - time_cost: weight for time cost (default: 0.1)
+            buyer_reward_aggregation: How to aggregate buyer rewards across sellers.
+                Options: "average", "max", "min" (default: "average")
+            seller_reward_aggregation: How to aggregate seller rewards across buyers.
+                Options: "average", "max", "min" (default: "average")
         """
         self.buyer_agent = buyer_agent
         self.seller1_agent = seller1_agent
@@ -71,6 +82,20 @@ class Task2ParallelThreeSellerNegotiation(BaseEnv):
         self.seller3_min_price = seller3_min_price
         self.environment_info = environment_info or {}
         self.price_tolerance = price_tolerance
+        
+        # Set default reward weights
+        default_weights = {
+            "buyer_savings": 1.0,      # 买方节省权重
+            "seller_profit": 1.0,      # 卖方利润权重
+            "time_cost": 0.1,          # 时间成本权重（降低影响）
+        }
+        if reward_weights is not None:
+            default_weights.update(reward_weights)
+        self.reward_weights = default_weights
+        
+        # Set reward aggregation methods
+        self.buyer_reward_aggregation = buyer_reward_aggregation
+        self.seller_reward_aggregation = seller_reward_aggregation
         
         # Call parent class initialization
         super().__init__()
@@ -313,28 +338,57 @@ class Task2ParallelThreeSellerNegotiation(BaseEnv):
         terminated = False
         truncated = False
         reward = 0.0
+        buyer_reward = 0.0
+        seller1_reward = 0.0
+        seller2_reward = 0.0
+        seller3_reward = 0.0
         
         if self.selected_seller is not None and self.final_deal_price is not None:
             terminated = True
             self.negotiation_info.status = NegotiationStatus.AGREED
             reward = self._calculate_reward()
+            buyer_reward = self._calculate_buyer_reward()
+            seller1_reward = self._calculate_seller_reward(1)
+            seller2_reward = self._calculate_seller_reward(2)
+            seller3_reward = self._calculate_seller_reward(3)
         elif self.current_round >= self.max_rounds:
             truncated = True
             self.negotiation_info.status = NegotiationStatus.TIMEOUT
             reward = self._calculate_reward()
+            buyer_reward = self._calculate_buyer_reward()
+            seller1_reward = self._calculate_seller_reward(1)
+            seller2_reward = self._calculate_seller_reward(2)
+            seller3_reward = self._calculate_seller_reward(3)
         else:
             # Move to next round
             self.current_round += 1
             self.negotiation_info.round_count = self.current_round
         
+        # Calculate step rewards for every round
+        step_buyer_reward = self._calculate_step_buyer_reward()
+        step_seller1_reward = self._calculate_step_seller_reward(1)
+        step_seller2_reward = self._calculate_step_seller_reward(2)
+        step_seller3_reward = self._calculate_step_seller_reward(3)
+        
         # Build observation and info
         observation = self._get_observation()
         info = self._get_info()
+        
+        # Add step rewards to info for every step
+        info["step_buyer_reward"] = step_buyer_reward
+        info["step_seller1_reward"] = step_seller1_reward
+        info["step_seller2_reward"] = step_seller2_reward
+        info["step_seller3_reward"] = step_seller3_reward
+        
         if terminated or truncated:
             info["termination_reason"] = "agreed" if terminated else "timeout"
             if terminated:
                 info["selected_seller"] = self.selected_seller
                 info["final_deal_price"] = self.final_deal_price
+            info["buyer_reward"] = buyer_reward
+            info["seller1_reward"] = seller1_reward
+            info["seller2_reward"] = seller2_reward
+            info["seller3_reward"] = seller3_reward
         
         return observation, reward, terminated, truncated, info
     
@@ -595,11 +649,10 @@ class Task2ParallelThreeSellerNegotiation(BaseEnv):
         return self.state_seller3.seller_price
     
     def _calculate_reward(self) -> float:
-        """Calculate reward
+        """Calculate global reward
         
         Calculate reward value based on negotiation result.
         If deal is reached with a seller, use that seller's min_price for calculation.
-        Reward is based on the lowest price deal if buyer made deals with multiple sellers.
         
         If deal is reached:
             reward = buyer savings + seller profit + time cost (negative, based on rounds)
@@ -636,21 +689,256 @@ class Task2ParallelThreeSellerNegotiation(BaseEnv):
             # Calculate buyer savings: buyer_max_price - deal_price
             if self.buyer_max_price is not None:
                 buyer_savings = self.buyer_max_price - deal_price
-                reward += buyer_savings
+                reward += buyer_savings * self.reward_weights["buyer_savings"]
             
             # Calculate seller profit: deal_price - seller_min_price
             if selected_seller_min_price is not None:
                 seller_profit = deal_price - selected_seller_min_price
-                reward += seller_profit
+                reward += seller_profit * self.reward_weights["seller_profit"]
             
             # Add time cost (negative penalty)
-            reward += time_cost
+            reward += time_cost * self.reward_weights["time_cost"]
             
-            print(f"Reward = buyer_savings({buyer_savings:.2f}) + seller{self.selected_seller}_profit({seller_profit:.2f}) + time_cost({time_cost:.2f}) = {reward:.2f} (buyer_max={self.buyer_max_price}, deal_price={deal_price:.2f}, seller{self.selected_seller}_min={selected_seller_min_price}, round={self.current_round})")
+            weighted_buyer_savings = buyer_savings * self.reward_weights["buyer_savings"] if self.buyer_max_price is not None else 0.0
+            weighted_seller_profit = seller_profit * self.reward_weights["seller_profit"] if selected_seller_min_price is not None else 0.0
+            weighted_time_cost = time_cost * self.reward_weights["time_cost"]
+            print(f"Global Reward = buyer_savings({buyer_savings:.2f} * {self.reward_weights['buyer_savings']:.2f}) + seller{self.selected_seller}_profit({seller_profit:.2f} * {self.reward_weights['seller_profit']:.2f}) + time_cost({time_cost:.2f} * {self.reward_weights['time_cost']:.2f}) = {reward:.2f} (buyer_max={self.buyer_max_price}, deal_price={deal_price:.2f}, seller{self.selected_seller}_min={selected_seller_min_price}, round={self.current_round})")
             
             return reward
         
         else:
             # Deal not reached: only time cost (negative penalty)
-            print(f"Reward = time_cost = {time_cost:.2f} (round={self.current_round}, deal not reached)")
-            return time_cost
+            weighted_time_cost = time_cost * self.reward_weights["time_cost"]
+            print(f"Global Reward = time_cost({time_cost:.2f} * {self.reward_weights['time_cost']:.2f}) = {weighted_time_cost:.2f} (round={self.current_round}, deal not reached)")
+            return weighted_time_cost
+    
+    def _calculate_buyer_reward(self) -> float:
+        """Calculate reward from buyer's perspective
+        
+        Calculate reward value based on negotiation result from buyer's perspective.
+        This reward does not include seller profit.
+        
+        If deal is reached:
+            reward = buyer savings + time cost (negative, based on rounds)
+            - buyer savings = buyer_max_price - deal_price (money saved by buyer)
+            - time cost = -current_round (penalty for number of rounds taken)
+        
+        If deal is not reached:
+            reward = time cost (negative, based on rounds)
+            - time cost = -current_round (penalty for number of rounds taken)
+        
+        Returns:
+            Reward value from buyer's perspective
+        """
+        # Time cost: negative value based on number of rounds
+        time_cost = -self.current_round
+        
+        if self.negotiation_info.status == NegotiationStatus.AGREED and self.selected_seller is not None and self.final_deal_price is not None:
+            # Deal reached: buyer savings + time cost
+            deal_price = self.final_deal_price
+            reward = 0.0
+            buyer_savings = 0.0
+            
+            # Calculate buyer savings: buyer_max_price - deal_price
+            if self.buyer_max_price is not None:
+                buyer_savings = self.buyer_max_price - deal_price
+                reward += buyer_savings * self.reward_weights["buyer_savings"]
+            
+            # Add time cost (negative penalty)
+            reward += time_cost * self.reward_weights["time_cost"]
+            
+            weighted_buyer_savings = buyer_savings * self.reward_weights["buyer_savings"] if self.buyer_max_price is not None else 0.0
+            weighted_time_cost = time_cost * self.reward_weights["time_cost"]
+            print(f"Buyer Reward = buyer_savings({buyer_savings:.2f} * {self.reward_weights['buyer_savings']:.2f}) + time_cost({time_cost:.2f} * {self.reward_weights['time_cost']:.2f}) = {reward:.2f} (buyer_max={self.buyer_max_price}, deal_price={deal_price:.2f}, round={self.current_round})")
+            
+            return reward
+        
+        else:
+            # Deal not reached: only time cost (negative penalty)
+            weighted_time_cost = time_cost * self.reward_weights["time_cost"]
+            print(f"Buyer Reward = time_cost({time_cost:.2f} * {self.reward_weights['time_cost']:.2f}) = {weighted_time_cost:.2f} (round={self.current_round}, deal not reached)")
+            return weighted_time_cost
+    
+    def _calculate_seller_reward(self, seller_id: int) -> float:
+        """Calculate reward from seller's perspective
+        
+        Calculate reward value based on negotiation result from seller's perspective.
+        This reward does not include buyer savings.
+        
+        If deal is reached with this seller:
+            reward = seller profit + time cost (negative, based on rounds)
+            - seller profit = deal_price - seller_min_price (extra profit for seller)
+            - time cost = -current_round (penalty for number of rounds taken)
+        
+        If deal is not reached or reached with another seller:
+            reward = time cost (negative, based on rounds)
+            - time cost = -current_round (penalty for number of rounds taken)
+        
+        Args:
+            seller_id: Seller ID (1, 2, or 3)
+        
+        Returns:
+            Reward value from seller's perspective
+        """
+        # Time cost: negative value based on number of rounds
+        time_cost = -self.current_round
+        
+        # Check if deal was reached with this seller
+        deal_reached_with_this_seller = (
+            self.negotiation_info.status == NegotiationStatus.AGREED and
+            self.selected_seller == seller_id and
+            self.final_deal_price is not None
+        )
+        
+        if deal_reached_with_this_seller:
+            # Deal reached with this seller: seller profit + time cost
+            deal_price = self.final_deal_price
+            reward = 0.0
+            seller_profit = 0.0
+            
+            # Get this seller's min_price
+            seller_min_price = None
+            if seller_id == 1:
+                seller_min_price = self.seller1_min_price
+            elif seller_id == 2:
+                seller_min_price = self.seller2_min_price
+            elif seller_id == 3:
+                seller_min_price = self.seller3_min_price
+            
+            # Calculate seller profit: deal_price - seller_min_price
+            if seller_min_price is not None:
+                seller_profit = deal_price - seller_min_price
+                reward += seller_profit * self.reward_weights["seller_profit"]
+            
+            # Add time cost (negative penalty)
+            reward += time_cost * self.reward_weights["time_cost"]
+            
+            weighted_seller_profit = seller_profit * self.reward_weights["seller_profit"] if seller_min_price is not None else 0.0
+            weighted_time_cost = time_cost * self.reward_weights["time_cost"]
+            print(f"Seller{seller_id} Reward = seller_profit({seller_profit:.2f} * {self.reward_weights['seller_profit']:.2f}) + time_cost({time_cost:.2f} * {self.reward_weights['time_cost']:.2f}) = {reward:.2f} (deal_price={deal_price:.2f}, seller{seller_id}_min={seller_min_price}, round={self.current_round})")
+            
+            return reward
+        
+        else:
+            # Deal not reached or reached with another seller: only time cost (negative penalty)
+            weighted_time_cost = time_cost * self.reward_weights["time_cost"]
+            print(f"Seller{seller_id} Reward = time_cost({time_cost:.2f} * {self.reward_weights['time_cost']:.2f}) = {weighted_time_cost:.2f} (round={self.current_round}, deal not reached with this seller)")
+            return weighted_time_cost
+    
+    def _calculate_step_buyer_reward(self) -> float:
+        """Calculate step reward from buyer's perspective for current round
+        
+        Calculate reward value based on buyer's current offers in this round with all sellers.
+        This is calculated every round, not just at the end.
+        Buyer's reward is aggregated across all sellers using the specified aggregation method.
+        
+        reward = aggregated(buyer savings with each seller) + round cost
+        - buyer savings = buyer_max_price - buyer_price (money saved by current offer)
+        - round cost = -current_round (penalty for number of rounds taken)
+        
+        Returns:
+            Step reward value from buyer's perspective for current round
+        """
+        # Round cost: negative value based on number of rounds
+        round_cost = -self.current_round
+        
+        # Calculate buyer rewards with each seller
+        buyer_rewards = []
+        
+        # Buyer reward with seller1
+        if self.state_seller1.buyer_price is not None and self.buyer_max_price is not None:
+            buyer_savings_s1 = self.buyer_max_price - self.state_seller1.buyer_price
+            reward_s1 = buyer_savings_s1 * self.reward_weights["buyer_savings"]
+            buyer_rewards.append(reward_s1)
+        
+        # Buyer reward with seller2
+        if self.state_seller2.buyer_price is not None and self.buyer_max_price is not None:
+            buyer_savings_s2 = self.buyer_max_price - self.state_seller2.buyer_price
+            reward_s2 = buyer_savings_s2 * self.reward_weights["buyer_savings"]
+            buyer_rewards.append(reward_s2)
+        
+        # Buyer reward with seller3
+        if self.state_seller3.buyer_price is not None and self.buyer_max_price is not None:
+            buyer_savings_s3 = self.buyer_max_price - self.state_seller3.buyer_price
+            reward_s3 = buyer_savings_s3 * self.reward_weights["buyer_savings"]
+            buyer_rewards.append(reward_s3)
+        
+        # Aggregate buyer rewards
+        if buyer_rewards:
+            aggregated_reward = self._aggregate_rewards(buyer_rewards, self.buyer_reward_aggregation)
+        else:
+            aggregated_reward = 0.0
+        
+        # Add round cost (negative penalty)
+        reward = aggregated_reward + round_cost * self.reward_weights["time_cost"]
+        
+        return reward
+    
+    def _calculate_step_seller_reward(self, seller_id: int) -> float:
+        """Calculate step reward from seller's perspective for current round
+        
+        Calculate reward value based on seller's current offer in this round.
+        This is calculated every round, not just at the end.
+        
+        reward = seller profit (from current offer) + round cost
+        - seller profit = seller_price - seller_min_price (profit from current offer)
+        - round cost = -current_round (penalty for number of rounds taken)
+        
+        If seller_price is not specified yet, only round cost is returned.
+        
+        Args:
+            seller_id: Seller ID (1, 2, or 3)
+        
+        Returns:
+            Step reward value from seller's perspective for current round
+        """
+        # Round cost: negative value based on number of rounds
+        round_cost = -self.current_round
+        reward = 0.0
+        seller_profit = 0.0
+        
+        # Get seller state
+        seller_state = None
+        seller_min_price = None
+        if seller_id == 1:
+            seller_state = self.state_seller1
+            seller_min_price = self.seller1_min_price
+        elif seller_id == 2:
+            seller_state = self.state_seller2
+            seller_min_price = self.seller2_min_price
+        elif seller_id == 3:
+            seller_state = self.state_seller3
+            seller_min_price = self.seller3_min_price
+        
+        # Calculate seller profit from current offer: seller_price - seller_min_price
+        if seller_state is not None and seller_state.seller_price is not None and seller_min_price is not None:
+            seller_profit = seller_state.seller_price - seller_min_price
+            reward += seller_profit * self.reward_weights["seller_profit"]
+        
+        # Add round cost (negative penalty)
+        reward += round_cost * self.reward_weights["time_cost"]
+        
+        return reward
+    
+    def _aggregate_rewards(self, rewards: list, method: str) -> float:
+        """Aggregate multiple rewards using specified method
+        
+        Args:
+            rewards: List of reward values to aggregate
+            method: Aggregation method - "average", "max", or "min"
+        
+        Returns:
+            Aggregated reward value
+        """
+        if not rewards:
+            return 0.0
+        
+        if method == "average":
+            return sum(rewards) / len(rewards)
+        elif method == "max":
+            return max(rewards)
+        elif method == "min":
+            return min(rewards)
+        else:
+            # Default to average if unknown method
+            return sum(rewards) / len(rewards)
