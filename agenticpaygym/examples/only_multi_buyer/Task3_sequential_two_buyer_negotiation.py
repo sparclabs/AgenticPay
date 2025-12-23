@@ -93,6 +93,13 @@ def main():
     buyer2 = BuyerAgent(llm=llm, buyer_max_price=buyer2_max_price)
     seller = SellerAgent(llm=llm, seller_min_price=seller_min_price)
     
+    # Configure reward weights
+    reward_weights = {
+        "buyer_savings": 1.0,      # 买方节省权重
+        "seller_profit": 1.0,      # 卖方利润权重
+        "time_cost": 0.1,          # 时间成本权重（降低影响）
+    }
+    
     # Create environment
     print("Creating sequential multi-buyer negotiation environment...")
     env = Task3SequentialTwoBuyerNegotiation(
@@ -110,6 +117,7 @@ def main():
             "weather": "sunny",
         },
         price_tolerance=5.0,
+        reward_weights=reward_weights,  # Reward weights configuration
     )
     
     # Create user profile (text description of personal preferences)
@@ -220,6 +228,66 @@ def main():
         # Render current state (includes all print information)
         env.render()
         
+        # Display step rewards for each round with detailed calculation
+        if 'step_buyer1_reward' in info or 'step_buyer2_reward' in info or 'step_seller_reward' in info:
+            print(f"\n[Step Rewards] ", end="")
+            if 'step_buyer1_reward' in info:
+                print(f"Buyer1: {info['step_buyer1_reward']:.3f}", end="")
+            if 'step_buyer2_reward' in info:
+                if 'step_buyer1_reward' in info:
+                    print(f" | ", end="")
+                print(f"Buyer2: {info['step_buyer2_reward']:.3f}", end="")
+            if 'step_seller_reward' in info:
+                if 'step_buyer1_reward' in info or 'step_buyer2_reward' in info:
+                    print(f" | ", end="")
+                print(f"Seller: {info['step_seller_reward']:.3f}", end="")
+            print()
+            
+            # Display detailed calculation with weights
+            round_cost = -info['round']
+            weights = env.reward_weights
+            
+            # Buyer1 step reward details
+            if 'step_buyer1_reward' in info:
+                buyer1_price = info.get('buyer1_price')
+                if buyer1_price is not None and env.buyer1_max_price is not None:
+                    buyer1_savings = env.buyer1_max_price - buyer1_price
+                    weighted_savings = buyer1_savings * weights["buyer_savings"]
+                    weighted_round_cost = round_cost * weights["time_cost"]
+                    print(f"  Buyer1 Step Reward = buyer_savings({buyer1_savings:.2f} * {weights['buyer_savings']:.2f}) + round_cost({round_cost:.2f} * {weights['time_cost']:.2f}) = {info['step_buyer1_reward']:.2f} (buyer1_max={env.buyer1_max_price}, buyer1_price={buyer1_price:.2f}, round={info['round']})")
+                else:
+                    weighted_round_cost = round_cost * weights["time_cost"]
+                    print(f"  Buyer1 Step Reward = round_cost({round_cost:.2f} * {weights['time_cost']:.2f}) = {weighted_round_cost:.2f} (buyer1_price not specified, round={info['round']})")
+            
+            # Buyer2 step reward details
+            if 'step_buyer2_reward' in info:
+                buyer2_price = info.get('buyer2_price')
+                if buyer2_price is not None and env.buyer2_max_price is not None:
+                    buyer2_savings = env.buyer2_max_price - buyer2_price
+                    weighted_savings = buyer2_savings * weights["buyer_savings"]
+                    weighted_round_cost = round_cost * weights["time_cost"]
+                    print(f"  Buyer2 Step Reward = buyer_savings({buyer2_savings:.2f} * {weights['buyer_savings']:.2f}) + round_cost({round_cost:.2f} * {weights['time_cost']:.2f}) = {info['step_buyer2_reward']:.2f} (buyer2_max={env.buyer2_max_price}, buyer2_price={buyer2_price:.2f}, round={info['round']})")
+                else:
+                    weighted_round_cost = round_cost * weights["time_cost"]
+                    print(f"  Buyer2 Step Reward = round_cost({round_cost:.2f} * {weights['time_cost']:.2f}) = {weighted_round_cost:.2f} (buyer2_price not specified, round={info['round']})")
+            
+            # Seller step reward details
+            if 'step_seller_reward' in info:
+                seller_price = None
+                if info.get('current_selected_buyer') == 1:
+                    seller_price = info.get('seller_price_buyer1')
+                elif info.get('current_selected_buyer') == 2:
+                    seller_price = info.get('seller_price_buyer2')
+                
+                if seller_price is not None and env.seller_min_price is not None:
+                    seller_profit = seller_price - env.seller_min_price
+                    weighted_seller_profit = seller_profit * weights["seller_profit"]
+                    weighted_round_cost = round_cost * weights["time_cost"]
+                    print(f"  Seller Step Reward = seller_profit({seller_profit:.2f} * {weights['seller_profit']:.2f}) + round_cost({round_cost:.2f} * {weights['time_cost']:.2f}) = {info['step_seller_reward']:.2f} (seller_price={seller_price:.2f}, seller_min={env.seller_min_price}, round={info['round']})")
+                else:
+                    weighted_round_cost = round_cost * weights["time_cost"]
+                    print(f"  Seller Step Reward = round_cost({round_cost:.2f} * {weights['time_cost']:.2f}) = {weighted_round_cost:.2f} (seller_price not specified, round={info['round']})")
+        
         if done:
             print("\n" + "="*60)
             print("Negotiation Ended")
@@ -235,7 +303,13 @@ def main():
             print(f"Buyer1 Prices: Buyer=${buyer1_price:.2f} | Seller=${seller_price_buyer1:.2f}")
             print(f"Buyer2 Prices: Buyer=${buyer2_price:.2f} | Seller=${seller_price_buyer2:.2f}")
             print(f"Total Rounds: {info['round']}")
-            print(f"Reward: {reward:.3f}")
+            print(f"Global Reward: {reward:.3f}")
+            if 'buyer1_reward' in info:
+                print(f"Buyer1 Reward: {info['buyer1_reward']:.3f}")
+            if 'buyer2_reward' in info:
+                print(f"Buyer2 Reward: {info['buyer2_reward']:.3f}")
+            if 'seller_reward' in info:
+                print(f"Seller Reward: {info['seller_reward']:.3f}")
             if info.get('termination_reason'):
                 print(f"Reason: {info['termination_reason']}")
             print("="*60)
