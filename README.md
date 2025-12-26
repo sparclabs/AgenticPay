@@ -14,22 +14,17 @@
 - [Project Structure](#project-structure)
 - [Core Components](#core-components)
   * [Environments](#environments)
-    + [NegotiationEnv](#negotiationenv)
-    + [MultiProductNegotiationEnv](#multiproductnegotiationenv)
   * [Agents](#agents)
     + [BaseAgent](#baseagent)
   * [Environment Registration System](#environment-registration-system)
   * [ConversationMemory](#conversationmemory)
   * [UserProfile](#userprofile)
-  * [BaseLLM](#basellm)
+  * [BaseLLM and BaseVLM](#basellm-and-basevlm)
 - [Configuration](#configuration)
   * [Environment Parameters](#environment-parameters)
   * [Agent Configuration](#agent-configuration)
     + [BuyerAgent](#buyeragent)
     + [SellerAgent](#selleragent)
-    + [ProductSelectorAgent](#productselectoragent)
-  * [User Profile Configuration](#user-profile-configuration)
-  * [LLM Configuration](#llm-configuration)
 - [Examples](#examples)
   * [Available Examples](#available-examples)
   * [Running Examples](#running-examples)
@@ -51,16 +46,17 @@ AgenticPayGym is a framework for simulating multi-agent negotiations between buy
 
 ## Features
 
-- 🤖 **LLM-based Agents**: Buyer and Seller agents powered by LLMs (OpenAI, etc.)
+- 🤖 **LLM/VLM-based Agents**: Buyer and Seller agents powered by LLMs and Vision Language Models (OpenAI, HuggingFace, etc.) supporting both text and image-based negotiations
 - 💬 **Multi-turn Conversations**: Support for extended negotiation dialogues
 - 🧠 **Memory System**: Conversation history management for context-aware negotiations
 - 📊 **State Tracking**: Comprehensive tracking of prices, rounds, and negotiation status
 - 🎯 **Flexible Configuration**: Customizable negotiation parameters and agent behaviors
-- 🔌 **Extensible Design**: Easy to add new agent types or LLM providers
+- 🔌 **Extensible Design**: Easy to add new agent types or LLM/VLM providers
 - 🏪 **Environment Registration System**: Gymnasium-like environment registration for easy environment management
 - 🛍️ **Multi-Product Negotiations**: Support for negotiating multiple products with context preservation
+- 👥 **Multi-Agent Scenarios**: Support for multiple buyers, sellers, and products in various combinations
+- 🔄 **Parallel & Sequential Negotiations**: Support for both parallel and sequential negotiation modes
 - 👤 **User Profiles**: Personal preference system that influences agent negotiation behavior
-- 🔄 **Product Selection**: Intelligent product matching based on user requirements
 
 ## Installation
 
@@ -72,7 +68,9 @@ pip install -e .
 ### Dependencies
 
 - Python 3.10+
-- openai (for OpenAI LLM support)
+- openai (for OpenAI LLM/VLM support)
+- transformers (for HuggingFace LLM/VLM support, optional)
+- torch (for HuggingFace models, optional)
 - Other dependencies listed in `requirements.txt`
 
 ## Quick Start
@@ -83,12 +81,21 @@ pip install -e .
 from agenticpaygym import make  # Recommended: use registration system
 from agenticpaygym.agents.buyer_agent import BuyerAgent
 from agenticpaygym.agents.seller_agent import SellerAgent
-from agenticpaygym.models.custom_llm import CustomLLM
-from agenticpaygym.utils.user_profile import UserProfile, StylePreference, ShoppingHabit
+from agenticpaygym.models.openai_llm import OpenAILLM
 import os
 
-# Initialize LLM
-llm = CustomLLM(api_key=os.getenv("OPENAI_API_KEY"), model="gpt-4")
+# Initialize LLM/VLM (supports local, online, and API modes)
+# Option 1: OpenAI API (online)
+from agenticpaygym.models.openai_llm import OpenAILLM
+from agenticpaygym.models.openai_vlm import OpenAIVLM
+llm = OpenAILLM(api_key=os.getenv("OPENAI_API_KEY"), model="gpt-4")
+vlm = OpenAIVLM(api_key=os.getenv("OPENAI_API_KEY"), model="gpt-4-vision-preview")
+
+# Option 2: HuggingFace (local/online)
+# from agenticpaygym.models.huggingface_llm import HuggingFaceLLM
+# from agenticpaygym.models.huggingface_vlm import HuggingFaceVLM
+# llm = HuggingFaceLLM(model_name="meta-llama/Llama-2-7b-chat-hf", device="cuda")
+# vlm = HuggingFaceVLM(model_name="llava-hf/llava-1.5-7b-hf", device="cuda")
 
 # Create agents with bottom prices (confidential)
 buyer_max_price = 120.0  # Maximum acceptable price for buyer
@@ -99,7 +106,7 @@ seller = SellerAgent(llm=llm, seller_min_price=seller_min_price)
 
 # Create environment using registration system (recommended)
 env = make(
-    "Negotiation-v0",
+    "Task1_basic_price_negotiation-v0",
     buyer_agent=buyer,
     seller_agent=seller,
     max_rounds=20,
@@ -113,11 +120,8 @@ env = make(
     price_tolerance=5.0,
 )
 
-# Create user profile (optional)
-user_profile = UserProfile(
-    style_preference=StylePreference.BUSINESS,
-    shopping_habit=ShoppingHabit.COMPARE,
-)
+# User description (optional)
+user_description = "A business professional who prefers comparing prices before making decisions"
 
 # Reset and start negotiation
 observation, info = env.reset(
@@ -130,7 +134,7 @@ observation, info = env.reset(
         "condition": "New",
         "material": "Gore-Tex",
     },
-    user_profile=user_profile,  # Optional
+    user_description=user_description,  # Optional
 )
 
 # Run negotiation
@@ -164,14 +168,10 @@ env.close()
 
 ```python
 from agenticpaygym import make
-from agenticpaygym.agents.product_selector_agent import ProductSelectorAgent
-
-# Create product selector agent
-product_selector = ProductSelectorAgent(llm=llm)
 
 # Create multi-product environment
 env = make(
-    "MultiProductNegotiation-v0",
+    "Task1_multi_product_negotiation-v0",
     buyer_agent=buyer,
     seller_agent=seller,
     max_rounds_per_product=20,
@@ -206,10 +206,9 @@ observation, info = env.reset(
 # ... negotiation loop ...
 
 # Second product (preserves context)
-selected_product = product_selector.select_product("I need running shoes", products)
 observation, info = env.reset(
     user_requirement="I need running shoes",
-    product_info=selected_product,
+    product_info=products[1],
     clear_history=False,  # Preserve previous context
     available_products=products,
 )
@@ -222,35 +221,18 @@ observation, info = env.reset(
 ```
 AgenticPayGym/
 ├── agenticpaygym/
-│   ├── __init__.py
-│   ├── core.py                    # Core base environment class
-│   ├── agents/
-│   │   ├── base_agent.py          # Base agent class
-│   │   ├── buyer_agent.py         # Buyer agent implementation
-│   │   ├── seller_agent.py        # Seller agent implementation
-│   │   └── product_selector_agent.py  # Product selector agent
+│   ├── agents/                    # Agent implementations (buyer, seller)
 │   ├── envs/                      # Environment implementations
-│   │   ├── __init__.py            # Environment registration
-│   │   ├── registration.py        # Registration system
-│   │   ├── negotiation_env.py     # Single-product negotiation
-│   │   └── multi_product_negotiation_env.py  # Multi-product negotiation
-│   ├── memory/
-│   │   └── conversation_memory.py  # Conversation history management
-│   ├── models/
-│   │   ├── base_llm.py            # LLM interface
-│   │   └── custom_llm.py          # Custom LLM implementation
-│   ├── utils/
-│   │   ├── negotiation_state.py   # State management
-│   │   └── user_profile.py        # User profile data structures
-│   ├── spaces/                    # Action/observation spaces (for future use)
-│   └── examples/
-│       ├── simple_negotiation.py  # Basic single-product example
-│       ├── multi_product_negotiation.py  # Multi-product example
-│       └── registration_example.py  # Registration system example
-├── README.md                      # This file
-├── QUICKSTART.md                  # Quick start guide
-├── PROJECT_STRUCTURE.md            # Detailed project structure
-├── ENV_REGISTRATION.md            # Environment registration guide
+│   │   ├── single_buyer_product_seller/  # Basic negotiation
+│   │   ├── only_multi_products/   # Multi-product scenarios
+│   │   ├── only_multi_seller/     # Multi-seller scenarios
+│   │   ├── only_multi_buyer/      # Multi-buyer scenarios
+│   │   └── multi_*/               # Complex multi-agent scenarios
+│   ├── models/                    # LLM/VLM implementations (OpenAI, HuggingFace, Custom)
+│   ├── memory/                    # Conversation history management
+│   ├── utils/                     # Utilities (state, user profile)
+│   └── examples/                   # Example scripts organized by scenario
+├── README.md
 ├── setup.py
 └── requirements.txt
 ```
@@ -259,24 +241,60 @@ AgenticPayGym/
 
 ### Environments
 
-#### NegotiationEnv
+The framework provides a comprehensive set of negotiation environments organized by complexity:
 
-Single-product negotiation environment that manages the negotiation process for one product.
+#### Single Buyer + Product + Seller (`single_buyer_product_seller/`)
 
-**Key Methods:**
+Basic negotiation scenarios with one buyer, one product, and one seller.
+
+- **Task1: Basic Price Negotiation** - Fundamental price negotiation environment
+- **Task2: Close Price Negotiation** - Tests edge cases with narrow price ranges
+- **Task3: Close to Market Price Negotiation** - Tests scenarios near market price
+
+#### Only Multi-Products (`only_multi_products/`)
+
+Environments for negotiating multiple products with a single buyer and seller.
+
+- **Task1: Multi-Product Negotiation** - General multi-product negotiation
+- **Task2: Two Product Negotiation** - Two products negotiation
+- **Task3: Five Product Negotiation** - Five products negotiation
+- **Task4: Select Three from Five Negotiation** - Product selection and negotiation
+
+#### Only Multi-Seller (`only_multi_seller/`)
+
+Environments with multiple sellers competing for a single buyer.
+
+- **Task1-2: Parallel Multi-Seller** - Parallel negotiations with multiple sellers
+- **Task3-4: Sequential Multi-Seller** - Sequential negotiations with multiple sellers
+
+#### Only Multi-Buyer (`only_multi_buyer/`)
+
+Environments with multiple buyers competing for products.
+
+- **Task1-2: Parallel Multi-Buyer** - Parallel negotiations with multiple buyers
+- **Task3-4: Sequential Multi-Buyer** - Sequential negotiations with multiple buyers
+
+#### Multi-Buyer Multi-Seller (`multi_buyer_multi_seller/`)
+
+Complex environments with multiple buyers and multiple sellers.
+
+#### Multi-Products Multi-Seller (`multi_products_multi_seller/`)
+
+Environments with multiple products and multiple sellers.
+
+#### Multi-Buyer Multi-Products (`multi_buyer_multi_products/`)
+
+Environments with multiple buyers and multiple products.
+
+#### Multi-Buyer Multi-Products Multi-Seller (`multi_buyer_multi_products_multi_seller/`)
+
+Most complex environments with multiple buyers, products, and sellers.
+
+**Common Environment Methods:**
 - `reset()`: Initialize a new negotiation
-- `step()`: Execute one negotiation turn (accepts `buyer_action` and `seller_action`)
+- `step()`: Execute one negotiation turn (accepts agent actions)
 - `render()`: Display current negotiation state
 - `close()`: Close environment and clean up
-
-#### MultiProductNegotiationEnv
-
-Multi-product negotiation environment that supports negotiating multiple products while preserving conversation context.
-
-**Key Features:**
-- Context preservation across products
-- Product result tracking
-- Flexible product switching
 
 ### Agents
 
@@ -287,7 +305,6 @@ Abstract base class for all agents.
 **Subclasses:**
 - `BuyerAgent`: Represents the buyer, negotiates based on user requirements and budget
 - `SellerAgent`: Represents the seller, negotiates based on product information and market conditions
-- `ProductSelectorAgent`: Selects the most appropriate product from available products based on user requirements
 
 ### Environment Registration System
 
@@ -303,7 +320,14 @@ Gymnasium-like environment registration system for easy environment management.
 ```python
 from agenticpaygym import make
 
-env = make("Negotiation-v0", buyer_agent=buyer, seller_agent=seller, max_rounds=20)
+# Single buyer/product/seller
+env = make("Task1_basic_price_negotiation-v0", buyer_agent=buyer, seller_agent=seller, max_rounds=20)
+
+# Multi-product
+env = make("Task1_multi_product_negotiation-v0", buyer_agent=buyer, seller_agent=seller, max_rounds_per_product=20)
+
+# Multi-seller
+env = make("Task1_parallel_two_seller_negotiation-v0", buyer_agent=buyer, seller_agents=[seller1, seller2], max_rounds=20)
 ```
 
 ### ConversationMemory
@@ -317,25 +341,25 @@ Manages conversation history and context.
 
 ### UserProfile
 
-User preference system that influences buyer agent behavior.
+User description system that influences agent negotiation behavior. Currently uses a simple string description passed to agents.
 
-**Attributes:**
-- `style_preference`: Simple, Business, or Traditional
-- `shopping_habit`: Compare prices or Direct purchase
+### BaseLLM and BaseVLM
 
-### BaseLLM
+Abstract interfaces for LLM and Vision Language Model (VLM) providers.
 
-Abstract interface for LLM providers.
+**LLM Implementations:**
+- `OpenAILLM`: OpenAI API integration for text models
+- `HuggingFaceLLM`: HuggingFace model integration
 
-**Implementations:**
-- `OpenAILLM`: OpenAI API integration
+**VLM Implementations:**
+- `OpenAIVLM`: OpenAI API integration for vision-language models
+- `HuggingFaceVLM`: HuggingFace vision-language model integration
 
 ## Configuration
 
 ### Environment Parameters
 
-#### NegotiationEnv / Negotiation-v0
-
+Common parameters across environments:
 - `max_rounds`: Maximum number of negotiation rounds
 - `initial_seller_price`: Starting price from seller
 - `buyer_max_price`: Maximum acceptable price for buyer (confidential)
@@ -343,69 +367,48 @@ Abstract interface for LLM providers.
 - `price_tolerance`: Price difference threshold for agreement
 - `environment_info`: Contextual information (weather, season, etc.)
 
-#### MultiProductNegotiationEnv / MultiProductNegotiation-v0
-
-- `max_rounds_per_product`: Maximum rounds per product negotiation
-- `initial_seller_price`: Starting price from seller
-- `buyer_max_price`: Maximum acceptable price for buyer
-- `seller_min_price`: Minimum acceptable price for seller
-- `price_tolerance`: Price difference threshold for agreement
-- `environment_info`: Contextual information
-
 ### Agent Configuration
 
-#### BuyerAgent
+- **BuyerAgent**: `buyer_max_price` (maximum acceptable purchase price)
+- **SellerAgent**: `seller_min_price` (minimum acceptable selling price)
 
-- `buyer_max_price`: Maximum acceptable purchase price (confidential)
-- `name`: Agent name
-- `role_description`: Custom role description
+### User Profile
 
-#### SellerAgent
+User description is passed as a string to agents during negotiation initialization.
 
-- `seller_min_price`: Minimum acceptable selling price (confidential)
-- `name`: Agent name
-- `role_description`: Custom role description
+### LLM/VLM Configuration
 
-#### ProductSelectorAgent
-
-- `name`: Agent name
-- `role_description`: Custom role description
-
-### User Profile Configuration
-
-```python
-from agenticpaygym.utils.user_profile import UserProfile, StylePreference, ShoppingHabit
-
-user_profile = UserProfile(
-    style_preference=StylePreference.BUSINESS,  # SIMPLE, BUSINESS, TRADITIONAL
-    shopping_habit=ShoppingHabit.COMPARE,     # COMPARE, DIRECT
-)
-```
-
-### LLM Configuration
-
-- `model`: Model name (e.g., "gpt-4", "gpt-4o-mini-2024-07-18", "gpt-3.5-turbo")
-- `api_key`: API key for the LLM provider
-- `temperature`: Generation temperature (set in `generate()` method)
+Supports multiple providers:
+- **OpenAI** (API): `OpenAILLM`, `OpenAIVLM` - requires API key
+- **HuggingFace** (local/online): `HuggingFaceLLM`, `HuggingFaceVLM` - requires model name and device
 
 ## Examples
 
 ### Available Examples
 
-1. **Simple Negotiation** (`simple_negotiation.py`)
-   - Basic single-product negotiation
-   - Demonstrates environment registration system
-   - Shows user profile usage
+Examples are organized by environment category:
 
-2. **Multi-Product Negotiation** (`multi_product_negotiation.py`)
-   - Negotiate multiple products sequentially
-   - Context preservation across products
-   - Product selection using ProductSelectorAgent
+1. **Single Buyer + Product + Seller** (`examples/single_buyer_product_seller/`)
+   - `Task1_basic_price_negotiation.py` - Basic price negotiation
+   - `Task2_close_price_negotiation.py` - Close price negotiation
+   - `Task3_close_to_market_price_negotiation.py` - Market price negotiation
+   - `registration_example.py` - Registration system demonstration
 
-3. **Registration Example** (`registration_example.py`)
-   - Detailed guide on environment registration
-   - Custom environment creation
-   - Namespace and version management
+2. **Multi-Product Negotiations** (`examples/only_multi_products/`)
+   - Multiple products negotiation examples
+   - Product selection scenarios
+
+3. **Multi-Seller Negotiations** (`examples/only_multi_seller/`)
+   - Parallel and sequential multi-seller scenarios
+
+4. **Multi-Buyer Negotiations** (`examples/only_multi_buyer/`)
+   - Parallel and sequential multi-buyer scenarios
+
+5. **Complex Multi-Agent Scenarios**
+   - `examples/multi_buyer_multi_seller/` - Multiple buyers and sellers
+   - `examples/multi_products_multi_seller/` - Multiple products and sellers
+   - `examples/multi_buyer_multi_products/` - Multiple buyers and products
+   - `examples/multi_buyer_multi_products_multi_seller/` - Full multi-agent scenarios
 
 ### Running Examples
 
@@ -413,32 +416,47 @@ user_profile = UserProfile(
 # Set API key
 export OPENAI_API_KEY="your-api-key"
 
-# Run simple negotiation
-python -m agenticpaygym.examples.simple_negotiation
+# Run single buyer/product/seller examples
+python -m agenticpaygym.examples.single_buyer_product_seller.Task1_basic_price_negotiation
+python -m agenticpaygym.examples.single_buyer_product_seller.Task2_close_price_negotiation
+python -m agenticpaygym.examples.single_buyer_product_seller.Task3_close_to_market_price_negotiation
 
-# Run multi-product negotiation
-python -m agenticpaygym.examples.multi_product_negotiation
+# Run multi-product examples
+python -m agenticpaygym.examples.only_multi_products.Task1_multi_product_negotiation
+
+# Run multi-seller examples
+python -m agenticpaygym.examples.only_multi_seller.Task1_parallel_two_seller_negotiation
 
 # Run registration example
-python -m agenticpaygym.examples.registration_example
+python -m agenticpaygym.examples.single_buyer_product_seller.registration_example
 ```
 
 ## Extending the Framework
 
 ### Adding a New LLM Provider
 
-1. Create a new class inheriting from `BaseLLM`
+1. Create a new class inheriting from `BaseLLM` or `BaseVLM`
 2. Implement the `generate()` method
 3. Add any provider-specific configuration
 4. Export in `models/__init__.py` (optional)
 
-Example:
+Example for LLM:
 ```python
 from agenticpaygym.models.base_llm import BaseLLM
 
 class MyCustomLLM(BaseLLM):
     def generate(self, prompt, **kwargs):
         # Your implementation
+        return response
+```
+
+Example for VLM:
+```python
+from agenticpaygym.models.base_vlm import BaseVLM
+
+class MyCustomVLM(BaseVLM):
+    def generate(self, prompt, images=None, **kwargs):
+        # Your implementation with image support
         return response
 ```
 
