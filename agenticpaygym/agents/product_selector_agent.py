@@ -3,7 +3,7 @@
 import re
 from typing import Dict, List, Any, Optional
 from agenticpaygym.agents.base_agent import BaseAgent
-from agenticpaygym.llm.base_llm import BaseLLM
+from agenticpaygym.models.base_llm import BaseLLM
 
 
 class ProductSelectorAgent(BaseAgent):

@@ -14,7 +14,7 @@ sys.path.insert(0, project_root)
 from agenticpaygym.envs.only_multi_buyer.Task1_parallel_two_buyer_negotiation import Task1ParallelTwoBuyerNegotiation
 from agenticpaygym.agents.buyer_agent import BuyerAgent
 from agenticpaygym.agents.seller_agent import SellerAgent
-from agenticpaygym.llm.openai_llm import OpenAILLM
+from agenticpaygym.models.custom_llm import CustomLLM
 
 # Import configuration parameters
 examples_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -34,7 +34,7 @@ def main():
     
     # Initialize LLM
     print("Initializing LLM...")
-    llm = OpenAILLM(api_key=api_key, model="gpt-4o-mini-2024-07-18")  # gpt-4o-mini-2024-07-18, gpt-3.5-turbo
+    llm = CustomLLM(api_key=api_key, model="gpt-4o-mini-2024-07-18")  # gpt-4o-mini-2024-07-18, gpt-3.5-turbo
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
     print("Creating agents...")

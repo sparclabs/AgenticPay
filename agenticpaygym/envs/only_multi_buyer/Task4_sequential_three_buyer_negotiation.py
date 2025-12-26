@@ -73,9 +73,9 @@ class Task4SequentialThreeBuyerNegotiation(BaseEnv):
         
         # Set default reward weights
         default_weights = {
-            "buyer_savings": 1.0,      # 买方节省权重
-            "seller_profit": 1.0,      # 卖方利润权重
-            "time_cost": 0.1,          # 时间成本权重（降低影响）
+            "buyer_savings": 1.0,      # Buyer savings weight
+            "seller_profit": 1.0,      # Seller profit weight
+            "time_cost": 0.1,          # Time cost weight (reduced impact)
         }
         if reward_weights is not None:
             default_weights.update(reward_weights)

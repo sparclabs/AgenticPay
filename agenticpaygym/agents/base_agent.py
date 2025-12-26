@@ -2,7 +2,7 @@
 
 from abc import ABC, abstractmethod
 from typing import Dict, List, Any, Optional
-from agenticpaygym.llm.base_llm import BaseLLM
+from agenticpaygym.models.base_llm import BaseLLM
 
 
 class BaseAgent(ABC):

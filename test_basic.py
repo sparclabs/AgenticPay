@@ -48,7 +48,7 @@ def test_imports():
         return False
     
     try:
-        from agenticpaygym.llm import BaseLLM
+        from agenticpaygym.models import BaseLLM
         print("✓ LLM module import successful")
     except ImportError as e:
         print(f"✗ LLM module import failed: {e}")
@@ -116,7 +116,7 @@ def test_core_env_structure():
     
     from agenticpaygym.core import NegotiationEnv, NegotiationStatus
     from agenticpaygym.agents.base_agent import BaseAgent
-    from agenticpaygym.llm.base_llm import BaseLLM
+    from agenticpaygym.models.base_llm import BaseLLM
     
     # Create a simple Mock LLM
     class MockLLM(BaseLLM):

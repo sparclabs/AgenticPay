@@ -32,11 +32,11 @@ os.environ["OPENAI_API_KEY"] = "your-api-key-here"
 
 ```python
 from agenticpaygym import NegotiationEnv, BuyerAgent, SellerAgent
-from agenticpaygym.llm.openai_llm import OpenAILLM
+from agenticpaygym.models.custom_llm import CustomLLM
 import os
 
 # Initialize LLM
-llm = OpenAILLM(api_key=os.getenv("OPENAI_API_KEY"), model="gpt-4")
+llm = CustomLLM(api_key=os.getenv("OPENAI_API_KEY"), model="gpt-4")
 
 # Create Agents
 buyer = BuyerAgent(llm=llm)
@@ -129,7 +129,7 @@ python test_basic.py
 A: Implement a custom LLM class, inherit from `BaseLLM`:
 
 ```python
-from agenticpaygym.llm.base_llm import BaseLLM
+from agenticpaygym.models.base_llm import BaseLLM
 
 class MyCustomLLM(BaseLLM):
     def generate(self, prompt, **kwargs):

@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 from agenticpaygym.envs.multi_buyer_multi_seller.Task4_sequential_three_buyer_three_seller_negotiation import Task4SequentialThreeBuyerThreeSellerNegotiation
 from agenticpaygym.agents.buyer_agent import BuyerAgent
 from agenticpaygym.agents.seller_agent import SellerAgent
-from agenticpaygym.llm.openai_llm import OpenAILLM
+from agenticpaygym.models.custom_llm import CustomLLM
 import re
 
 # Import configuration parameters
@@ -96,7 +96,7 @@ def main():
     
     # Initialize LLM
     print("Initializing LLM...")
-    llm = OpenAILLM(api_key=api_key, model="gpt-4o-mini-2024-07-18")  # gpt-4o-mini-2024-07-18, gpt-3.5-turbo
+    llm = CustomLLM(api_key=api_key, model="gpt-4o-mini-2024-07-18")  # gpt-4o-mini-2024-07-18, gpt-3.5-turbo
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
     print("Creating agents...")

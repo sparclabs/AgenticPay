@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 from agenticpaygym import make, Task2ClosePriceNegotiation  # Use registration system
 from agenticpaygym.agents.buyer_agent import BuyerAgent
 from agenticpaygym.agents.seller_agent import SellerAgent
-from agenticpaygym.llm.openai_llm import OpenAILLM
+from agenticpaygym.models.custom_llm import CustomLLM
 from agenticpaygym.examples.config import reward_weights, max_rounds, price_tolerance
 
 
@@ -29,7 +29,7 @@ def main():
     
     # Initialize LLM
     print("Initializing LLM...")
-    llm = OpenAILLM(api_key=api_key, model="gpt-3.5-turbo") # gpt-4o-mini-2024-07-18, gpt-3.5-turbo
+    llm = CustomLLM(api_key=api_key, model="gpt-3.5-turbo") # gpt-4o-mini-2024-07-18, gpt-3.5-turbo
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
     # Task2: buyer_max_price is close to seller_min_price to test if deal can be reached

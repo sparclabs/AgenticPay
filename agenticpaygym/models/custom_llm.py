@@ -1,16 +1,16 @@
-"""OpenAI LLM Implementation"""
+"""Custom LLM Implementation"""
 
 from typing import Optional
 import os
 import http.client
 import json
-from agenticpaygym.llm.base_llm import BaseLLM
+from agenticpaygym.models.base_llm import BaseLLM
 
 
-class OpenAILLM(BaseLLM):
-    """OpenAI LLM Implementation
+class CustomLLM(BaseLLM):
+    """Custom LLM Implementation
     
-    Uses OpenAI API for text generation.
+    Uses custom API for text generation.
     """
     
     def __init__(
@@ -19,7 +19,7 @@ class OpenAILLM(BaseLLM):
         api_key: Optional[str] = None,
         base_url: Optional[str] = None,
     ):
-        """Initialize OpenAI LLM
+        """Initialize Custom LLM
         
         Args:
             model: Model name, e.g., "gpt-4", "gpt-3.5-turbo"
@@ -32,7 +32,7 @@ class OpenAILLM(BaseLLM):
         
         if not self.api_key:
             raise ValueError(
-                "OpenAI API key is required. "
+                "API key is required. "
                 "Set it via api_key parameter or OPENAI_API_KEY environment variable."
             )
         
@@ -112,25 +112,25 @@ class OpenAILLM(BaseLLM):
             return response
 
         except Exception as e:
-            raise RuntimeError(f"OpenAI API error: {e}")
+            raise RuntimeError(f"Custom API error: {e}")
     
     def __repr__(self) -> str:
         """Return string representation of LLM"""
-        return f"OpenAILLM(model={self.model})"
+        return f"CustomLLM(model={self.model})"
 
 
 if __name__ == "__main__":
-    """Test OpenAI LLM API calls"""
+    """Test Custom LLM API calls"""
     import sys
     
     print("=" * 50)
-    print("Testing OpenAI LLM API calls")
+    print("Testing Custom LLM API calls")
     print("=" * 50)
     
     try:
         # Initialize LLM
-        print("\n1. Initializing OpenAI LLM...")
-        llm = OpenAILLM(model="gpt-3.5-turbo", api_key="", base_url="https://api2.aigcbest.top")
+        print("\n1. Initializing Custom LLM...")
+        llm = CustomLLM(model="gpt-3.5-turbo", api_key="", base_url="https://api2.aigcbest.top")
         print(f"✓ Successfully initialized: {llm}")
         
         # Test generation
@@ -166,3 +166,4 @@ if __name__ == "__main__":
         import traceback
         traceback.print_exc()
         sys.exit(1)
+

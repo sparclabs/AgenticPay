@@ -5,7 +5,7 @@ from agenticpaygym.agents.base_agent import BaseAgent
 from agenticpaygym.agents.buyer_agent import BuyerAgent
 from agenticpaygym.agents.seller_agent import SellerAgent
 from agenticpaygym.memory.conversation_memory import ConversationMemory
-from agenticpaygym.llm.base_llm import BaseLLM
+from agenticpaygym.models.base_llm import BaseLLM
 
 # Import environment registration system
 from agenticpaygym.envs import (
@@ -50,7 +50,14 @@ __all__ = [
 
 # Try to import OpenAI LLM if available
 try:
-    from agenticpaygym.llm.openai_llm import OpenAILLM
+    from agenticpaygym.models.openai_llm import OpenAILLM
     __all__.append("OpenAILLM")
+except ImportError:
+    pass
+
+# Try to import Custom LLM if available
+try:
+    from agenticpaygym.models.custom_llm import CustomLLM
+    __all__.append("CustomLLM")
 except ImportError:
     pass

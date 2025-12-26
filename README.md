@@ -83,12 +83,12 @@ pip install -e .
 from agenticpaygym import make  # Recommended: use registration system
 from agenticpaygym.agents.buyer_agent import BuyerAgent
 from agenticpaygym.agents.seller_agent import SellerAgent
-from agenticpaygym.llm.openai_llm import OpenAILLM
+from agenticpaygym.models.custom_llm import CustomLLM
 from agenticpaygym.utils.user_profile import UserProfile, StylePreference, ShoppingHabit
 import os
 
 # Initialize LLM
-llm = OpenAILLM(api_key=os.getenv("OPENAI_API_KEY"), model="gpt-4")
+llm = CustomLLM(api_key=os.getenv("OPENAI_API_KEY"), model="gpt-4")
 
 # Create agents with bottom prices (confidential)
 buyer_max_price = 120.0  # Maximum acceptable price for buyer
@@ -236,9 +236,9 @@ AgenticPayGym/
 │   │   └── multi_product_negotiation_env.py  # Multi-product negotiation
 │   ├── memory/
 │   │   └── conversation_memory.py  # Conversation history management
-│   ├── llm/
+│   ├── models/
 │   │   ├── base_llm.py            # LLM interface
-│   │   └── openai_llm.py          # OpenAI implementation
+│   │   └── custom_llm.py          # Custom LLM implementation
 │   ├── utils/
 │   │   ├── negotiation_state.py   # State management
 │   │   └── user_profile.py        # User profile data structures
@@ -430,11 +430,11 @@ python -m agenticpaygym.examples.registration_example
 1. Create a new class inheriting from `BaseLLM`
 2. Implement the `generate()` method
 3. Add any provider-specific configuration
-4. Export in `llm/__init__.py` (optional)
+4. Export in `models/__init__.py` (optional)
 
 Example:
 ```python
-from agenticpaygym.llm.base_llm import BaseLLM
+from agenticpaygym.models.base_llm import BaseLLM
 
 class MyCustomLLM(BaseLLM):
     def generate(self, prompt, **kwargs):

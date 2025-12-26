@@ -18,10 +18,10 @@ AgenticPayGym/
 │   │   ├── __init__.py
 │   │   └── conversation_memory.py  # Conversation memory management
 │   │
-│   ├── llm/                    # LLM interface
+│   ├── models/                    # LLM interface
 │   │   ├── __init__.py
 │   │   ├── base_llm.py         # LLM base class interface
-│   │   └── openai_llm.py       # OpenAI implementation
+│   │   └── custom_llm.py       # Custom LLM implementation
 │   │
 │   ├── utils/                  # Utility modules
 │   │   ├── __init__.py
@@ -77,12 +77,12 @@ AgenticPayGym/
 - `get_history_by_role()`: Get messages by role
 - `clear()`: Clear memory
 
-### 4. llm/ - LLM Interface
+### 4. models/ - LLM Interface
 
 **BaseLLM**: LLM interface base class
 - `generate()`: Generate text (abstract method)
 
-**OpenAILLM**: OpenAI implementation
+**OpenAILLM**: Custom LLM implementation
 - Uses OpenAI API for text generation
 
 ### 5. utils/ - Utility Modules
@@ -96,8 +96,8 @@ AgenticPayGym/
 
 1. **Initialize LLM**
    ```python
-   from agenticpaygym.llm.openai_llm import OpenAILLM
-   llm = OpenAILLM(api_key="your-key", model="gpt-4")
+   from agenticpaygym.models.custom_llm import CustomLLM
+   llm = CustomLLM(api_key="your-key", model="gpt-4")
    ```
 
 2. **Create Agents**
@@ -138,7 +138,7 @@ AgenticPayGym/
 
 1. Create new class inheriting from `BaseLLM`
 2. Implement `generate()` method
-3. Export in `llm/__init__.py`
+3. Export in `models/__init__.py`
 
 ### Creating Custom Agents
 

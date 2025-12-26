@@ -13,7 +13,7 @@ from agenticpaygym import make, register, spec, pprint_registry
 from agenticpaygym.envs.single_buyer_product_seller.negotiation_env import NegotiationEnv
 from agenticpaygym.agents.buyer_agent import BuyerAgent
 from agenticpaygym.agents.seller_agent import SellerAgent
-from agenticpaygym.llm.openai_llm import OpenAILLM
+from agenticpaygym.models.custom_llm import CustomLLM
 
 
 def example_basic_usage():

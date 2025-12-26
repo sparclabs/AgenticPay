@@ -8,17 +8,17 @@ environment parameters.
 # Reward weights configuration
 # These weights control the relative importance of different reward components
 reward_weights = {
-    "buyer_savings": 1.0,      # 买方节省权重
-    "seller_profit": 1.0,      # 卖方利润权重
-    "time_cost": 0.1,          # 时间成本权重（降低影响）
+    "buyer_savings": 1.0,      # Buyer savings weight
+    "seller_profit": 1.0,      # Seller profit weight
+    "time_cost": 0.1,          # Time cost weight (reduced impact)
 }
 
 # Reward aggregation methods
 # Options: "average", "max", "min"
-buyer_reward_aggregation = "average"  # 买方奖励聚合方法
-seller_reward_aggregation = "average"  # 卖方奖励聚合方法
+buyer_reward_aggregation = "average"  # Buyer reward aggregation method
+seller_reward_aggregation = "average"  # Seller reward aggregation method
 
 # Environment parameters
-max_rounds = 20  # 最大谈判轮数
-price_tolerance = 0.0  # 价格容忍度（用于判断价格是否匹配）
+max_rounds = 20  # Maximum negotiation rounds
+price_tolerance = 0.0  # Price tolerance (used to determine if prices match)
 
