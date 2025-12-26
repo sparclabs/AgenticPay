@@ -8,13 +8,19 @@ import os
 import sys
 
 # Add project path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, project_root)
 
 from agenticpaygym import make  # Use registration system
 from agenticpaygym.agents.buyer_agent import BuyerAgent
 from agenticpaygym.agents.seller_agent import SellerAgent
 from agenticpaygym.agents.product_selector_agent import ProductSelectorAgent
 from agenticpaygym.llm.openai_llm import OpenAILLM
+
+# Import configuration parameters
+examples_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, examples_dir)
+from config import reward_weights, buyer_reward_aggregation, seller_reward_aggregation, max_rounds, price_tolerance
 
 
 def main():
@@ -40,20 +46,13 @@ def main():
     seller = SellerAgent(llm=llm, seller_min_price=seller_min_price)
     product_selector = ProductSelectorAgent(llm=llm)
     
-    # Configure reward weights
-    reward_weights = {
-        "buyer_savings": 1.0,      # 买方节省权重
-        "seller_profit": 1.0,      # 卖方利润权重
-        "time_cost": 0.1,          # 时间成本权重（降低影响）
-    }
-    
     # Create environment using registration system
     print("Creating multi-product negotiation environment...")
     env = make(
         "Task1_multi_product_negotiation-v0",
         buyer_agent=buyer,
         seller_agent=seller,
-        max_rounds_per_product=20,
+        max_rounds_per_product=max_rounds,
         initial_seller_price=150.0,  # Initial price offered by seller
         buyer_max_price=buyer_max_price,  # Buyer bottom price (confidential)
         seller_min_price=seller_min_price,  # Seller bottom price (confidential)
@@ -62,7 +61,7 @@ def main():
             "season": "summer",
             "weather": "sunny",
         },
-        price_tolerance=5.0,
+        price_tolerance=price_tolerance,
         reward_weights=reward_weights,  # Reward weights configuration
     )
     

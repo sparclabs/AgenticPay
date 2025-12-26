@@ -14,6 +14,7 @@ from agenticpaygym.envs.only_multi_seller.Task1_parallel_two_seller_negotiation 
 from agenticpaygym.agents.buyer_agent import BuyerAgent
 from agenticpaygym.agents.seller_agent import SellerAgent
 from agenticpaygym.llm.openai_llm import OpenAILLM
+from agenticpaygym.examples.config import reward_weights, max_rounds, price_tolerance, buyer_reward_aggregation, seller_reward_aggregation
 
 
 def main():
@@ -40,24 +41,13 @@ def main():
     seller1 = SellerAgent(llm=llm, seller_min_price=seller1_min_price)
     seller2 = SellerAgent(llm=llm, seller_min_price=seller2_min_price)
     
-    # Configure reward weights
-    reward_weights = {
-        "buyer_savings": 1.0,      # 买方节省权重
-        "seller_profit": 1.0,      # 卖方利润权重
-        "time_cost": 0.1,          # 时间成本权重（降低影响）
-    }
-    
-    # Configure reward aggregation methods
-    buyer_reward_aggregation = "average"  # Options: "average", "max", "min"
-    seller_reward_aggregation = "average"  # Options: "average", "max", "min"
-    
     # Create environment
     print("Creating multi-seller negotiation environment...")
     env = Task1ParallelTwoSellerNegotiation(
         buyer_agent=buyer,
         seller1_agent=seller1,
         seller2_agent=seller2,
-        max_rounds=20,
+        max_rounds=max_rounds,
         initial_seller1_price=150.0,  # Initial price offered by seller1
         initial_seller2_price=160.0,  # Initial price offered by seller2 (higher)
         buyer_max_price=buyer_max_price,  # Buyer bottom price (confidential)
@@ -68,7 +58,7 @@ def main():
             "season": "summer",
             "weather": "sunny",
         },
-        price_tolerance=5.0,
+        price_tolerance=price_tolerance,
         reward_weights=reward_weights,  # Reward weights configuration
         buyer_reward_aggregation=buyer_reward_aggregation,  # Buyer reward aggregation method
         seller_reward_aggregation=seller_reward_aggregation,  # Seller reward aggregation method

@@ -8,12 +8,18 @@ import os
 import sys
 
 # Add project path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, project_root)
 
 from agenticpaygym import make  # Use registration system
 from agenticpaygym.agents.buyer_agent import BuyerAgent
 from agenticpaygym.agents.seller_agent import SellerAgent
 from agenticpaygym.llm.openai_llm import OpenAILLM
+
+# Import configuration parameters
+examples_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, examples_dir)
+from config import reward_weights, buyer_reward_aggregation, seller_reward_aggregation, max_rounds, price_tolerance
 
 
 def main():
@@ -45,7 +51,7 @@ def main():
         "Task2_two_product_negotiation-v0",
         buyer_agent=buyer,
         seller_agent=seller,
-        max_rounds=20,
+        max_rounds=max_rounds,
         initial_seller_price=250.0,  # Initial total price offered by seller for both products
         buyer_max_price=buyer_max_price,  # Buyer total max price (confidential, for both products)
         seller_min_price=seller_min_price,  # Seller total min price (confidential, for both products)
@@ -54,7 +60,7 @@ def main():
             "season": "summer",
             "weather": "sunny",
         },
-        price_tolerance=5.0,
+        price_tolerance=price_tolerance,
     )
     
     # Create user profile (text description of personal preferences)

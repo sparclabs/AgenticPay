@@ -17,6 +17,11 @@ from agenticpaygym.agents.seller_agent import SellerAgent
 from agenticpaygym.llm.openai_llm import OpenAILLM
 import re
 
+# Import configuration parameters
+examples_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, examples_dir)
+from config import reward_weights, max_rounds, price_tolerance
+
 
 def extract_seller_choice(buyer_response: str, observation: dict, buyer_id: int) -> int:
     """Extract seller choice from buyer's response
@@ -101,13 +106,6 @@ def main():
     seller1 = SellerAgent(llm=llm, seller_min_price=seller1_min_price)
     seller2 = SellerAgent(llm=llm, seller_min_price=seller2_min_price)
     
-    # Configure reward weights
-    reward_weights = {
-        "buyer_savings": 1.0,      # 买方节省权重
-        "seller_profit": 1.0,      # 卖方利润权重
-        "time_cost": 0.1,          # 时间成本权重（降低影响）
-    }
-    
     # Create environment
     print("Creating sequential multi-buyer multi-seller multi-product negotiation environment...")
     env = Task3SequentialTwoBuyerTwoSellerTwoProductNegotiation(
@@ -115,7 +113,7 @@ def main():
         buyer2_agent=buyer2,
         seller1_agent=seller1,
         seller2_agent=seller2,
-        max_rounds=20,
+        max_rounds=max_rounds,
         initial_seller1_price=250.0,  # Initial total price offered by seller1 for both products
         initial_seller2_price=260.0,  # Initial total price offered by seller2 for both products (higher)
         buyer1_max_price=buyer1_max_price,  # Buyer1 total max price (confidential, for both products)
@@ -127,7 +125,7 @@ def main():
             "season": "summer",
             "weather": "sunny",
         },
-        price_tolerance=5.0,
+        price_tolerance=price_tolerance,
         reward_weights=reward_weights,  # Reward weights configuration
     )
     

@@ -14,6 +14,7 @@ from agenticpaygym import make, Task2ClosePriceNegotiation  # Use registration s
 from agenticpaygym.agents.buyer_agent import BuyerAgent
 from agenticpaygym.agents.seller_agent import SellerAgent
 from agenticpaygym.llm.openai_llm import OpenAILLM
+from agenticpaygym.examples.config import reward_weights, max_rounds, price_tolerance
 
 
 def main():
@@ -39,13 +40,6 @@ def main():
     buyer = BuyerAgent(llm=llm, buyer_max_price=buyer_max_price)
     seller = SellerAgent(llm=llm, seller_min_price=seller_min_price)
     
-    # Configure reward weights
-    reward_weights = {
-        "buyer_savings": 1.0,      # 买方节省权重
-        "seller_profit": 1.0,      # 卖方利润权重
-        "time_cost": 0.1,          # 时间成本权重（降低影响）
-    }
-    
     # Method 1: Create environment using registration system (recommended)
     print("Creating negotiation environment using registration system...")
     print(f"Task2 Configuration:")
@@ -58,7 +52,7 @@ def main():
         "Task2_close_price_negotiation-v0",
         buyer_agent=buyer,
         seller_agent=seller,
-        max_rounds=20,
+        max_rounds=max_rounds,
         initial_seller_price=100.0,  # Initial price offered by seller
         buyer_max_price=buyer_max_price,  # Buyer bottom price (confidential)
         seller_min_price=seller_min_price,  # Seller bottom price (confidential)
@@ -67,7 +61,7 @@ def main():
             "season": "summer",
             "weather": "sunny",
         },
-        price_tolerance=0.0,  # Tolerance for agreement
+        price_tolerance=price_tolerance,  # Tolerance for agreement
         reward_weights=reward_weights,  # Reward weights configuration
     )
     
