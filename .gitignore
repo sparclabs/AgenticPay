@@ -38,6 +38,7 @@ ENV/
 .coverage
 htmlcov/
 .tox/
+agenticpaygym/test/
 
 # Environment variables
 .env
@@ -49,4 +50,10 @@ htmlcov/
 # OS
 .DS_Store
 Thumbs.db
+
+# Model files (too large for git)
+agenticpaygym/models/download_models/
+
+# Configuration files
+agenticpaygym/examples/config.py
 

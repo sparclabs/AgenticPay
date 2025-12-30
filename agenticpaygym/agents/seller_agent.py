@@ -1,8 +1,9 @@
 """Seller Agent Implementation"""
 
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Union
 from agenticpaygym.agents.base_agent import BaseAgent
 from agenticpaygym.models.base_llm import BaseLLM
+from agenticpaygym.models.base_vlm import BaseVLM
 
 
 class SellerAgent(BaseAgent):
@@ -13,20 +14,20 @@ class SellerAgent(BaseAgent):
     
     def __init__(
         self,
-        llm: BaseLLM,
+        model: Union[BaseLLM, BaseVLM],
         name: str = "Seller",
-        role_description: str = "a seller trying to maximize profit while being reasonable. You are professional, friendly, and want to close a deal that benefits both parties.",
+        role_description: str = "You are a seller trying to maximize profit while being reasonable. You are professional, friendly, and want to close a deal that benefits both parties.",
         seller_min_price: Optional[float] = None,
     ):
         """Initialize Seller Agent
         
         Args:
-            llm: LLM interface
+            model: LLM or VLM interface (supports both BaseLLM and BaseVLM)
             name: Agent name
             role_description: Role description
             seller_min_price: Minimum acceptable selling price for seller (bottom price, confidential information)
         """
-        super().__init__(llm, role_description, name)
+        super().__init__(model, role_description, name)
         self.seller_min_price = seller_min_price
     
     def respond(
@@ -78,14 +79,41 @@ IMPORTANT REMINDERS:
 - Highlight the value and quality of your product
 - If the buyer's needs might be better met by another product in your inventory, you can suggest it
 - Be willing to negotiate but don't go below your minimum acceptable price
-- Always mention specific prices when making offers (e.g., "I can offer $X")
+- **CRITICAL: Each conversation you MUST make one price offer, you MUST use the format: ### SELLER_PRICE($X) ###**
+- Example: "I can offer ### SELLER_PRICE($150) ### for this product"
+- Example: "How about ### SELLER_PRICE($130.00) ###?"
+- This specific format is required for the system to correctly extract your offer price
 - Consider market conditions and seasonality
 - NEVER reveal your minimum acceptable price to the buyer - keep it confidential
+- Keep communication short and concise.
 
 Now, respond as {self.name}:
 """
         full_prompt = prompt + seller_guidance
         
-        response = self.llm.generate(full_prompt, temperature=0.7)
+        # Extract images from current_state if VLM is used
+        images = None
+        if self.is_vlm:
+            # Check for images in current_state (e.g., product images)
+            images = current_state.get('images') or current_state.get('product_images')
+            # Also check in context
+            if images is None:
+                images = self.context.get('images') or self.context.get('product_images')
+        
+        # Generate response: VLM supports images, LLM doesn't
+        if self.is_vlm and images is not None:
+            response = self.model.generate(
+                full_prompt, 
+                images=images,
+                temperature=0.7,
+                max_tokens=1024  # Ensure complete response generation
+            )
+        else:
+            response = self.model.generate(
+                full_prompt, 
+                temperature=0.7,
+                max_tokens=1024  # Ensure complete response generation
+            )
+        
         return response.strip()
 

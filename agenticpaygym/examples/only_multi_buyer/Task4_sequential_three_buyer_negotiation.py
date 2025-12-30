@@ -20,7 +20,7 @@ import re
 # Import configuration parameters
 examples_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, examples_dir)
-from config import reward_weights, buyer_reward_aggregation, seller_reward_aggregation, max_rounds, price_tolerance
+from config import reward_weights, buyer_reward_aggregation, seller_reward_aggregation, max_rounds, price_tolerance, OPENAI_API_KEY
 
 
 def extract_buyer_choice(seller_response: str, observation: dict) -> int:
@@ -89,16 +89,11 @@ def extract_buyer_choice(seller_response: str, observation: dict) -> int:
 def main():
     """Main function: Demonstrates sequential multi-buyer negotiation flow"""
     
-    # Check API key
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        print("Warning: OPENAI_API_KEY not set. Please set it to use OpenAI models.")
-        print("You can set it with: export OPENAI_API_KEY='your-key-here'")
-        return
+    print("Initializing model...")
     
-    # Initialize LLM
-    print("Initializing LLM...")
-    llm = CustomLLM(api_key=api_key, model="gpt-4o-mini-2024-07-18")  # gpt-4o-mini-2024-07-18, gpt-3.5-turbo
+    model = CustomLLM(api_key=OPENAI_API_KEY, model="gpt-5.2")  # gpt-4o-mini-2024-07-18, gpt-3.5-turbo
+    
+    print(f"✓ Successfully initialized: {model}")
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
     print("Creating agents...")
@@ -107,10 +102,10 @@ def main():
     buyer3_max_price = 125.0  # Maximum acceptable purchase price for buyer3 (confidential, different from buyer1 and buyer2)
     seller_min_price = 80.0  # Minimum acceptable selling price for seller (confidential)
     
-    buyer1 = BuyerAgent(llm=llm, buyer_max_price=buyer1_max_price)
-    buyer2 = BuyerAgent(llm=llm, buyer_max_price=buyer2_max_price)
-    buyer3 = BuyerAgent(llm=llm, buyer_max_price=buyer3_max_price)
-    seller = SellerAgent(llm=llm, seller_min_price=seller_min_price)
+    buyer1 = BuyerAgent(model=model, buyer_max_price=buyer1_max_price)
+    buyer2 = BuyerAgent(model=model, buyer_max_price=buyer2_max_price)
+    buyer3 = BuyerAgent(model=model, buyer_max_price=buyer3_max_price)
+    seller = SellerAgent(model=model, seller_min_price=seller_min_price)
     
     # Create environment
     print("Creating sequential multi-buyer negotiation environment...")
@@ -169,91 +164,182 @@ def main():
     done = False
     
     while not done:
-        # Each round, seller chooses one buyer to negotiate with
-        # Seller can see all three buyers' information in the observation
-        # Let seller decide which buyer to negotiate with and provide negotiation message
-        # We'll use a combined conversation history that includes all three buyers' conversations
-        combined_history = []
-        # Add buyer1 messages with prefix
-        for msg in observation.get("conversation_history_buyer1", []):
-            combined_history.append({
-                **msg,
-                "content": f"[Buyer 1] {msg['content']}"
-            })
-        # Add buyer2 messages with prefix
-        for msg in observation.get("conversation_history_buyer2", []):
-            combined_history.append({
-                **msg,
-                "content": f"[Buyer 2] {msg['content']}"
-            })
-        # Add buyer3 messages with prefix
-        for msg in observation.get("conversation_history_buyer3", []):
-            combined_history.append({
-                **msg,
-                "content": f"[Buyer 3] {msg['content']}"
-            })
+        # Each round: buyers respond first (if first round), then seller chooses buyer and responds
+        # For sequential negotiation, we need to handle the flow:
+        # 1. First round: all three buyers respond first, then seller chooses one and responds
+        # 2. Subsequent rounds: seller chooses buyer first, then buyer responds, then seller responds
         
-        # Get seller's response - seller should indicate which buyer they want to negotiate with
-        seller_response = seller.respond(
-            conversation_history=combined_history,
-            current_state={
-                **observation,
-                "instruction": "You are negotiating with three buyers. Each round, you need to choose ONE buyer to negotiate with and provide your negotiation message. Please clearly indicate which buyer (1, 2, or 3) you want to negotiate with, for example: 'I want to negotiate with buyer 1' or 'Let me talk to buyer 2' or 'I'll negotiate with buyer 3'."
-            }
-        )
-        
-        # Extract buyer choice from seller's response
-        selected_buyer = extract_buyer_choice(seller_response, observation)
-        print(f"\n[Seller chooses to negotiate with Buyer {selected_buyer} this round]")
-        
-        # Use seller's full response as the negotiation message
-        # The response may include the choice statement, which is fine as it's seller's natural expression
-        seller_action = seller_response
-        
-        # Get the conversation history for the selected buyer
-        if selected_buyer == 1:
-            conversation_history = observation["conversation_history_buyer1"]
-        elif selected_buyer == 2:
-            conversation_history = observation["conversation_history_buyer2"]
-        else:  # selected_buyer == 3
-            conversation_history = observation["conversation_history_buyer3"]
-        
-        # Get the selected buyer's response
-        if selected_buyer == 1:
-            buyer_action = buyer1.respond(
-                conversation_history=conversation_history,
-                current_state=observation
-            )
-        elif selected_buyer == 2:
-            buyer_action = buyer2.respond(
-                conversation_history=conversation_history,
-                current_state=observation
-            )
-        else:  # selected_buyer == 3
-            buyer_action = buyer3.respond(
-                conversation_history=conversation_history,
-                current_state=observation
-            )
-        
-        # Print conversation content for this round
         current_round = observation.get('current_round', 0)
-        print(f"\n{'='*60}")
-        print(f"Round {current_round} Conversation:")
-        print(f"{'='*60}")
-        print(f"[SELLER to Buyer {selected_buyer}]: {seller_action}")
-        print(f"[BUYER {selected_buyer}]: {buyer_action}")
-        print(f"{'='*60}")
         
-        # Execute step with selected buyer and actions
+        # First round: buyers respond first based on product info
+        if current_round == 0:
+            # Get buyer1's initial response
+            buyer1_action = buyer1.respond(
+                conversation_history=observation["conversation_history_buyer1"],
+                current_state=observation
+            )
+            
+            # Get buyer2's initial response
+            buyer2_action = buyer2.respond(
+                conversation_history=observation["conversation_history_buyer2"],
+                current_state=observation
+            )
+            
+            # Get buyer3's initial response
+            buyer3_action = buyer3.respond(
+                conversation_history=observation["conversation_history_buyer3"],
+                current_state=observation
+            )
+            
+            # Create updated conversation histories that include buyers' responses
+            updated_conversation_history_buyer1 = observation["conversation_history_buyer1"].copy()
+            updated_conversation_history_buyer2 = observation["conversation_history_buyer2"].copy()
+            updated_conversation_history_buyer3 = observation["conversation_history_buyer3"].copy()
+            
+            if buyer1_action:
+                updated_conversation_history_buyer1.append({
+                    "role": "buyer",
+                    "content": buyer1_action,
+                    "round": current_round
+                })
+            
+            if buyer2_action:
+                updated_conversation_history_buyer2.append({
+                    "role": "buyer",
+                    "content": buyer2_action,
+                    "round": current_round
+                })
+            
+            if buyer3_action:
+                updated_conversation_history_buyer3.append({
+                    "role": "buyer",
+                    "content": buyer3_action,
+                    "round": current_round
+                })
+            
+            # Seller can see all three buyers' messages and choose which one to negotiate with
+            combined_history = []
+            for msg in updated_conversation_history_buyer1:
+                combined_history.append({
+                    **msg,
+                    "content": f"[Buyer 1] {msg['content']}"
+                })
+            for msg in updated_conversation_history_buyer2:
+                combined_history.append({
+                    **msg,
+                    "content": f"[Buyer 2] {msg['content']}"
+                })
+            for msg in updated_conversation_history_buyer3:
+                combined_history.append({
+                    **msg,
+                    "content": f"[Buyer 3] {msg['content']}"
+                })
+            
+            # Get seller's response - seller should indicate which buyer they want to negotiate with
+            seller_response = seller.respond(
+                conversation_history=combined_history,
+                current_state={
+                    **observation,
+                    "instruction": "You are negotiating with three buyers. Each round, you need to choose ONE buyer to negotiate with and provide your negotiation message. Please clearly indicate which buyer (1, 2, or 3) you want to negotiate with, for example: 'I want to negotiate with buyer 1' or 'Let me talk to buyer 2' or 'I'll negotiate with buyer 3'."
+                }
+            )
+            
+            # Extract buyer choice from seller's response
+            selected_buyer = extract_buyer_choice(seller_response, observation)
+            print(f"\n[Seller chooses to negotiate with Buyer {selected_buyer} this round]")
+            
+            seller_action = seller_response
+            
+            # Use the buyer action for the selected buyer
+            if selected_buyer == 1:
+                buyer_action = buyer1_action
+            elif selected_buyer == 2:
+                buyer_action = buyer2_action
+            else:  # selected_buyer == 3
+                buyer_action = buyer3_action
+        else:
+            # Subsequent rounds: seller chooses buyer first, then buyer responds, then seller responds
+            # Seller can see all three buyers' information in the observation
+            combined_history = []
+            for msg in observation.get("conversation_history_buyer1", []):
+                combined_history.append({
+                    **msg,
+                    "content": f"[Buyer 1] {msg['content']}"
+                })
+            for msg in observation.get("conversation_history_buyer2", []):
+                combined_history.append({
+                    **msg,
+                    "content": f"[Buyer 2] {msg['content']}"
+                })
+            for msg in observation.get("conversation_history_buyer3", []):
+                combined_history.append({
+                    **msg,
+                    "content": f"[Buyer 3] {msg['content']}"
+                })
+            
+            # Get seller's response - seller should indicate which buyer they want to negotiate with
+            seller_response = seller.respond(
+                conversation_history=combined_history,
+                current_state={
+                    **observation,
+                    "instruction": "You are negotiating with three buyers. Each round, you need to choose ONE buyer to negotiate with and provide your negotiation message. Please clearly indicate which buyer (1, 2, or 3) you want to negotiate with, for example: 'I want to negotiate with buyer 1' or 'Let me talk to buyer 2' or 'I'll negotiate with buyer 3'."
+                }
+            )
+            
+            # Extract buyer choice from seller's response
+            selected_buyer = extract_buyer_choice(seller_response, observation)
+            print(f"\n[Seller chooses to negotiate with Buyer {selected_buyer} this round]")
+            
+            seller_action = seller_response
+            
+            # Get the conversation history for the selected buyer
+            if selected_buyer == 1:
+                conversation_history = observation["conversation_history_buyer1"]
+            elif selected_buyer == 2:
+                conversation_history = observation["conversation_history_buyer2"]
+            else:  # selected_buyer == 3
+                conversation_history = observation["conversation_history_buyer3"]
+            
+            # Create updated conversation history that includes seller's message
+            # So buyer can see seller's message before responding
+            updated_conversation_history = conversation_history.copy()
+            if seller_action:
+                updated_conversation_history.append({
+                    "role": "seller",
+                    "content": seller_action,
+                    "round": current_round
+                })
+            
+            # Get the selected buyer's response (buyer can now see seller's message)
+            if selected_buyer == 1:
+                buyer_action = buyer1.respond(
+                    conversation_history=updated_conversation_history,
+                    current_state=observation
+                )
+            elif selected_buyer == 2:
+                buyer_action = buyer2.respond(
+                    conversation_history=updated_conversation_history,
+                    current_state=observation
+                )
+            else:  # selected_buyer == 3
+                buyer_action = buyer3.respond(
+                    conversation_history=updated_conversation_history,
+                    current_state=observation
+                )
+        
+        # Execute step with selected buyer and actions (order: buyer_action, seller_action)
         observation, reward, terminated, truncated, info = env.step(
             selected_buyer=selected_buyer,
-            seller_action=seller_action,
-            buyer_action=buyer_action
+            buyer_action=buyer_action,
+            seller_action=seller_action
         )
         done = terminated or truncated
         
         # Render current state (includes all print information)
         env.render()
+        
+        # Flush output to ensure complete display
+        sys.stdout.flush()
         
         # Display step rewards for each round with detailed calculation
         if 'step_buyer1_reward' in info or 'step_buyer2_reward' in info or 'step_buyer3_reward' in info or 'step_seller_reward' in info:

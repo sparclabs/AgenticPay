@@ -1,8 +1,9 @@
 """Agent Base Class"""
 
 from abc import ABC, abstractmethod
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Union
 from agenticpaygym.models.base_llm import BaseLLM
+from agenticpaygym.models.base_vlm import BaseVLM
 
 
 class BaseAgent(ABC):
@@ -13,22 +14,24 @@ class BaseAgent(ABC):
     
     def __init__(
         self,
-        llm: BaseLLM,
+        model: Union[BaseLLM, BaseVLM],
         role_description: str,
         name: str,
     ):
         """Initialize Agent
         
         Args:
-            llm: LLM interface
+            model: LLM or VLM interface (supports both BaseLLM and BaseVLM)
             role_description: Role description (used in prompt)
             name: Agent name
         """
-        self.llm = llm
+        self.model = model
         self.role_description = role_description
         self.name = name
         self.context: Dict[str, Any] = {}
         self.initialized = False
+        # Check if the model is a VLM
+        self.is_vlm = isinstance(model, BaseVLM)
     
     def initialize(self, context: Dict[str, Any]):
         """Initialize Agent context

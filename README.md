@@ -61,7 +61,17 @@ AgenticPayGym is a framework for simulating multi-agent negotiations between buy
 ## Installation
 
 ```bash
+# Create conda environment
+conda create -n agenticpaygym python=3.10 -y
+conda activate agenticpaygym
+
+# Navigate to project directory
 cd AgenticPayGym
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Install package in editable mode
 pip install -e .
 ```
 

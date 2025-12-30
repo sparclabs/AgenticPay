@@ -153,15 +153,7 @@ class Task3SequentialTwoBuyerNegotiation(BaseEnv):
         }
         self.seller_agent.initialize(seller_context)
         
-        # Seller gives initial offers to both buyers
-        initial_message_buyer1 = f"I'm offering this product for ${self.initial_seller_price:.2f}."
-        self.memory_buyer1.add_message("seller", initial_message_buyer1, self.current_round)
-        self.state_buyer1.update(seller_price=self.initial_seller_price)
-        
-        initial_message_buyer2 = f"I'm offering this product for ${self.initial_seller_price:.2f}."
-        self.memory_buyer2.add_message("seller", initial_message_buyer2, self.current_round)
-        self.state_buyer2.update(seller_price=self.initial_seller_price)
-        
+        # No initial seller offer - negotiation starts with buyers' first messages
         # Build observation
         observation = self._get_observation()
         info = self._get_info()
@@ -171,18 +163,18 @@ class Task3SequentialTwoBuyerNegotiation(BaseEnv):
     def step(
         self, 
         selected_buyer: int,  # 1 or 2, which buyer seller chooses to negotiate with this round
-        seller_action: Optional[str] = None,
         buyer_action: Optional[str] = None,
+        seller_action: Optional[str] = None,
     ) -> Tuple[Dict[str, Any], float, bool, bool, Dict[str, Any]]:
         """Execute one negotiation step
         
-        Each round, seller chooses one buyer to negotiate with, then seller and that buyer exchange messages.
-        Order: seller -> buyer
+        Each round, seller chooses one buyer to negotiate with, then buyer and seller exchange messages.
+        Order: buyer -> seller (seller can see buyer's message before responding)
         
         Args:
             selected_buyer: Which buyer (1 or 2) seller chooses to negotiate with this round
-            seller_action: Seller's response (optional)
             buyer_action: Selected buyer's response (optional)
+            seller_action: Seller's response (optional, can see buyer's message)
             
         Returns:
             (observation, reward, terminated, truncated, info)
@@ -192,21 +184,8 @@ class Task3SequentialTwoBuyerNegotiation(BaseEnv):
         
         self.current_selected_buyer = selected_buyer
         
-        # Add messages to memory in order: seller -> buyer
-        # Process seller action first
-        if seller_action is not None:
-            if selected_buyer == 1:
-                self.memory_buyer1.add_message("seller", seller_action, self.current_round)
-                seller_price = self._extract_price(seller_action)
-                if seller_price is not None:
-                    self.state_buyer1.update(seller_price=seller_price)
-            else:  # selected_buyer == 2
-                self.memory_buyer2.add_message("seller", seller_action, self.current_round)
-                seller_price = self._extract_price(seller_action)
-                if seller_price is not None:
-                    self.state_buyer2.update(seller_price=seller_price)
-        
-        # Process buyer action after seller
+        # Add messages to memory in order: buyer -> seller
+        # Process buyer action first
         if buyer_action is not None:
             if selected_buyer == 1:
                 self.memory_buyer1.add_message("buyer", buyer_action, self.current_round)
@@ -218,6 +197,19 @@ class Task3SequentialTwoBuyerNegotiation(BaseEnv):
                 buyer_price = self._extract_price(buyer_action)
                 if buyer_price is not None:
                     self.state_buyer2.update(buyer_price=buyer_price)
+        
+        # Process seller action after buyer (seller can see buyer's message)
+        if seller_action is not None:
+            if selected_buyer == 1:
+                self.memory_buyer1.add_message("seller", seller_action, self.current_round)
+                seller_price = self._extract_price(seller_action)
+                if seller_price is not None:
+                    self.state_buyer1.update(seller_price=seller_price)
+            else:  # selected_buyer == 2
+                self.memory_buyer2.add_message("seller", seller_action, self.current_round)
+                seller_price = self._extract_price(seller_action)
+                if seller_price is not None:
+                    self.state_buyer2.update(seller_price=seller_price)
         
         # Check if deal can be made with the selected buyer
         # Buyer must explicitly express make deal intent AND price_tolerance condition must be satisfied
@@ -300,7 +292,7 @@ class Task3SequentialTwoBuyerNegotiation(BaseEnv):
     def render(self, mode: str = "human") -> Optional[str]:
         """Render current state
         
-        Displays seller and buyer outputs for each round, followed by a round summary
+        Displays buyer and seller outputs for each round, followed by a round summary
         including prices, agreement status, and reason.
         
         Args:
@@ -311,8 +303,27 @@ class Task3SequentialTwoBuyerNegotiation(BaseEnv):
         """
         output_lines = []
         
+        # Get messages from the round that just completed
+        # Note: In step(), messages are added to current_round
+        # - If agreement reached: current_round stays the same, messages are in current_round
+        # - If no agreement: current_round is incremented, messages are in current_round - 1
+        history_buyer1 = self.memory_buyer1.get_history()
+        history_buyer2 = self.memory_buyer2.get_history()
+        
+        # Determine which round's messages to display
+        if self.negotiation_info.status in [NegotiationStatus.AGREED, NegotiationStatus.TIMEOUT]:
+            round_to_display = self.current_round
+        else:
+            round_to_display = self.current_round - 1 if self.current_round > 0 else 0
+        
+        # Display round number
+        if self.negotiation_info.status in [NegotiationStatus.AGREED, NegotiationStatus.TIMEOUT]:
+            display_round = self.current_round
+        else:
+            display_round = self.current_round if self.current_round > 0 else 0
+        
         output_lines.append(f"\n{'='*60}")
-        output_lines.append(f"Round {self.current_round} - Sequential Negotiation Output")
+        output_lines.append(f"Round {display_round} - Sequential Negotiation Output")
         output_lines.append(f"{'='*60}")
         
         # Display which buyer was selected this round
@@ -320,28 +331,50 @@ class Task3SequentialTwoBuyerNegotiation(BaseEnv):
             output_lines.append(f"\n[Selected Buyer: Buyer {self.current_selected_buyer}]")
         
         # Display Buyer1 conversation (if this round negotiated with buyer1)
-        if self.current_selected_buyer == 1:
-            output_lines.append(f"\n[BUYER 1 Conversation]:")
-            history_buyer1 = self.memory_buyer1.get_history()
-            if history_buyer1:
-                current_round_messages_b1 = [
-                    msg for msg in history_buyer1 if msg["round"] == self.current_round
-                ]
-                for msg in current_round_messages_b1:
-                    role = msg["role"].upper()
-                    output_lines.append(f"  [{role}]: {msg['content']}")
+        if self.current_selected_buyer == 1 and history_buyer1:
+            round_messages_b1 = [
+                msg for msg in history_buyer1 if msg["round"] == round_to_display
+            ]
+            if round_messages_b1:
+                output_lines.append(f"\n[BUYER 1 Conversation]:")
+                # Display buyer message first (if exists)
+                buyer1_msg = next(
+                    (msg for msg in round_messages_b1 if msg["role"] == "buyer"), 
+                    None
+                )
+                if buyer1_msg:
+                    output_lines.append(f"  [BUYER]: {buyer1_msg['content']}")
+                
+                # Display seller message (if exists)
+                seller1_msg = next(
+                    (msg for msg in round_messages_b1 if msg["role"] == "seller"), 
+                    None
+                )
+                if seller1_msg:
+                    output_lines.append(f"  [SELLER]: {seller1_msg['content']}")
         
         # Display Buyer2 conversation (if this round negotiated with buyer2)
-        if self.current_selected_buyer == 2:
-            output_lines.append(f"\n[BUYER 2 Conversation]:")
-            history_buyer2 = self.memory_buyer2.get_history()
-            if history_buyer2:
-                current_round_messages_b2 = [
-                    msg for msg in history_buyer2 if msg["round"] == self.current_round
-                ]
-                for msg in current_round_messages_b2:
-                    role = msg["role"].upper()
-                    output_lines.append(f"  [{role}]: {msg['content']}")
+        if self.current_selected_buyer == 2 and history_buyer2:
+            round_messages_b2 = [
+                msg for msg in history_buyer2 if msg["round"] == round_to_display
+            ]
+            if round_messages_b2:
+                output_lines.append(f"\n[BUYER 2 Conversation]:")
+                # Display buyer message first (if exists)
+                buyer2_msg = next(
+                    (msg for msg in round_messages_b2 if msg["role"] == "buyer"), 
+                    None
+                )
+                if buyer2_msg:
+                    output_lines.append(f"  [BUYER]: {buyer2_msg['content']}")
+                
+                # Display seller message (if exists)
+                seller2_msg = next(
+                    (msg for msg in round_messages_b2 if msg["role"] == "seller"), 
+                    None
+                )
+                if seller2_msg:
+                    output_lines.append(f"  [SELLER]: {seller2_msg['content']}")
         
         # Round summary section
         output_lines.append(f"\n{'-'*60}")
@@ -438,14 +471,43 @@ class Task3SequentialTwoBuyerNegotiation(BaseEnv):
     def _extract_price(self, text: str) -> Optional[float]:
         """Extract price from text
         
+        Priority: 
+        1. Extract from ### BUYER_PRICE($X) ### or ### SELLER_PRICE($X) ### format (preferred)
+        2. Fall back to ### $X ### format
+        3. Fall back to other price patterns
+        
         Args:
             text: Text containing price
             
         Returns:
             Extracted price, returns None if not found
         """
-        # Match $XX.XX or $XX format
-        patterns = [
+        # Priority 1: Extract price from ### BUYER_PRICE($X) ### or ### SELLER_PRICE($X) ### format
+        # Matches: ### BUYER_PRICE($100.50) ###, ### SELLER_PRICE($150) ###, etc.
+        labeled_price_pattern = r'###\s*(?:BUYER_PRICE|SELLER_PRICE)\s*\(\$(\d+\.?\d*)\)\s*###'
+        matches = re.findall(labeled_price_pattern, text, re.IGNORECASE)
+        if matches:
+            try:
+                price = float(matches[-1])  # Take the last match
+                if price > 0:
+                    return price
+            except ValueError:
+                pass
+        
+        # Priority 2: Extract price from ### $X ### format (backward compatibility)
+        # Matches: ### $100.50 ###, ### $100 ###, ###$120###, etc.
+        triple_hash_pattern = r'###\s*\$(\d+\.?\d*)\s*###'
+        matches = re.findall(triple_hash_pattern, text, re.IGNORECASE)
+        if matches:
+            try:
+                price = float(matches[-1])  # Take the last match
+                if price > 0:
+                    return price
+            except ValueError:
+                pass
+        
+        # Priority 3: Fall back to other price patterns
+        fallback_patterns = [
             r'\$(\d+\.?\d*)',  # $100.50 or $100
             r'(\d+\.?\d*)\s*dollars?',  # 100.50 dollars
             r'(\d+\.?\d*)\s*USD',  # 100.50 USD
@@ -453,7 +515,7 @@ class Task3SequentialTwoBuyerNegotiation(BaseEnv):
             r'offer.*?(\d+\.?\d*)',  # offer 100.50
         ]
         
-        for pattern in patterns:
+        for pattern in fallback_patterns:
             matches = re.findall(pattern, text, re.IGNORECASE)
             if matches:
                 try:

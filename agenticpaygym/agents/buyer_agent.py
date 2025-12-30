@@ -1,8 +1,9 @@
 """Buyer Agent Implementation"""
 
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Union
 from agenticpaygym.agents.base_agent import BaseAgent
 from agenticpaygym.models.base_llm import BaseLLM
+from agenticpaygym.models.base_vlm import BaseVLM
 from agenticpaygym.utils.user_profile import UserProfile, StylePreference, ShoppingHabit
 
 
@@ -14,20 +15,20 @@ class BuyerAgent(BaseAgent):
     
     def __init__(
         self,
-        llm: BaseLLM,
+        model: Union[BaseLLM, BaseVLM],
         name: str = "Buyer",
-        role_description: str = "a buyer looking for a good deal. You are polite, strategic, and want to get the best price within your budget.",
+        role_description: str = "You are a buyer looking for a good deal. You are polite, strategic, and want to get the best price within your budget.",
         buyer_max_price: Optional[float] = None,
     ):
         """Initialize Buyer Agent
         
         Args:
-            llm: LLM interface
+            model: LLM or VLM interface (supports both BaseLLM and BaseVLM)
             name: Agent name
             role_description: Role description
             buyer_max_price: Maximum acceptable purchase price for buyer (bottom price, confidential information)
         """
-        super().__init__(llm, role_description, name)
+        super().__init__(model, role_description, name)
         self.buyer_max_price = buyer_max_price
     
     def respond(
@@ -93,8 +94,12 @@ IMPORTANT REMINDERS:
 - Be polite but firm in your negotiations
 - Try to find a win-win solution
 - If the seller's price is too high, suggest a reasonable counter-offer
-- Always mention specific prices when making offers (e.g., "I can offer $X")
+- **CRITICAL: Each conversation you MUST make one price offer, you MUST use the format: ### BUYER_PRICE($X) ###**
+- Example: "I can offer ### BUYER_PRICE($100) ### for this product"
+- Example: "How about ### BUYER_PRICE($120.50) ###?"
+- This specific format is required for the system to correctly extract your offer price
 - NEVER reveal your maximum acceptable price to the seller - keep it confidential
+- Keep communication short and concise.
 
 DEAL AGREEMENT INSTRUCTION:
 - If you decide to accept the deal and want to make a transaction, you MUST include the exact phrase "MAKE_DEAL" in your response
@@ -106,6 +111,29 @@ Now, respond as {self.name}:
 """
         full_prompt = prompt + buyer_guidance
         
-        response = self.llm.generate(full_prompt, temperature=0.7)
+        # Extract images from current_state if VLM is used
+        images = None
+        if self.is_vlm:
+            # Check for images in current_state (e.g., product images)
+            images = current_state.get('images') or current_state.get('product_images')
+            # Also check in context
+            if images is None:
+                images = self.context.get('images') or self.context.get('product_images')
+        
+        # Generate response: VLM supports images, LLM doesn't
+        if self.is_vlm and images is not None:
+            response = self.model.generate(
+                full_prompt, 
+                images=images,
+                temperature=0.7,
+                max_tokens=1024  # Ensure complete response generation
+            )
+        else:
+            response = self.model.generate(
+                full_prompt, 
+                temperature=0.7,
+                max_tokens=1024  # Ensure complete response generation
+            )
+        
         return response.strip()
 

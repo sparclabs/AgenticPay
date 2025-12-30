@@ -19,22 +19,17 @@ from agenticpaygym.models.custom_llm import CustomLLM
 # Import configuration parameters
 examples_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, examples_dir)
-from config import reward_weights, buyer_reward_aggregation, seller_reward_aggregation, max_rounds, price_tolerance
+from config import reward_weights, buyer_reward_aggregation, seller_reward_aggregation, max_rounds, price_tolerance, OPENAI_API_KEY
 
 
 def main():
     """Main function: Demonstrates multi-buyer multi-seller multi-product negotiation flow"""
     
-    # Check API key
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        print("Warning: OPENAI_API_KEY not set. Please set it to use OpenAI models.")
-        print("You can set it with: export OPENAI_API_KEY='your-key-here'")
-        return
+    print("Initializing model...")
     
-    # Initialize LLM
-    print("Initializing LLM...")
-    llm = CustomLLM(api_key=api_key, model="gpt-4o-mini-2024-07-18")  # gpt-4o-mini-2024-07-18, gpt-3.5-turbo
+    model = CustomLLM(api_key=OPENAI_API_KEY, model="gpt-5.2")  # gpt-4o-mini-2024-07-18, gpt-3.5-turbo
+    
+    print(f"✓ Successfully initialized: {model}")
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
     # buyer_max_price and seller_min_price represent total expected cost for both products
@@ -44,10 +39,10 @@ def main():
     seller1_min_price = 150.0  # Minimum acceptable total selling price for seller1 (confidential, for both products)
     seller2_min_price = 160.0  # Minimum acceptable total selling price for seller2 (confidential, for both products)
     
-    buyer1 = BuyerAgent(llm=llm, buyer_max_price=buyer1_max_price)
-    buyer2 = BuyerAgent(llm=llm, buyer_max_price=buyer2_max_price)
-    seller1 = SellerAgent(llm=llm, seller_min_price=seller1_min_price)
-    seller2 = SellerAgent(llm=llm, seller_min_price=seller2_min_price)
+    buyer1 = BuyerAgent(model=model, buyer_max_price=buyer1_max_price)
+    buyer2 = BuyerAgent(model=model, buyer_max_price=buyer2_max_price)
+    seller1 = SellerAgent(model=model, seller_min_price=seller1_min_price)
+    seller2 = SellerAgent(model=model, seller_min_price=seller2_min_price)
     
     # Create environment
     print("Creating multi-buyer multi-seller multi-product negotiation environment...")
@@ -132,7 +127,7 @@ def main():
     done = False
     
     while not done:
-        # Each round, order is: buyer -> seller
+        # Each round: buyers respond first, then sellers respond (seeing buyers' messages)
         # Get buyer1's responses
         buyer1_action_seller1 = buyer1.respond(
             conversation_history=observation["conversation_history_b1s1"],
@@ -155,25 +150,64 @@ def main():
             current_state=observation
         )
         
-        # Get seller1's responses
+        # Create updated conversation histories that include buyers' responses
+        # So sellers can see buyers' messages before responding
+        updated_conversation_history_b1s1 = observation["conversation_history_b1s1"].copy()
+        updated_conversation_history_b1s2 = observation["conversation_history_b1s2"].copy()
+        updated_conversation_history_b2s1 = observation["conversation_history_b2s1"].copy()
+        updated_conversation_history_b2s2 = observation["conversation_history_b2s2"].copy()
+        
+        if buyer1_action_seller1:
+            current_round = observation.get("current_round", 0)
+            updated_conversation_history_b1s1.append({
+                "role": "buyer",
+                "content": buyer1_action_seller1,
+                "round": current_round
+            })
+        
+        if buyer1_action_seller2:
+            current_round = observation.get("current_round", 0)
+            updated_conversation_history_b1s2.append({
+                "role": "buyer",
+                "content": buyer1_action_seller2,
+                "round": current_round
+            })
+        
+        if buyer2_action_seller1:
+            current_round = observation.get("current_round", 0)
+            updated_conversation_history_b2s1.append({
+                "role": "buyer",
+                "content": buyer2_action_seller1,
+                "round": current_round
+            })
+        
+        if buyer2_action_seller2:
+            current_round = observation.get("current_round", 0)
+            updated_conversation_history_b2s2.append({
+                "role": "buyer",
+                "content": buyer2_action_seller2,
+                "round": current_round
+            })
+        
+        # Get seller1's responses (sellers can now see buyers' messages)
         seller1_action_buyer1 = seller1.respond(
-            conversation_history=observation["conversation_history_b1s1"],
+            conversation_history=updated_conversation_history_b1s1,
             current_state=observation
         )
         
         seller1_action_buyer2 = seller1.respond(
-            conversation_history=observation["conversation_history_b2s1"],
+            conversation_history=updated_conversation_history_b2s1,
             current_state=observation
         )
         
-        # Get seller2's responses
+        # Get seller2's responses (sellers can now see buyers' messages)
         seller2_action_buyer1 = seller2.respond(
-            conversation_history=observation["conversation_history_b1s2"],
+            conversation_history=updated_conversation_history_b1s2,
             current_state=observation
         )
         
         seller2_action_buyer2 = seller2.respond(
-            conversation_history=observation["conversation_history_b2s2"],
+            conversation_history=updated_conversation_history_b2s2,
             current_state=observation
         )
         
@@ -192,6 +226,9 @@ def main():
         
         # Render current state (includes all print information)
         env.render()
+        
+        # Flush output to ensure complete display
+        sys.stdout.flush()
         
         # Display step rewards for each round with detailed calculation
         if ('step_buyer1_reward' in info or 'step_buyer2_reward' in info or

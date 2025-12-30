@@ -30,22 +30,22 @@ try:
 except ImportError:
     pass  # CustomLLM is optional
 
-# Try to import Hugging Face LLM implementation, but don't fail if not available
+# Try to import Qwen3 VL implementation, but don't fail if not available
 try:
-    from agenticpaygym.models.huggingface_llm import HuggingFaceLLM
-    if len(__all__) > 2:  # At least BaseLLM and BaseVLM
-        __all__.append("HuggingFaceLLM")
-    else:
-        __all__ = ["BaseLLM", "BaseVLM", "HuggingFaceLLM"]
-except ImportError:
-    pass  # HuggingFaceLLM is optional
-
-# Try to import Hugging Face VLM implementation, but don't fail if not available
-try:
-    from agenticpaygym.models.huggingface_vlm import HuggingFaceVLM
+    from agenticpaygym.models.qwen3_vl import Qwen3VL
     if len(__all__) > 2:
-        __all__.append("HuggingFaceVLM")
+        __all__.append("Qwen3VL")
     else:
-        __all__ = ["BaseLLM", "BaseVLM", "HuggingFaceVLM"]
+        __all__ = ["BaseLLM", "BaseVLM", "Qwen3VL"]
 except ImportError:
-    pass  # HuggingFaceVLM is optional
+    pass  # Qwen3VL is optional
+
+# Try to import vLLM VLM implementation, but don't fail if not available
+try:
+    from agenticpaygym.models.vllm_vlm import VLLMVLM
+    if len(__all__) > 2:
+        __all__.append("VLLMVLM")
+    else:
+        __all__ = ["BaseLLM", "BaseVLM", "VLLMVLM"]
+except ImportError:
+    pass  # VLLMVLM is optional

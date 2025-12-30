@@ -19,7 +19,7 @@ import re
 # Import configuration parameters
 examples_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, examples_dir)
-from config import reward_weights, max_rounds, price_tolerance
+from config import reward_weights, max_rounds, price_tolerance, OPENAI_API_KEY
 
 
 def extract_seller_choice(buyer_response: str, observation: dict) -> int:
@@ -75,16 +75,11 @@ def extract_seller_choice(buyer_response: str, observation: dict) -> int:
 def main():
     """Main function: Demonstrates sequential multi-seller negotiation flow with different products"""
     
-    # Check API key
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        print("Warning: OPENAI_API_KEY not set. Please set it to use OpenAI models.")
-        print("You can set it with: export OPENAI_API_KEY='your-key-here'")
-        return
+    print("Initializing model...")
     
-    # Initialize LLM
-    print("Initializing LLM...")
-    llm = CustomLLM(api_key=api_key, model="gpt-4o-mini-2024-07-18")  # gpt-4o-mini-2024-07-18, gpt-3.5-turbo
+    model = CustomLLM(api_key=OPENAI_API_KEY, model="gpt-5.2")  # gpt-4o-mini-2024-07-18, gpt-3.5-turbo
+    
+    print(f"✓ Successfully initialized: {model}")
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
     print("Creating agents...")
@@ -92,9 +87,9 @@ def main():
     seller1_min_price = 80.0  # Minimum acceptable selling price for seller1 (confidential)
     seller2_min_price = 85.0  # Minimum acceptable selling price for seller2 (confidential, different from seller1)
     
-    buyer = BuyerAgent(llm=llm, buyer_max_price=buyer_max_price)
-    seller1 = SellerAgent(llm=llm, seller_min_price=seller1_min_price)
-    seller2 = SellerAgent(llm=llm, seller_min_price=seller2_min_price)
+    buyer = BuyerAgent(model=model, buyer_max_price=buyer_max_price)
+    seller1 = SellerAgent(model=model, seller_min_price=seller1_min_price)
+    seller2 = SellerAgent(model=model, seller_min_price=seller2_min_price)
     
     # Create environment
     print("Creating sequential multi-seller negotiation environment...")
@@ -205,26 +200,28 @@ def main():
         else:
             conversation_history = observation["conversation_history_seller2"]
         
-        # Get the selected seller's response
+        # Create updated conversation history that includes buyer's response
+        # So seller can see buyer's message before responding
+        updated_conversation_history = conversation_history.copy()
+        if buyer_action:
+            current_round = observation.get("current_round", 0)
+            updated_conversation_history.append({
+                "role": "buyer",
+                "content": buyer_action,
+                "round": current_round
+            })
+        
+        # Get the selected seller's response (seller can now see buyer's message)
         if selected_seller == 1:
             seller_action = seller1.respond(
-                conversation_history=conversation_history,
+                conversation_history=updated_conversation_history,
                 current_state=observation
             )
         else:
             seller_action = seller2.respond(
-                conversation_history=conversation_history,
+                conversation_history=updated_conversation_history,
                 current_state=observation
             )
-        
-        # Print conversation content for this round
-        current_round = observation.get('current_round', 0)
-        print(f"\n{'='*60}")
-        print(f"Round {current_round} Conversation:")
-        print(f"{'='*60}")
-        print(f"[BUYER to Seller {selected_seller}]: {buyer_action}")
-        print(f"[SELLER {selected_seller}]: {seller_action}")
-        print(f"{'='*60}")
         
         # Execute step with selected seller and actions
         observation, reward, terminated, truncated, info = env.step(
@@ -236,6 +233,9 @@ def main():
         
         # Render current state (includes all print information)
         env.render()
+        
+        # Flush output to ensure complete display
+        sys.stdout.flush()
         
         # Display step rewards for each round with detailed calculation
         if 'step_buyer_reward' in info or 'step_seller1_reward' in info or 'step_seller2_reward' in info:

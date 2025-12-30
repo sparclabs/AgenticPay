@@ -157,13 +157,7 @@ class Task1MultiProductNegotiation(BaseEnv):
         }
         self.seller_agent.initialize(seller_context)
         
-        # Seller gives initial offer
-        initial_message = f"I'm offering this {self.current_product_name} for ${self.initial_seller_price:.2f}."
-        self.memory.add_message("seller", initial_message, self.current_round)
-        self.current_product_state.update(seller_price=self.initial_seller_price)
-        self.negotiation_info.current_price = self.initial_seller_price
-        self.negotiation_info.seller_price = self.initial_seller_price
-        
+        # No initial seller offer - negotiation starts with buyer's first message
         # Build observation
         observation = self._get_observation()
         info = self._get_info()
@@ -187,15 +181,7 @@ class Task1MultiProductNegotiation(BaseEnv):
             (observation, reward, terminated, truncated, info)
         """
         # Add messages to memory (both agents respond in the same round)
-        if seller_action is not None:
-            self.memory.add_message("seller", seller_action, self.current_round)
-            # Extract seller price
-            seller_price = self._extract_price(seller_action)
-            if seller_price is not None:
-                self.current_product_state.update(seller_price=seller_price)
-                self.negotiation_info.seller_price = seller_price
-                self.negotiation_info.current_price = seller_price
-        
+        # Buyer responds first, then seller
         if buyer_action is not None:
             self.memory.add_message("buyer", buyer_action, self.current_round)
             # Extract buyer price
@@ -204,6 +190,15 @@ class Task1MultiProductNegotiation(BaseEnv):
                 self.current_product_state.update(buyer_price=buyer_price)
                 self.negotiation_info.buyer_price = buyer_price
                 self.negotiation_info.current_price = buyer_price
+        
+        if seller_action is not None:
+            self.memory.add_message("seller", seller_action, self.current_round)
+            # Extract seller price
+            seller_price = self._extract_price(seller_action)
+            if seller_price is not None:
+                self.current_product_state.update(seller_price=seller_price)
+                self.negotiation_info.seller_price = seller_price
+                self.negotiation_info.current_price = seller_price
         
         # Check if agreement is reached (after both agents have responded)
         terminated = False
@@ -306,36 +301,51 @@ class Task1MultiProductNegotiation(BaseEnv):
             output_lines.append(f"Previous Products Negotiated: {len(self.product_results)}")
         output_lines.append(f"{'='*60}")
         
-        # Get messages from current round (both buyer and seller)
+        # Get messages from the round that just completed
+        # Note: In step(), messages are added to current_round
+        # - If agreement reached: current_round stays the same, messages are in current_round
+        # - If no agreement: current_round is incremented, messages are in current_round - 1
         history = self.memory.get_history()
         if history:
-            # Get messages from the current round
-            current_round_messages = [
-                msg for msg in history if msg["round"] == self.current_round
+            # Determine which round's messages to display
+            # If negotiation is agreed or timed out, messages are in current_round
+            # Otherwise, messages are in current_round - 1 (because current_round was incremented)
+            if self.negotiation_info.status in [NegotiationStatus.AGREED, NegotiationStatus.TIMEOUT]:
+                round_to_display = self.current_round
+            else:
+                round_to_display = self.current_round - 1 if self.current_round > 0 else 0
+            
+            round_messages = [
+                msg for msg in history if msg["round"] == round_to_display
             ]
             
-            if current_round_messages:
+            if round_messages:
+                # Display round number (use round_to_display + 1 for display, or current_round if agreed)
+                if self.negotiation_info.status in [NegotiationStatus.AGREED, NegotiationStatus.TIMEOUT]:
+                    display_round = self.current_round
+                else:
+                    display_round = self.current_round if self.current_round > 0 else 0
                 output_lines.append(f"\n{'='*60}")
-                output_lines.append(f"Round {self.current_round} - Negotiation Output")
+                output_lines.append(f"Round {display_round} - Negotiation Output")
                 output_lines.append(f"{'='*60}")
                 
-                # Display seller message first (if exists)
-                seller_msg = next(
-                    (msg for msg in current_round_messages if msg["role"] == "seller"), 
-                    None
-                )
-                if seller_msg:
-                    output_lines.append(f"\n[SELLER Output]:")
-                    output_lines.append(f"  {seller_msg['content']}")
-                
-                # Display buyer message (if exists)
+                # Display buyer message first (if exists)
                 buyer_msg = next(
-                    (msg for msg in current_round_messages if msg["role"] == "buyer"), 
+                    (msg for msg in round_messages if msg["role"] == "buyer"), 
                     None
                 )
                 if buyer_msg:
                     output_lines.append(f"\n[BUYER Output]:")
                     output_lines.append(f"  {buyer_msg['content']}")
+                
+                # Display seller message (if exists)
+                seller_msg = next(
+                    (msg for msg in round_messages if msg["role"] == "seller"), 
+                    None
+                )
+                if seller_msg:
+                    output_lines.append(f"\n[SELLER Output]:")
+                    output_lines.append(f"  {seller_msg['content']}")
         
         # Round summary section
         output_lines.append(f"\n{'-'*60}")
@@ -475,14 +485,43 @@ class Task1MultiProductNegotiation(BaseEnv):
     def _extract_price(self, text: str) -> Optional[float]:
         """Extract price from text
         
+        Priority: 
+        1. Extract from ### BUYER_PRICE($X) ### or ### SELLER_PRICE($X) ### format (preferred)
+        2. Fall back to ### $X ### format
+        3. Fall back to other price patterns
+        
         Args:
             text: Text containing price
             
         Returns:
             Extracted price, returns None if not found
         """
-        # Match $XX.XX or $XX format
-        patterns = [
+        # Priority 1: Extract price from ### BUYER_PRICE($X) ### or ### SELLER_PRICE($X) ### format
+        # Matches: ### BUYER_PRICE($100.50) ###, ### SELLER_PRICE($150) ###, etc.
+        labeled_price_pattern = r'###\s*(?:BUYER_PRICE|SELLER_PRICE)\s*\(\$(\d+\.?\d*)\)\s*###'
+        matches = re.findall(labeled_price_pattern, text, re.IGNORECASE)
+        if matches:
+            try:
+                price = float(matches[-1])  # Take the last match
+                if price > 0:
+                    return price
+            except ValueError:
+                pass
+        
+        # Priority 2: Extract price from ### $X ### format (backward compatibility)
+        # Matches: ### $100.50 ###, ### $100 ###, ###$120###, etc.
+        triple_hash_pattern = r'###\s*\$(\d+\.?\d*)\s*###'
+        matches = re.findall(triple_hash_pattern, text, re.IGNORECASE)
+        if matches:
+            try:
+                price = float(matches[-1])  # Take the last match
+                if price > 0:
+                    return price
+            except ValueError:
+                pass
+        
+        # Priority 3: Fall back to other price patterns
+        fallback_patterns = [
             r'\$(\d+\.?\d*)',  # $100.50 or $100
             r'(\d+\.?\d*)\s*dollars?',  # 100.50 dollars
             r'(\d+\.?\d*)\s*USD',  # 100.50 USD
@@ -490,7 +529,7 @@ class Task1MultiProductNegotiation(BaseEnv):
             r'offer.*?(\d+\.?\d*)',  # offer 100.50
         ]
         
-        for pattern in patterns:
+        for pattern in fallback_patterns:
             matches = re.findall(pattern, text, re.IGNORECASE)
             if matches:
                 try:

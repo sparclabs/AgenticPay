@@ -199,18 +199,7 @@ class Task2ParallelThreeBuyerTwoProductNegotiation(BaseEnv):
         }
         self.seller_agent.initialize(seller_context)
         
-        # Seller gives initial offers to all three buyers (total price for both products)
-        product_names = [p.get("name", "Product") for p in products]
-        initial_message = f"I'm offering {product_names[0]} and {product_names[1]} for a total of ${self.initial_seller_price:.2f}."
-        self.memory_buyer1.add_message("seller", initial_message, self.current_round)
-        self.state_buyer1.update(seller_price=self.initial_seller_price)
-        
-        self.memory_buyer2.add_message("seller", initial_message, self.current_round)
-        self.state_buyer2.update(seller_price=self.initial_seller_price)
-        
-        self.memory_buyer3.add_message("seller", initial_message, self.current_round)
-        self.state_buyer3.update(seller_price=self.initial_seller_price)
-        
+        # No initial seller offer - negotiation starts with buyers' first messages
         # Build observation
         observation = self._get_observation()
         info = self._get_info()
@@ -421,6 +410,24 @@ class Task2ParallelThreeBuyerTwoProductNegotiation(BaseEnv):
         """
         output_lines = []
         
+        # Get messages from the round that just completed
+        # Note: In step(), messages are added to current_round
+        # - If agreement reached: current_round stays the same, messages are in current_round
+        # - If no agreement: current_round is incremented, messages are in current_round - 1
+        history_buyer1 = self.memory_buyer1.get_history()
+        history_buyer2 = self.memory_buyer2.get_history()
+        history_buyer3 = self.memory_buyer3.get_history()
+        
+        # Determine which round's messages to display
+        # If negotiation is agreed or timed out, messages are in current_round
+        # Otherwise, messages are in current_round - 1 (because current_round was incremented)
+        if self.negotiation_info.status in [NegotiationStatus.AGREED, NegotiationStatus.TIMEOUT]:
+            round_to_display = self.current_round
+            display_round = self.current_round
+        else:
+            round_to_display = self.current_round - 1 if self.current_round > 0 else 0
+            display_round = self.current_round if self.current_round > 0 else 0
+        
         # Display product info
         if self.product_info:
             products = self.product_info.get("products", [])
@@ -436,45 +443,81 @@ class Task2ParallelThreeBuyerTwoProductNegotiation(BaseEnv):
                 output_lines.append(f"{'='*60}")
         
         output_lines.append(f"\n{'='*60}")
-        output_lines.append(f"Round {self.current_round} - Parallel Negotiation Output")
+        output_lines.append(f"Round {display_round} - Parallel Negotiation Output")
         output_lines.append(f"{'='*60}")
         
         # Display Buyer1 conversation
-        output_lines.append(f"\n[BUYER 1 Conversation]:")
-        history_buyer1 = self.memory_buyer1.get_history()
         if history_buyer1:
-            current_round_messages_b1 = [
-                msg for msg in history_buyer1 if msg["round"] == self.current_round
+            round_messages_b1 = [
+                msg for msg in history_buyer1 if msg["round"] == round_to_display
             ]
-            for msg in current_round_messages_b1:
-                role = msg["role"].upper()
-                output_lines.append(f"  [{role}]: {msg['content']}")
+            if round_messages_b1:
+                output_lines.append(f"\n[BUYER 1 Conversation]:")
+                # Display buyer message first (if exists)
+                buyer_msg_b1 = next(
+                    (msg for msg in round_messages_b1 if msg["role"] == "buyer"), 
+                    None
+                )
+                if buyer_msg_b1:
+                    output_lines.append(f"  [BUYER]: {buyer_msg_b1['content']}")
+                
+                # Display seller message (if exists)
+                seller_msg_b1 = next(
+                    (msg for msg in round_messages_b1 if msg["role"] == "seller"), 
+                    None
+                )
+                if seller_msg_b1:
+                    output_lines.append(f"  [SELLER]: {seller_msg_b1['content']}")
         
         # Display Buyer2 conversation
-        output_lines.append(f"\n[BUYER 2 Conversation]:")
-        history_buyer2 = self.memory_buyer2.get_history()
         if history_buyer2:
-            current_round_messages_b2 = [
-                msg for msg in history_buyer2 if msg["round"] == self.current_round
+            round_messages_b2 = [
+                msg for msg in history_buyer2 if msg["round"] == round_to_display
             ]
-            for msg in current_round_messages_b2:
-                role = msg["role"].upper()
-                output_lines.append(f"  [{role}]: {msg['content']}")
+            if round_messages_b2:
+                output_lines.append(f"\n[BUYER 2 Conversation]:")
+                # Display buyer message first (if exists)
+                buyer_msg_b2 = next(
+                    (msg for msg in round_messages_b2 if msg["role"] == "buyer"), 
+                    None
+                )
+                if buyer_msg_b2:
+                    output_lines.append(f"  [BUYER]: {buyer_msg_b2['content']}")
+                
+                # Display seller message (if exists)
+                seller_msg_b2 = next(
+                    (msg for msg in round_messages_b2 if msg["role"] == "seller"), 
+                    None
+                )
+                if seller_msg_b2:
+                    output_lines.append(f"  [SELLER]: {seller_msg_b2['content']}")
         
         # Display Buyer3 conversation
-        output_lines.append(f"\n[BUYER 3 Conversation]:")
-        history_buyer3 = self.memory_buyer3.get_history()
         if history_buyer3:
-            current_round_messages_b3 = [
-                msg for msg in history_buyer3 if msg["round"] == self.current_round
+            round_messages_b3 = [
+                msg for msg in history_buyer3 if msg["round"] == round_to_display
             ]
-            for msg in current_round_messages_b3:
-                role = msg["role"].upper()
-                output_lines.append(f"  [{role}]: {msg['content']}")
+            if round_messages_b3:
+                output_lines.append(f"\n[BUYER 3 Conversation]:")
+                # Display buyer message first (if exists)
+                buyer_msg_b3 = next(
+                    (msg for msg in round_messages_b3 if msg["role"] == "buyer"), 
+                    None
+                )
+                if buyer_msg_b3:
+                    output_lines.append(f"  [BUYER]: {buyer_msg_b3['content']}")
+                
+                # Display seller message (if exists)
+                seller_msg_b3 = next(
+                    (msg for msg in round_messages_b3 if msg["role"] == "seller"), 
+                    None
+                )
+                if seller_msg_b3:
+                    output_lines.append(f"  [SELLER]: {seller_msg_b3['content']}")
         
         # Round summary section
         output_lines.append(f"\n{'-'*60}")
-        output_lines.append(f"Round {self.current_round} Summary:")
+        output_lines.append(f"Round {display_round} Summary:")
         output_lines.append(f"{'-'*60}")
         
         # Display Buyer1 prices (total for both products)
@@ -585,14 +628,43 @@ class Task2ParallelThreeBuyerTwoProductNegotiation(BaseEnv):
     def _extract_price(self, text: str) -> Optional[float]:
         """Extract price from text
         
+        Priority: 
+        1. Extract from ### BUYER_PRICE($X) ### or ### SELLER_PRICE($X) ### format (preferred)
+        2. Fall back to ### $X ### format
+        3. Fall back to other price patterns
+        
         Args:
             text: Text containing price
             
         Returns:
             Extracted price, returns None if not found
         """
-        # Match $XX.XX or $XX format
-        patterns = [
+        # Priority 1: Extract price from ### BUYER_PRICE($X) ### or ### SELLER_PRICE($X) ### format
+        # Matches: ### BUYER_PRICE($100.50) ###, ### SELLER_PRICE($150) ###, etc.
+        labeled_price_pattern = r'###\s*(?:BUYER_PRICE|SELLER_PRICE)\s*\(\$(\d+\.?\d*)\)\s*###'
+        matches = re.findall(labeled_price_pattern, text, re.IGNORECASE)
+        if matches:
+            try:
+                price = float(matches[-1])  # Take the last match
+                if price > 0:
+                    return price
+            except ValueError:
+                pass
+        
+        # Priority 2: Extract price from ### $X ### format (backward compatibility)
+        # Matches: ### $100.50 ###, ### $100 ###, ###$120###, etc.
+        triple_hash_pattern = r'###\s*\$(\d+\.?\d*)\s*###'
+        matches = re.findall(triple_hash_pattern, text, re.IGNORECASE)
+        if matches:
+            try:
+                price = float(matches[-1])  # Take the last match
+                if price > 0:
+                    return price
+            except ValueError:
+                pass
+        
+        # Priority 3: Fall back to other price patterns
+        fallback_patterns = [
             r'\$(\d+\.?\d*)',  # $100.50 or $100
             r'(\d+\.?\d*)\s*dollars?',  # 100.50 dollars
             r'(\d+\.?\d*)\s*USD',  # 100.50 USD
@@ -601,7 +673,7 @@ class Task2ParallelThreeBuyerTwoProductNegotiation(BaseEnv):
             r'total.*?(\d+\.?\d*)',  # total 100.50
         ]
         
-        for pattern in patterns:
+        for pattern in fallback_patterns:
             matches = re.findall(pattern, text, re.IGNORECASE)
             if matches:
                 try:

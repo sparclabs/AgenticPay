@@ -14,22 +14,24 @@ from agenticpaygym.envs.only_multi_seller.Task2_parallel_three_seller_negotiatio
 from agenticpaygym.agents.buyer_agent import BuyerAgent
 from agenticpaygym.agents.seller_agent import SellerAgent
 from agenticpaygym.models.custom_llm import CustomLLM
-from agenticpaygym.examples.config import reward_weights, max_rounds, price_tolerance, buyer_reward_aggregation, seller_reward_aggregation
+from agenticpaygym.examples.config import reward_weights, max_rounds, price_tolerance, buyer_reward_aggregation, seller_reward_aggregation, OPENAI_API_KEY
 
 
 def main():
     """Main function: Demonstrates multi-seller negotiation flow with three sellers"""
     
-    # Check API key
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        print("Warning: OPENAI_API_KEY not set. Please set it to use OpenAI models.")
-        print("You can set it with: export OPENAI_API_KEY='your-key-here'")
-        return
+    print("Initializing model...")
     
-    # Initialize LLM
-    print("Initializing LLM...")
-    llm = CustomLLM(api_key=api_key, model="gpt-4o-mini-2024-07-18")  # gpt-4o-mini-2024-07-18, gpt-3.5-turbo
+    # Check API key
+    # api_key = os.getenv("OPENAI_API_KEY")
+    # if not api_key:
+    #     print("Warning: OPENAI_API_KEY not set. Please set it to use OpenAI models.")
+    #     print("You can set it with: export OPENAI_API_KEY='your-key-here'")
+    #     return
+    
+    model = CustomLLM(api_key=OPENAI_API_KEY, model="gpt-5.2")  # gpt-4o-mini-2024-07-18, gpt-3.5-turbo
+    
+    print(f"✓ Successfully initialized: {model}")
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
     print("Creating agents...")
@@ -38,10 +40,10 @@ def main():
     seller2_min_price = 85.0  # Minimum acceptable selling price for seller2 (confidential, different from seller1)
     seller3_min_price = 90.0  # Minimum acceptable selling price for seller3 (confidential, different from seller1 and seller2)
     
-    buyer = BuyerAgent(llm=llm, buyer_max_price=buyer_max_price)
-    seller1 = SellerAgent(llm=llm, seller_min_price=seller1_min_price)
-    seller2 = SellerAgent(llm=llm, seller_min_price=seller2_min_price)
-    seller3 = SellerAgent(llm=llm, seller_min_price=seller3_min_price)
+    buyer = BuyerAgent(model=model, buyer_max_price=buyer_max_price)
+    seller1 = SellerAgent(model=model, seller_min_price=seller1_min_price)
+    seller2 = SellerAgent(model=model, seller_min_price=seller2_min_price)
+    seller3 = SellerAgent(model=model, seller_min_price=seller3_min_price)
     
     # Create environment
     print("Creating multi-seller negotiation environment with three sellers...")
@@ -104,7 +106,7 @@ def main():
     done = False
     
     while not done:
-        # Each round, order is: buyer -> seller
+        # Each round: buyer responds first, then sellers respond (seeing buyer's messages)
         # Get buyer's response to seller1 first
         buyer_action_seller1 = buyer.respond(
             conversation_history=observation["conversation_history_seller1"],
@@ -123,21 +125,51 @@ def main():
             current_state=observation
         )
         
-        # Then get seller1's response
+        # Create updated conversation histories that include buyer's responses
+        # So sellers can see buyer's messages before responding
+        updated_conversation_history_seller1 = observation["conversation_history_seller1"].copy()
+        updated_conversation_history_seller2 = observation["conversation_history_seller2"].copy()
+        updated_conversation_history_seller3 = observation["conversation_history_seller3"].copy()
+        
+        if buyer_action_seller1:
+            current_round = observation.get("current_round", 0)
+            updated_conversation_history_seller1.append({
+                "role": "buyer",
+                "content": buyer_action_seller1,
+                "round": current_round
+            })
+        
+        if buyer_action_seller2:
+            current_round = observation.get("current_round", 0)
+            updated_conversation_history_seller2.append({
+                "role": "buyer",
+                "content": buyer_action_seller2,
+                "round": current_round
+            })
+        
+        if buyer_action_seller3:
+            current_round = observation.get("current_round", 0)
+            updated_conversation_history_seller3.append({
+                "role": "buyer",
+                "content": buyer_action_seller3,
+                "round": current_round
+            })
+        
+        # Then get seller1's response (seller1 can now see buyer's message)
         seller1_action = seller1.respond(
-            conversation_history=observation["conversation_history_seller1"],
+            conversation_history=updated_conversation_history_seller1,
             current_state=observation
         )
         
-        # Get seller2's response
+        # Get seller2's response (seller2 can now see buyer's message)
         seller2_action = seller2.respond(
-            conversation_history=observation["conversation_history_seller2"],
+            conversation_history=updated_conversation_history_seller2,
             current_state=observation
         )
         
-        # Get seller3's response
+        # Get seller3's response (seller3 can now see buyer's message)
         seller3_action = seller3.respond(
-            conversation_history=observation["conversation_history_seller3"],
+            conversation_history=updated_conversation_history_seller3,
             current_state=observation
         )
         
@@ -154,6 +186,9 @@ def main():
         
         # Render current state (includes all print information)
         env.render()
+        
+        # Flush output to ensure complete display
+        sys.stdout.flush()
         
         # Display step rewards for each round with detailed calculation
         if 'step_buyer_reward' in info or 'step_seller1_reward' in info or 'step_seller2_reward' in info or 'step_seller3_reward' in info:

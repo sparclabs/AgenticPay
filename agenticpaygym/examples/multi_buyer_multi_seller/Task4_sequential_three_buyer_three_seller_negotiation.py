@@ -19,7 +19,7 @@ import re
 # Import configuration parameters
 examples_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, examples_dir)
-from config import reward_weights, max_rounds, price_tolerance
+from config import reward_weights, max_rounds, price_tolerance, OPENAI_API_KEY
 
 
 def extract_seller_choice(buyer_response: str, observation: dict, buyer_id: int) -> int:
@@ -87,16 +87,11 @@ def extract_seller_choice(buyer_response: str, observation: dict, buyer_id: int)
 def main():
     """Main function: Demonstrates sequential multi-buyer multi-seller negotiation flow"""
     
-    # Check API key
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        print("Warning: OPENAI_API_KEY not set. Please set it to use OpenAI models.")
-        print("You can set it with: export OPENAI_API_KEY='your-key-here'")
-        return
+    print("Initializing model...")
     
-    # Initialize LLM
-    print("Initializing LLM...")
-    llm = CustomLLM(api_key=api_key, model="gpt-4o-mini-2024-07-18")  # gpt-4o-mini-2024-07-18, gpt-3.5-turbo
+    model = CustomLLM(api_key=OPENAI_API_KEY, model="gpt-5.2")  # gpt-4o-mini-2024-07-18, gpt-3.5-turbo
+    
+    print(f"✓ Successfully initialized: {model}")
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
     print("Creating agents...")
@@ -107,12 +102,12 @@ def main():
     seller2_min_price = 85.0  # Minimum acceptable selling price for seller2 (confidential)
     seller3_min_price = 90.0  # Minimum acceptable selling price for seller3 (confidential)
     
-    buyer1 = BuyerAgent(llm=llm, buyer_max_price=buyer1_max_price)
-    buyer2 = BuyerAgent(llm=llm, buyer_max_price=buyer2_max_price)
-    buyer3 = BuyerAgent(llm=llm, buyer_max_price=buyer3_max_price)
-    seller1 = SellerAgent(llm=llm, seller_min_price=seller1_min_price)
-    seller2 = SellerAgent(llm=llm, seller_min_price=seller2_min_price)
-    seller3 = SellerAgent(llm=llm, seller_min_price=seller3_min_price)
+    buyer1 = BuyerAgent(model=model, buyer_max_price=buyer1_max_price)
+    buyer2 = BuyerAgent(model=model, buyer_max_price=buyer2_max_price)
+    buyer3 = BuyerAgent(model=model, buyer_max_price=buyer3_max_price)
+    seller1 = SellerAgent(model=model, seller_min_price=seller1_min_price)
+    seller2 = SellerAgent(model=model, seller_min_price=seller2_min_price)
+    seller3 = SellerAgent(model=model, seller_min_price=seller3_min_price)
     
     # Create environment
     print("Creating sequential multi-buyer multi-seller negotiation environment...")
@@ -242,17 +237,82 @@ def main():
         buyer3_action = buyer3_response
         
         # Get the conversation history for each buyer-seller pair
-        conversation_history_b1s1 = observation.get("conversation_history_b1s1", [])
-        conversation_history_b1s2 = observation.get("conversation_history_b1s2", [])
-        conversation_history_b1s3 = observation.get("conversation_history_b1s3", [])
-        conversation_history_b2s1 = observation.get("conversation_history_b2s1", [])
-        conversation_history_b2s2 = observation.get("conversation_history_b2s2", [])
-        conversation_history_b2s3 = observation.get("conversation_history_b2s3", [])
-        conversation_history_b3s1 = observation.get("conversation_history_b3s1", [])
-        conversation_history_b3s2 = observation.get("conversation_history_b3s2", [])
-        conversation_history_b3s3 = observation.get("conversation_history_b3s3", [])
+        # Create updated conversation histories that include buyers' responses
+        # So sellers can see buyers' messages before responding
+        conversation_history_b1s1 = observation.get("conversation_history_b1s1", []).copy()
+        conversation_history_b1s2 = observation.get("conversation_history_b1s2", []).copy()
+        conversation_history_b1s3 = observation.get("conversation_history_b1s3", []).copy()
+        conversation_history_b2s1 = observation.get("conversation_history_b2s1", []).copy()
+        conversation_history_b2s2 = observation.get("conversation_history_b2s2", []).copy()
+        conversation_history_b2s3 = observation.get("conversation_history_b2s3", []).copy()
+        conversation_history_b3s1 = observation.get("conversation_history_b3s1", []).copy()
+        conversation_history_b3s2 = observation.get("conversation_history_b3s2", []).copy()
+        conversation_history_b3s3 = observation.get("conversation_history_b3s3", []).copy()
         
-        # Get the selected sellers' responses
+        if buyer1_action:
+            current_round = observation.get("current_round", 0)
+            if buyer1_selected_seller == 1:
+                conversation_history_b1s1.append({
+                    "role": "buyer",
+                    "content": buyer1_action,
+                    "round": current_round
+                })
+            elif buyer1_selected_seller == 2:
+                conversation_history_b1s2.append({
+                    "role": "buyer",
+                    "content": buyer1_action,
+                    "round": current_round
+                })
+            elif buyer1_selected_seller == 3:
+                conversation_history_b1s3.append({
+                    "role": "buyer",
+                    "content": buyer1_action,
+                    "round": current_round
+                })
+        
+        if buyer2_action:
+            current_round = observation.get("current_round", 0)
+            if buyer2_selected_seller == 1:
+                conversation_history_b2s1.append({
+                    "role": "buyer",
+                    "content": buyer2_action,
+                    "round": current_round
+                })
+            elif buyer2_selected_seller == 2:
+                conversation_history_b2s2.append({
+                    "role": "buyer",
+                    "content": buyer2_action,
+                    "round": current_round
+                })
+            elif buyer2_selected_seller == 3:
+                conversation_history_b2s3.append({
+                    "role": "buyer",
+                    "content": buyer2_action,
+                    "round": current_round
+                })
+        
+        if buyer3_action:
+            current_round = observation.get("current_round", 0)
+            if buyer3_selected_seller == 1:
+                conversation_history_b3s1.append({
+                    "role": "buyer",
+                    "content": buyer3_action,
+                    "round": current_round
+                })
+            elif buyer3_selected_seller == 2:
+                conversation_history_b3s2.append({
+                    "role": "buyer",
+                    "content": buyer3_action,
+                    "round": current_round
+                })
+            elif buyer3_selected_seller == 3:
+                conversation_history_b3s3.append({
+                    "role": "buyer",
+                    "content": buyer3_action,
+                    "round": current_round
+                })
+        
+        # Get the selected sellers' responses (sellers can now see buyers' messages)
         seller1_action_buyer1 = None
         seller1_action_buyer2 = None
         seller1_action_buyer3 = None
@@ -311,30 +371,6 @@ def main():
                 current_state=observation
             )
         
-        # Print conversation content for this round
-        current_round = observation.get('current_round', 0)
-        print(f"\n{'='*60}")
-        print(f"Round {current_round} Conversation:")
-        print(f"{'='*60}")
-        
-        for buyer_id in [1, 2, 3]:
-            selected_seller = buyer1_selected_seller if buyer_id == 1 else (buyer2_selected_seller if buyer_id == 2 else buyer3_selected_seller)
-            buyer_action = buyer1_action if buyer_id == 1 else (buyer2_action if buyer_id == 2 else buyer3_action)
-            
-            print(f"[BUYER {buyer_id} to Seller {selected_seller}]: {buyer_action}")
-            
-            if selected_seller == 1:
-                seller_action = seller1_action_buyer1 if buyer_id == 1 else (seller1_action_buyer2 if buyer_id == 2 else seller1_action_buyer3)
-            elif selected_seller == 2:
-                seller_action = seller2_action_buyer1 if buyer_id == 1 else (seller2_action_buyer2 if buyer_id == 2 else seller2_action_buyer3)
-            else:  # selected_seller == 3
-                seller_action = seller3_action_buyer1 if buyer_id == 1 else (seller3_action_buyer2 if buyer_id == 2 else seller3_action_buyer3)
-            
-            if seller_action:
-                print(f"[SELLER {selected_seller} to Buyer {buyer_id}]: {seller_action}")
-        
-        print(f"{'='*60}")
-        
         # Execute step with selected sellers and actions
         observation, reward, terminated, truncated, info = env.step(
             buyer1_selected_seller=buyer1_selected_seller,
@@ -357,6 +393,9 @@ def main():
         
         # Render current state (includes all print information)
         env.render()
+        
+        # Flush output to ensure complete display
+        sys.stdout.flush()
         
         # Display step rewards for each round with detailed calculation
         if ('step_buyer1_reward' in info or 'step_buyer2_reward' in info or 'step_buyer3_reward' in info or
