@@ -22,4 +22,3 @@ seller_reward_aggregation = "average"  # Seller reward aggregation method
 max_rounds = 20  # Maximum negotiation rounds
 price_tolerance = 0.0  # Price tolerance (used to determine if prices match)
 
-OPENAI_API_KEY= "sk-rxWby7Li4omOU2YD7aGmxQNlwghQOshsQHlDBoUCrGJt0jCk"
