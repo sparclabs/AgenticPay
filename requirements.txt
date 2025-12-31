@@ -4,6 +4,7 @@ numpy>=1.21.0
 # LLM providers (optional, install as needed)
 openai>=1.0.0
 vllm>=0.2.0
+sglang>=0.2.0
 
 # HuggingFace support
 transformers>=4.30.0

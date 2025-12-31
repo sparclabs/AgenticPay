@@ -18,8 +18,9 @@ from agenticpaygym.agents.seller_agent import SellerAgent
 from agenticpaygym.models.custom_llm import CustomLLM
 from agenticpaygym.models.qwen3_vl import Qwen3VL
 from agenticpaygym.models.vllm_vlm import VLLMVLM
+from agenticpaygym.models.sglang_vlm import SGLangVLM
 
-from agenticpaygym.examples.config import reward_weights, max_rounds, price_tolerance, OPENAI_API_KEY
+from agenticpaygym.examples.config import reward_weights, max_rounds, price_tolerance
 
 
 def main():
@@ -37,14 +38,20 @@ def main():
     # model = CustomLLM(api_key=OPENAI_API_KEY, model="gpt-5.2") # gpt-4o-mini-2024-07-18, gpt-3.5-turbo
 
     # Build absolute path to model directory
-    model_path = os.path.join(project_root, "models", "download_models", "Qwen3-VL-2B-Instruct")
+    model_path = os.path.join(project_root, "models", "download_models", "Qwen3-VL-8B-Instruct")
     model_path = os.path.abspath(model_path)
 
-    model = VLLMVLM(
+    # vLLM VLM Model
+    # model = VLLMVLM(
+    #     model_path=model_path,
+    #     trust_remote_code=True,
+    #     gpu_memory_utilization=0.9,
+    #     tensor_parallel_size=4, # 4 GPUs
+    # )
+
+    # SGLang VLM Model
+    model = SGLangVLM(
         model_path=model_path,
-        trust_remote_code=True,
-        gpu_memory_utilization=0.9,
-        tensor_parallel_size=2,
     )
 
     print(f"✓ Successfully initialized: {model}")
