@@ -7,30 +7,22 @@
 - [Overview](#overview)
 - [Features](#features)
 - [Installation](#installation)
-  * [Dependencies](#dependencies)
 - [Quick Start](#quick-start)
+  * [Running the Example Script](#running-the-example-script)
   * [Basic Single-Product Negotiation](#basic-single-product-negotiation)
-  * [Multi-Product Negotiation](#multi-product-negotiation)
 - [Project Structure](#project-structure)
 - [Core Components](#core-components)
   * [Environments](#environments)
   * [Agents](#agents)
-    + [BaseAgent](#baseagent)
   * [Environment Registration System](#environment-registration-system)
   * [ConversationMemory](#conversationmemory)
-  * [UserProfile](#userprofile)
-  * [BaseLLM and BaseVLM](#basellm-and-basevlm)
 - [Configuration](#configuration)
   * [Environment Parameters](#environment-parameters)
   * [Agent Configuration](#agent-configuration)
-    + [BuyerAgent](#buyeragent)
-    + [SellerAgent](#selleragent)
+  * [User Profile](#user-profile)
+  * [LLM/VLM Configuration](#llmvlm-configuration)
 - [Examples](#examples)
   * [Available Examples](#available-examples)
-  * [Running Examples](#running-examples)
-- [Extending the Framework](#extending-the-framework)
-  * [Adding a New LLM Provider](#adding-a-new-llm-provider)
-  * [Creating Custom Agents](#creating-custom-agents)
   * [Registering New Environments](#registering-new-environments)
   * [Adding New Features](#adding-new-features)
 - [License](#license)
@@ -46,7 +38,7 @@ AgenticPayGym is a framework for simulating multi-agent negotiations between buy
 
 ## Features
 
-- 🤖 **LLM/VLM-based Agents**: Buyer and Seller agents powered by LLMs and Vision Language Models (OpenAI, HuggingFace, etc.) supporting both text and image-based negotiations
+- 🤖 **LLM/VLM-based Agents**: Buyer and Seller agents powered by LLMs and Vision Language Models (currently supports OpenAI, vLLM, and SGLang) for both text and image-based negotiations
 - 💬 **Multi-turn Conversations**: Support for extended negotiation dialogues
 - 🧠 **Memory System**: Conversation history management for context-aware negotiations
 - 📊 **State Tracking**: Comprehensive tracking of prices, rounds, and negotiation status
@@ -75,15 +67,19 @@ pip install -r requirements.txt
 pip install -e .
 ```
 
-### Dependencies
-
-- Python 3.10+
-- openai (for OpenAI LLM/VLM support)
-- transformers (for HuggingFace LLM/VLM support, optional)
-- torch (for HuggingFace models, optional)
-- Other dependencies listed in `requirements.txt`
+**Model Download**: Download models from Hugging Face and save them to the `agenticpaygym/models/download_models` directory for local model usage.
 
 ## Quick Start
+
+### Running the Example Script
+
+To quickly try a negotiation simulation, you can run the provided example script from the command line:
+
+```bash
+python agenticpaygym/examples/single_buyer_product_seller/Task1_basic_price_negotiation.py
+```
+
+This script runs a simple negotiation task between a buyer and a seller.
 
 ### Basic Single-Product Negotiation
 
@@ -91,28 +87,39 @@ pip install -e .
 from agenticpaygym import make  # Recommended: use registration system
 from agenticpaygym.agents.buyer_agent import BuyerAgent
 from agenticpaygym.agents.seller_agent import SellerAgent
-from agenticpaygym.models.openai_llm import OpenAILLM
 import os
 
-# Initialize LLM/VLM (supports local, online, and API modes)
-# Option 1: OpenAI API (online)
-from agenticpaygym.models.openai_llm import OpenAILLM
-from agenticpaygym.models.openai_vlm import OpenAIVLM
-llm = OpenAILLM(api_key=os.getenv("OPENAI_API_KEY"), model="gpt-4")
-vlm = OpenAIVLM(api_key=os.getenv("OPENAI_API_KEY"), model="gpt-4-vision-preview")
 
-# Option 2: HuggingFace (local/online)
-# from agenticpaygym.models.huggingface_llm import HuggingFaceLLM
-# from agenticpaygym.models.huggingface_vlm import HuggingFaceVLM
-# llm = HuggingFaceLLM(model_name="meta-llama/Llama-2-7b-chat-hf", device="cuda")
-# vlm = HuggingFaceVLM(model_name="llava-hf/llava-1.5-7b-hf", device="cuda")
+# Local models (SGLang, vLLM, etc.)
+from agenticpaygym.models.sglang_vlm import SGLangVLM
+from agenticpaygym.models.vllm_vlm import VLLMVLM
+
+model_path = "agenticpaygym/models/download_models/Qwen3-VL-8B-Instruct"
+
+# Option 1: SGLang VLM
+model = SGLangVLM(model_path=model_path)
+
+# Option 2: vLLM VLM (for multi-GPU setups)
+# model = VLLMVLM(
+#     model_path=model_path,
+#     trust_remote_code=True,
+#     gpu_memory_utilization=0.9,
+#     tensor_parallel_size=4,  # Number of GPUs
+# )
 
 # Create agents with bottom prices (confidential)
 buyer_max_price = 120.0  # Maximum acceptable price for buyer
 seller_min_price = 80.0   # Minimum acceptable price for seller
 
-buyer = BuyerAgent(llm=llm, buyer_max_price=buyer_max_price)
-seller = SellerAgent(llm=llm, seller_min_price=seller_min_price)
+buyer = BuyerAgent(model=model, buyer_max_price=buyer_max_price)
+seller = SellerAgent(model=model, seller_min_price=seller_min_price)
+
+# Configure reward weights (optional)
+reward_weights = {
+    "buyer_savings": 1.0,      # Buyer savings weight
+    "seller_profit": 1.0,      # Seller profit weight
+    "time_cost": 0.1,          # Time cost weight
+}
 
 # Create environment using registration system (recommended)
 env = make(
@@ -126,12 +133,14 @@ env = make(
     environment_info={
         "temperature": "warm",
         "season": "summer",
+        "weather": "sunny",
     },
-    price_tolerance=5.0,
+    price_tolerance=0.0,
+    reward_weights=reward_weights,  # Optional: reward weights configuration
 )
 
-# User description (optional)
-user_description = "A business professional who prefers comparing prices before making decisions"
+# User profile (optional text description of personal preferences)
+user_profile = "User prefers business/professional style and likes to compare prices before making purchases. In negotiations, they may mention comparing other options and seek better deals."
 
 # Reset and start negotiation
 observation, info = env.reset(
@@ -140,24 +149,35 @@ observation, info = env.reset(
         "name": "Premium Winter Jacket",
         "brand": "Mountain Gear",
         "price": 180.0,
-        "features": ["Waterproof", "Insulated", "Windproof"],
+        "features": ["Waterproof", "Insulated", "Windproof", "Breathable"],
         "condition": "New",
         "material": "Gore-Tex",
     },
-    user_description=user_description,  # Optional
+    user_profile=user_profile,  # Optional
 )
 
-# Run negotiation
+# Run negotiation loop
 done = False
 while not done:
-    # Get responses from both agents
-    seller_action = seller.respond(
+    # Buyer responds first
+    buyer_action = buyer.respond(
         conversation_history=observation["conversation_history"],
         current_state=observation
     )
     
-    buyer_action = buyer.respond(
-        conversation_history=observation["conversation_history"],
+    # Update conversation history with buyer's response
+    updated_conversation_history = observation["conversation_history"].copy()
+    if buyer_action:
+        current_round = observation.get("current_round", 0)
+        updated_conversation_history.append({
+            "role": "buyer",
+            "content": buyer_action,
+            "round": current_round
+        })
+    
+    # Seller responds (can see buyer's message)
+    seller_action = seller.respond(
+        conversation_history=updated_conversation_history,
         current_state=observation
     )
     
@@ -174,58 +194,6 @@ print(f"Final price: ${info.get('seller_price', 'N/A')}")
 env.close()
 ```
 
-### Multi-Product Negotiation
-
-```python
-from agenticpaygym import make
-
-# Create multi-product environment
-env = make(
-    "Task1_multi_product_negotiation-v0",
-    buyer_agent=buyer,
-    seller_agent=seller,
-    max_rounds_per_product=20,
-    initial_seller_price=150.0,
-    buyer_max_price=buyer_max_price,
-    seller_min_price=seller_min_price,
-)
-
-# Define available products
-products = [
-    {
-        "name": "Premium Winter Jacket",
-        "brand": "Mountain Gear",
-        "price": 180.0,
-        "features": ["Waterproof", "Insulated"],
-    },
-    {
-        "name": "Running Shoes",
-        "brand": "SportMax",
-        "price": 120.0,
-        "features": ["Lightweight", "Cushioned"],
-    },
-]
-
-# First product negotiation
-observation, info = env.reset(
-    user_requirement="I need a winter jacket",
-    product_info=products[0],
-    available_products=products,
-)
-
-# ... negotiation loop ...
-
-# Second product (preserves context)
-observation, info = env.reset(
-    user_requirement="I need running shoes",
-    product_info=products[1],
-    clear_history=False,  # Preserve previous context
-    available_products=products,
-)
-
-# ... continue negotiation ...
-```
-
 ## Project Structure
 
 ```
@@ -238,7 +206,7 @@ AgenticPayGym/
 │   │   ├── only_multi_seller/     # Multi-seller scenarios
 │   │   ├── only_multi_buyer/      # Multi-buyer scenarios
 │   │   └── multi_*/               # Complex multi-agent scenarios
-│   ├── models/                    # LLM/VLM implementations (OpenAI, HuggingFace, Custom)
+│   ├── models/                    # LLM/VLM implementations (supports vllm, sglang, Openai API)
 │   ├── memory/                    # Conversation history management
 │   ├── utils/                     # Utilities (state, user profile)
 │   └── examples/                   # Example scripts organized by scenario
@@ -349,22 +317,6 @@ Manages conversation history and context.
 - History retrieval (full or recent)
 - Role-based filtering
 
-### UserProfile
-
-User description system that influences agent negotiation behavior. Currently uses a simple string description passed to agents.
-
-### BaseLLM and BaseVLM
-
-Abstract interfaces for LLM and Vision Language Model (VLM) providers.
-
-**LLM Implementations:**
-- `OpenAILLM`: OpenAI API integration for text models
-- `HuggingFaceLLM`: HuggingFace model integration
-
-**VLM Implementations:**
-- `OpenAIVLM`: OpenAI API integration for vision-language models
-- `HuggingFaceVLM`: HuggingFace vision-language model integration
-
 ## Configuration
 
 ### Environment Parameters
@@ -376,6 +328,10 @@ Common parameters across environments:
 - `seller_min_price`: Minimum acceptable price for seller (confidential)
 - `price_tolerance`: Price difference threshold for agreement
 - `environment_info`: Contextual information (weather, season, etc.)
+- `reward_weights`: Dictionary controlling the relative importance of different reward components
+  - `buyer_savings`: Weight for buyer savings (difference between max price and agreed price)
+  - `seller_profit`: Weight for seller profit (difference between agreed price and min price)
+  - `time_cost`: Weight for time cost (penalty for negotiation rounds)
 
 ### Agent Configuration
 
@@ -389,6 +345,7 @@ User description is passed as a string to agents during negotiation initializati
 ### LLM/VLM Configuration
 
 Supports multiple providers:
+- **Local Models**: `SGLangVLM`, `VLLMVLM` - for local model inference (supports multi-GPU setups)
 - **OpenAI** (API): `OpenAILLM`, `OpenAIVLM` - requires API key
 - **HuggingFace** (local/online): `HuggingFaceLLM`, `HuggingFaceVLM` - requires model name and device
 
@@ -419,72 +376,6 @@ Examples are organized by environment category:
    - `examples/multi_products_multi_seller/` - Multiple products and sellers
    - `examples/multi_buyer_multi_products/` - Multiple buyers and products
    - `examples/multi_buyer_multi_products_multi_seller/` - Full multi-agent scenarios
-
-### Running Examples
-
-```bash
-# Set API key
-export OPENAI_API_KEY="your-api-key"
-
-# Run single buyer/product/seller examples
-python -m agenticpaygym.examples.single_buyer_product_seller.Task1_basic_price_negotiation
-python -m agenticpaygym.examples.single_buyer_product_seller.Task2_close_price_negotiation
-python -m agenticpaygym.examples.single_buyer_product_seller.Task3_close_to_market_price_negotiation
-
-# Run multi-product examples
-python -m agenticpaygym.examples.only_multi_products.Task1_multi_product_negotiation
-
-# Run multi-seller examples
-python -m agenticpaygym.examples.only_multi_seller.Task1_parallel_two_seller_negotiation
-
-# Run registration example
-python -m agenticpaygym.examples.single_buyer_product_seller.registration_example
-```
-
-## Extending the Framework
-
-### Adding a New LLM Provider
-
-1. Create a new class inheriting from `BaseLLM` or `BaseVLM`
-2. Implement the `generate()` method
-3. Add any provider-specific configuration
-4. Export in `models/__init__.py` (optional)
-
-Example for LLM:
-```python
-from agenticpaygym.models.base_llm import BaseLLM
-
-class MyCustomLLM(BaseLLM):
-    def generate(self, prompt, **kwargs):
-        # Your implementation
-        return response
-```
-
-Example for VLM:
-```python
-from agenticpaygym.models.base_vlm import BaseVLM
-
-class MyCustomVLM(BaseVLM):
-    def generate(self, prompt, images=None, **kwargs):
-        # Your implementation with image support
-        return response
-```
-
-### Creating Custom Agents
-
-1. Inherit from `BaseAgent` or existing agent classes
-2. Implement the `respond()` method
-3. Customize prompt building as needed
-
-Example:
-```python
-from agenticpaygym.agents.base_agent import BaseAgent
-
-class CustomAgent(BaseAgent):
-    def respond(self, conversation_history, current_state):
-        # Custom response logic
-        return response
-```
 
 ### Registering New Environments
 
