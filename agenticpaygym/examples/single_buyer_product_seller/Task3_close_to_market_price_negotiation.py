@@ -9,7 +9,9 @@ import os
 import sys
 
 # Add project path
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+# sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, project_root)
 
 from agenticpaygym import make, Task3CloseToMarketPriceNegotiation  # Use registration system
 from agenticpaygym.agents.buyer_agent import BuyerAgent
@@ -17,7 +19,8 @@ from agenticpaygym.agents.seller_agent import SellerAgent
 from agenticpaygym.models.custom_llm import CustomLLM
 from agenticpaygym.models.qwen3_vl import Qwen3VL
 from agenticpaygym.models.vllm_vlm import VLLMVLM
-from agenticpaygym.examples.config import reward_weights, max_rounds, price_tolerance, OPENAI_API_KEY
+from agenticpaygym.models.sglang_vlm import SGLangVLM
+from agenticpaygym.examples.config import reward_weights, max_rounds, price_tolerance
 
 
 def main():
@@ -26,21 +29,29 @@ def main():
     print("Initializing model...")
     
     # Check API key
-    # api_key = os.getenv("OPENAI_API_KEY")
-    # if not api_key:
-    #     print("Warning: OPENAI_API_KEY not set. Please set it to use OpenAI models.")
-    #     print("You can set it with: export OPENAI_API_KEY='your-key-here'")
-    #     return
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        print("Warning: OPENAI_API_KEY not set. Please set it to use OpenAI models.")
+        print("You can set it with: export OPENAI_API_KEY='your-key-here'")
+        return
     
-    model = CustomLLM(api_key=OPENAI_API_KEY, model="gpt-5.2") # gpt-4o-mini-2024-07-18, gpt-3.5-turbo
+    model = CustomLLM(api_key=api_key, model="gemini-3-pro-all") # claude-sonnet-4-5-20250929, gpt-5.2, gemini-3-pro-all, gpt-3.5-turbo, DeepSeek-R1
 
-    # model_path = "/root/autodl-tmp/AgenticPayGym/agenticpaygym/models/download_models/Qwen3-VL-2B-Instruct"
+    # Build absolute path to model directory
+    # model_path = os.path.join(project_root, "models", "download_models", "Qwen3-VL-8B-Instruct")
+    # model_path = os.path.abspath(model_path)
 
+    # vLLM VLM Model
     # model = VLLMVLM(
     #     model_path=model_path,
     #     trust_remote_code=True,
     #     gpu_memory_utilization=0.9,
-    #     tensor_parallel_size=2,
+    #     tensor_parallel_size=4, # 4 GPUs
+    # )
+
+    # SGLang VLM Model
+    # model = SGLangVLM(
+    #     model_path=model_path,
     # )
 
     print(f"✓ Successfully initialized: {model}")
@@ -231,6 +242,12 @@ def main():
                 print(f"Seller Reward: {info['seller_reward']:.3f}")
             if 'buyer_reward' in info:
                 print(f"Buyer Reward: {info['buyer_reward']:.3f}")
+            if 'global_score' in info:
+                print(f"GlobalScore: {info['global_score']:.3f}")
+            if 'buyer_score' in info:
+                print(f"BuyerScore: {info['buyer_score']:.3f}")
+            if 'seller_score' in info:
+                print(f"SellerScore: {info['seller_score']:.3f}")
             if info.get('termination_reason'):
                 print(f"Reason: {info['termination_reason']}")
             

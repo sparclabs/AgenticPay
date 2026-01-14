@@ -58,7 +58,7 @@ class CustomLLM(BaseLLM):
                  "content": input_str
               }
            ],
-            "temperature": temperature,
+            "temperature": 0,
             "max_tokens": max_tokens
         
         })

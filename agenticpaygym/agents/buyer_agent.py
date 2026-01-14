@@ -1,5 +1,6 @@
 """Buyer Agent Implementation"""
 
+import re
 from typing import Dict, List, Any, Optional, Union
 from agenticpaygym.agents.base_agent import BaseAgent
 from agenticpaygym.models.base_llm import BaseLLM
@@ -53,6 +54,21 @@ class BuyerAgent(BaseAgent):
         # Get buyer's maximum acceptable price (bottom price)
         max_price = self.buyer_max_price or self.context.get('max_price', 'unknown')
         
+        # Get product information (similar to seller_agent)
+        product_info = self.context.get('product_info', {})
+        available_products = self.context.get('available_products', [])
+        
+        # Format available products information
+        available_products_info = ""
+        if available_products:
+            available_products_info = "\n\nAVAILABLE PRODUCTS IN YOUR INVENTORY:\n"
+            for i, prod in enumerate(available_products, 1):
+                available_products_info += f"{i}. {prod.get('name', 'Unknown')} - "
+                available_products_info += f"Brand: {prod.get('brand', 'N/A')}, "
+                available_products_info += f"Price: ${prod.get('price', 0):.2f}, "
+                available_products_info += f"Features: {', '.join(prod.get('features', []))}\n"
+            available_products_info += "\nYou can suggest other products from your inventory if they better match the buyer's needs.\n"
+        
         # Get user profile information
         user_profile = self.context.get('user_profile')
         
@@ -85,30 +101,58 @@ class BuyerAgent(BaseAgent):
                         preference_guidance += "- Shopping habit: You prefer DIRECT PURCHASES. You value efficiency and may be willing to pay a fair price quickly if the deal is reasonable. Don't waste too much time haggling.\n"
         
         # Add Buyer-specific guidance
-        buyer_guidance = f"""
+#         buyer_guidance = f"""
 
-IMPORTANT REMINDERS:
-- Your maximum acceptable price (confidential - do not reveal this to the seller) is ${max_price}
-- You want to negotiate a fair price that fits your needs
-- Consider the environment factors: {self.context.get('environment_info', {})}
-- Be polite but firm in your negotiations
-- Try to find a win-win solution
-- If the seller's price is too high, suggest a reasonable counter-offer
-- **CRITICAL: Each conversation you MUST make one price offer, you MUST use the format: ### BUYER_PRICE($X) ###**
-- Example: "I can offer ### BUYER_PRICE($100) ### for this product"
-- Example: "How about ### BUYER_PRICE($120.50) ###?"
-- This specific format is required for the system to correctly extract your offer price
-- NEVER reveal your maximum acceptable price to the seller - keep it confidential
-- Keep communication short and concise.
+# IMPORTANT REMINDERS:
+# - Your maximum acceptable price (confidential - do not reveal this to the seller) is ${max_price}
+# - You want to negotiate a fair price that fits your needs
+# - Consider the environment factors: {self.context.get('environment_info', {})}
+# - Be polite but firm in your negotiations
+# - Try to find a win-win solution
+# - If the seller's price is too high, suggest a reasonable counter-offer
+# - Try to negotiate the price as low as possible, but ensure the deal is successful in the end
+# - **CRITICAL: Each conversation you MUST make one price offer, you MUST use the format: ### BUYER_PRICE($X) ###**
+# - Example: "I can offer ### BUYER_PRICE($100) ### for this product"
+# - Example: "How about ### BUYER_PRICE($120.50) ###?"
+# - This specific format is required for the system to correctly extract your offer price
+# - NEVER reveal your maximum acceptable price to the seller - keep it confidential
+# - Keep communication short and concise.
+
+# DEAL AGREEMENT INSTRUCTION:
+# - If you decide to accept the deal and want to make a transaction, you MUST include the exact phrase "MAKE_DEAL" in your response
+# - This phrase should appear when you are ready to finalize the agreement
+# - Example: "That sounds good! I accept your offer. MAKE_DEAL"
+# - Only use "MAKE_DEAL" when you are genuinely ready to complete the transaction
+# {preference_guidance}
+# Now, respond as {self.name}:
+# """
+
+        buyer_guidance = f"""
+IMPORTANT:
+- Your top price is ${max_price} (confidential, do not reveal).
+- Current product information: {product_info}
+{available_products_info}
+- Consider the environment: {self.context.get('environment_info', {})}.
+
+- **CRITICAL: In each turn, you MUST make exactly one price offer using the format:**
+  ### BUYER_PRICE($X) ###
+- Example: "I can offer ### BUYER_PRICE($10) ### for this product."
+- Example: "How about ### BUYER_PRICE($12.50) ###?"
+- This specific format is required for the system to correctly extract your offer price.
+- NEVER reveal your maximum acceptable price to the seller.
+- Keep communication short, clear, and focused on negotiation.
 
 DEAL AGREEMENT INSTRUCTION:
-- If you decide to accept the deal and want to make a transaction, you MUST include the exact phrase "MAKE_DEAL" in your response
-- This phrase should appear when you are ready to finalize the agreement
-- Example: "That sounds good! I accept your offer. MAKE_DEAL"
-- Only use "MAKE_DEAL" when you are genuinely ready to complete the transaction
+- Only finalize the transaction when you believe the price is reasonably balanced.
+- If you decide to accept the deal, you MUST include the exact phrase "MAKE_DEAL" in your response.
+- Example: "That sounds acceptable to me. MAKE_DEAL"
+- Do NOT use "MAKE_DEAL" unless you are genuinely ready to complete the transaction.
+
 {preference_guidance}
+
 Now, respond as {self.name}:
 """
+
         full_prompt = prompt + buyer_guidance
         
         # Extract images from current_state if VLM is used
@@ -135,5 +179,8 @@ Now, respond as {self.name}:
                 max_tokens=1024  # Ensure complete response generation
             )
         
-        return response.strip()
+        # Remove <think>...</think> tags and their content using regex
+        cleaned_response = re.sub(r'<think>.*?</think>', '', response, flags=re.DOTALL | re.IGNORECASE)
+        
+        return cleaned_response.strip()
 

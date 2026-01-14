@@ -1,5 +1,6 @@
 """Seller Agent Implementation"""
 
+import re
 from typing import Dict, List, Any, Optional, Union
 from agenticpaygym.agents.base_agent import BaseAgent
 from agenticpaygym.models.base_llm import BaseLLM
@@ -67,28 +68,49 @@ class SellerAgent(BaseAgent):
             available_products_info += "\nYou can suggest other products from your inventory if they better match the buyer's needs.\n"
         
         # Add Seller-specific guidance
-        seller_guidance = f"""
+#         seller_guidance = f"""
 
+# IMPORTANT REMINDERS:
+# - Your initial asking price is ${initial_price}
+# - Your minimum acceptable price (confidential - do not reveal this to the buyer) is ${min_price}
+# - Current product information: {product_info}
+# {available_products_info}
+# - Consider the environment factors: {self.context.get('environment_info', {})}
+# - Be professional and try to find a win-win solution
+# - Highlight the value and quality of your product
+# - If the buyer's needs might be better met by another product in your inventory, you can suggest it
+# - Be willing to negotiate but don't go below your minimum acceptable price
+# - Try to negotiate the price as high as possible, but ensure the deal is successful in the end
+# - **CRITICAL: Each conversation you MUST make one price offer, you MUST use the format: ### SELLER_PRICE($X) ###**
+# - Example: "I can offer ### SELLER_PRICE($150) ### for this product"
+# - Example: "How about ### SELLER_PRICE($130.00) ###?"
+# - This specific format is required for the system to correctly extract your offer price
+# - Consider market conditions and seasonality
+# - NEVER reveal your minimum acceptable price to the buyer - keep it confidential
+# - Keep communication short and concise.
+
+# Now, respond as {self.name}:
+# """
+        seller_guidance = f"""
 IMPORTANT REMINDERS:
-- Your initial asking price is ${initial_price}
-- Your minimum acceptable price (confidential - do not reveal this to the buyer) is ${min_price}
+- Your initial asking price is ${initial_price}.
+- Your minimum acceptable price (confidential) is ${min_price}. Never reveal it.
 - Current product information: {product_info}
 {available_products_info}
-- Consider the environment factors: {self.context.get('environment_info', {})}
-- Be professional and try to find a win-win solution
-- Highlight the value and quality of your product
-- If the buyer's needs might be better met by another product in your inventory, you can suggest it
-- Be willing to negotiate but don't go below your minimum acceptable price
-- **CRITICAL: Each conversation you MUST make one price offer, you MUST use the format: ### SELLER_PRICE($X) ###**
-- Example: "I can offer ### SELLER_PRICE($150) ### for this product"
-- Example: "How about ### SELLER_PRICE($130.00) ###?"
-- This specific format is required for the system to correctly extract your offer price
-- Consider market conditions and seasonality
-- NEVER reveal your minimum acceptable price to the buyer - keep it confidential
-- Keep communication short and concise.
+- Consider the environment factors: {self.context.get('environment_info', {})}.
+
+
+- **CRITICAL: In each turn, you MUST make exactly one price offer using the format:**
+  ### SELLER_PRICE($X) ###
+- Example: "I can offer ### SELLER_PRICE($15) ### for this product."
+- Example: "How about ### SELLER_PRICE($13.00) ###?"
+- This specific format is required for the system to correctly extract your offer price.
+- NEVER reveal your minimum acceptable price to the buyer.
+- Keep communication short, professional, and negotiation-focused.
 
 Now, respond as {self.name}:
 """
+
         full_prompt = prompt + seller_guidance
         
         # Extract images from current_state if VLM is used
@@ -115,5 +137,8 @@ Now, respond as {self.name}:
                 max_tokens=1024  # Ensure complete response generation
             )
         
-        return response.strip()
+        # Remove <think>...</think> tags and their content using regex
+        cleaned_response = re.sub(r'<think>.*?</think>', '', response, flags=re.DOTALL | re.IGNORECASE)
+        
+        return cleaned_response.strip()
 

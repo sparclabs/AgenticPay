@@ -29,17 +29,17 @@ def main():
     print("Initializing model...")
     
     # Check API key
-    # api_key = os.getenv("OPENAI_API_KEY")
-    # if not api_key:
-    #     print("Warning: OPENAI_API_KEY not set. Please set it to use OpenAI models.")
-    #     print("You can set it with: export OPENAI_API_KEY='your-key-here'")
-    #     return
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        print("Warning: OPENAI_API_KEY not set. Please set it to use OpenAI models.")
+        print("You can set it with: export OPENAI_API_KEY='your-key-here'")
+        return
     
-    # model = CustomLLM(api_key=OPENAI_API_KEY, model="gpt-5.2") # gpt-4o-mini-2024-07-18, gpt-3.5-turbo
+    model = CustomLLM(api_key=api_key, model="gpt-5.2") # claude-sonnet-4-5-20250929, gpt-5.2, gemini-3-pro-all, gpt-3.5-turbo, DeepSeek-R1
 
     # Build absolute path to model directory
-    model_path = os.path.join(project_root, "models", "download_models", "Qwen3-VL-8B-Instruct")
-    model_path = os.path.abspath(model_path)
+    # model_path = os.path.join(project_root, "models", "download_models", "Qwen3-VL-8B-Instruct")
+    # model_path = os.path.abspath(model_path)
 
     # vLLM VLM Model
     # model = VLLMVLM(
@@ -50,15 +50,15 @@ def main():
     # )
 
     # SGLang VLM Model
-    model = SGLangVLM(
-        model_path=model_path,
-    )
+    # model = SGLangVLM(
+    #     model_path=model_path,
+    # )
 
     print(f"✓ Successfully initialized: {model}")
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
     print("Creating agents...")
-    buyer_max_price = 120.0  # Maximum acceptable purchase price for buyer (confidential)
+    buyer_max_price = 150.0  # Maximum acceptable purchase price for buyer (confidential)
     seller_min_price = 80.0  # Minimum acceptable selling price for seller (confidential)
     
     buyer = BuyerAgent(model=model, buyer_max_price=buyer_max_price)
@@ -231,6 +231,12 @@ def main():
                 print(f"Seller Reward: {info['seller_reward']:.3f}")
             if 'buyer_reward' in info:
                 print(f"Buyer Reward: {info['buyer_reward']:.3f}")
+            if 'global_score' in info:
+                print(f"GlobalScore: {info['global_score']:.3f}")
+            if 'buyer_score' in info:
+                print(f"BuyerScore: {info['buyer_score']:.3f}")
+            if 'seller_score' in info:
+                print(f"SellerScore: {info['seller_score']:.3f}")
             if info.get('termination_reason'):
                 print(f"Reason: {info['termination_reason']}")
             print("="*60)

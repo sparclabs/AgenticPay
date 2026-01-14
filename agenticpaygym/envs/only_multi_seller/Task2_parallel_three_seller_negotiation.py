@@ -41,6 +41,19 @@ class Task2ParallelThreeSellerNegotiation(BaseEnv):
         reward_weights: Optional[Dict[str, float]] = None,
         buyer_reward_aggregation: str = "average",
         seller_reward_aggregation: str = "average",
+        gamma: float = 0.99,
+        deal_score_weight: float = 30.0,
+        quality_score_weight: float = 55.0,
+        efficiency_score_weight: float = 15.0,
+        failure_penalty_weight: float = 15.0,
+        buyer_deal_weight: float = 30.0,
+        buyer_utility_weight: float = 55.0,
+        buyer_efficiency_weight: float = 15.0,
+        buyer_failure_penalty_weight: float = 15.0,
+        seller_deal_weight: float = 30.0,
+        seller_utility_weight: float = 55.0,
+        seller_efficiency_weight: float = 15.0,
+        seller_failure_penalty_weight: float = 15.0,
     ):
         """Initialize multi-seller negotiation environment
         
@@ -67,6 +80,19 @@ class Task2ParallelThreeSellerNegotiation(BaseEnv):
                 Options: "average", "max", "min" (default: "average")
             seller_reward_aggregation: How to aggregate seller rewards across buyers.
                 Options: "average", "max", "min" (default: "average")
+            gamma: Discount factor for GlobalScore calculation, controls penalty for longer negotiations (default: 0.99, range: 0.97-0.995)
+            deal_score_weight: Weight D for DealScore component (default: 30.0)
+            quality_score_weight: Weight W for QualityScore component (default: 55.0)
+            efficiency_score_weight: Weight E for EfficiencyScore component (default: 15.0)
+            failure_penalty_weight: Weight F for FailurePenalty component (default: 15.0)
+            buyer_deal_weight: Weight Db for Buyer Deal Bonus (default: 30.0)
+            buyer_utility_weight: Weight Wb for Buyer utility component (default: 55.0)
+            buyer_efficiency_weight: Weight Eb for Buyer Efficiency Bonus (default: 15.0)
+            buyer_failure_penalty_weight: Weight Fb for Buyer Failure Penalty (default: 15.0)
+            seller_deal_weight: Weight Ds for Seller Deal Bonus (default: 30.0)
+            seller_utility_weight: Weight Ws for Seller utility component (default: 55.0)
+            seller_efficiency_weight: Weight Es for Seller Efficiency Bonus (default: 15.0)
+            seller_failure_penalty_weight: Weight Fs for Seller Failure Penalty (default: 15.0)
         """
         self.buyer_agent = buyer_agent
         self.seller1_agent = seller1_agent
@@ -96,6 +122,23 @@ class Task2ParallelThreeSellerNegotiation(BaseEnv):
         # Set reward aggregation methods
         self.buyer_reward_aggregation = buyer_reward_aggregation
         self.seller_reward_aggregation = seller_reward_aggregation
+        
+        # Score calculation parameters
+        self.gamma = gamma
+        self.deal_score_weight = deal_score_weight  # D
+        self.quality_score_weight = quality_score_weight  # W
+        self.efficiency_score_weight = efficiency_score_weight  # E
+        self.failure_penalty_weight = failure_penalty_weight  # F
+        # Buyer score weights
+        self.buyer_deal_weight = buyer_deal_weight  # Db
+        self.buyer_utility_weight = buyer_utility_weight  # Wb
+        self.buyer_efficiency_weight = buyer_efficiency_weight  # Eb
+        self.buyer_failure_penalty_weight = buyer_failure_penalty_weight  # Fb
+        # Seller score weights
+        self.seller_deal_weight = seller_deal_weight  # Ds
+        self.seller_utility_weight = seller_utility_weight  # Ws
+        self.seller_efficiency_weight = seller_efficiency_weight  # Es
+        self.seller_failure_penalty_weight = seller_failure_penalty_weight  # Fs
         
         # Call parent class initialization
         super().__init__()
@@ -377,6 +420,13 @@ class Task2ParallelThreeSellerNegotiation(BaseEnv):
             info["seller1_reward"] = seller1_reward
             info["seller2_reward"] = seller2_reward
             info["seller3_reward"] = seller3_reward
+            # Calculate GlobalScore, BuyerScore, and SellerScore for final result
+            global_score = self._calculate_global_score()
+            info["global_score"] = global_score
+            buyer_score = self._calculate_buyer_score()
+            info["buyer_score"] = buyer_score
+            seller_score = self._calculate_seller_score()
+            info["seller_score"] = seller_score
         
         return observation, reward, terminated, truncated, info
     
@@ -1016,3 +1066,284 @@ class Task2ParallelThreeSellerNegotiation(BaseEnv):
         else:
             # Default to average if unknown method
             return sum(rewards) / len(rewards)
+    
+    def _get_selected_seller_min_price(self) -> Optional[float]:
+        """Get the min_price of the selected seller
+        
+        Returns:
+            Min price of selected seller, or None if no seller selected
+        """
+        if self.selected_seller == 1:
+            return self.seller1_min_price
+        elif self.selected_seller == 2:
+            return self.seller2_min_price
+        elif self.selected_seller == 3:
+            return self.seller3_min_price
+        return None
+    
+    def _calculate_global_score(self) -> float:
+        """Calculate GlobalScore based on the optimized formula
+        
+        Uses the selected seller's min_price for calculation.
+        If no seller is selected, calculates failure penalty.
+        
+        Returns:
+            GlobalScore value (only calculated at final result)
+        """
+        # Get selected seller's min_price
+        selected_seller_min_price = self._get_selected_seller_min_price()
+        
+        # Check if we have required prices
+        if self.buyer_max_price is None or selected_seller_min_price is None:
+            # Calculate discount for failure penalty
+            round_index = max(0, self.current_round)
+            discount = self.gamma ** round_index
+            failure_penalty = -self.failure_penalty_weight * (1.0 - discount)
+            
+            print(f"\n[GlobalScore Calculation]")
+            print(f"  buyer_max_price or selected_seller_min_price is None")
+            print(f"  round_index = {round_index}, gamma = {self.gamma}, discount = γ^{round_index} = {discount:.6f}")
+            print(f"  FailurePenalty = -F({self.failure_penalty_weight:.1f}) * (1 - discount({discount:.6f})) = {failure_penalty:.3f}")
+            print(f"  GlobalScore = {failure_penalty:.3f}")
+            return failure_penalty
+        
+        # Calculate Z
+        Z = self.buyer_max_price - selected_seller_min_price
+        
+        # Calculate discount = γ^(t-1)
+        round_index = max(0, self.current_round)
+        discount = self.gamma ** round_index
+        
+        # Check feasible_deal: whether negotiation reached agreement
+        feasible_deal = (self.negotiation_info.status == NegotiationStatus.AGREED) or (self.final_deal_price is not None)
+        
+        # Get the final price
+        if self.final_deal_price is not None:
+            final_price = self.final_deal_price
+        else:
+            # No price available - calculate failure penalty
+            failure_penalty = -self.failure_penalty_weight * (1.0 - discount)
+            
+            print(f"\n[GlobalScore Calculation]")
+            print(f"  Z = buyer_max_price({self.buyer_max_price:.2f}) - selected_seller_min_price({selected_seller_min_price:.2f}) = {Z:.2f}")
+            print(f"  No final price available")
+            print(f"  feasible_deal = {feasible_deal}")
+            print(f"  valid_range = (Z > 0) = {Z > 0}")
+            print(f"  round_index = {round_index}, gamma = {self.gamma}, discount = γ^{round_index} = {discount:.6f}")
+            print(f"  FailurePenalty = -F({self.failure_penalty_weight:.1f}) * (1 - discount({discount:.6f})) = {failure_penalty:.3f}")
+            print(f"  GlobalScore = {failure_penalty:.3f}")
+            return failure_penalty
+        
+        # Check valid_range: (Z > 0) and (selected_seller_min_price <= p <= buyer_max_price)
+        valid_range = (Z > 0) and (selected_seller_min_price <= final_price <= self.buyer_max_price)
+        
+        # Debug output header
+        print(f"\n[GlobalScore Calculation]")
+        print(f"  Z = buyer_max_price({self.buyer_max_price:.2f}) - selected_seller_min_price({selected_seller_min_price:.2f}) = {Z:.2f}")
+        print(f"  final_price = {final_price:.2f}")
+        print(f"  feasible_deal = {feasible_deal} (negotiation status: {self.negotiation_info.status.value})")
+        print(f"  valid_range = (Z > 0) and (selected_seller_min_price({selected_seller_min_price:.2f}) <= final_price({final_price:.2f}) <= buyer_max_price({self.buyer_max_price:.2f})) = {valid_range}")
+        print(f"  round_index = {round_index}, gamma = {self.gamma}, discount = γ^{round_index} = {discount:.6f}")
+        
+        # If feasible_deal and valid_range, calculate success scores
+        if feasible_deal and valid_range:
+            # Calculate utilities
+            u_b = (self.buyer_max_price - final_price) / Z
+            u_s = (final_price - selected_seller_min_price) / Z
+            
+            # Calculate Q = 4 * u_b * u_s (in [0,1])
+            Q = 4.0 * u_b * u_s
+            
+            # Calculate component scores
+            deal_score = self.deal_score_weight * discount  # D * discount
+            quality_score = self.quality_score_weight * Q * discount  # W * Q * discount
+            efficiency_score = self.efficiency_score_weight * discount  # E * discount
+            
+            # Calculate GlobalScore
+            global_score = deal_score + quality_score + efficiency_score
+            
+            # Debug output for success case
+            print(f"  u_b = (buyer_max_price({self.buyer_max_price:.2f}) - final_price({final_price:.2f})) / Z({Z:.2f}) = {u_b:.4f}")
+            print(f"  u_s = (final_price({final_price:.2f}) - selected_seller_min_price({selected_seller_min_price:.2f})) / Z({Z:.2f}) = {u_s:.4f}")
+            print(f"  Q = 4 * u_b({u_b:.4f}) * u_s({u_s:.4f}) = {Q:.4f}")
+            print(f"  DealScore = D({self.deal_score_weight:.1f}) * discount({discount:.6f}) = {deal_score:.3f}")
+            print(f"  QualityScore = W({self.quality_score_weight:.1f}) * Q({Q:.4f}) * discount({discount:.6f}) = {quality_score:.3f}")
+            print(f"  EfficiencyScore = E({self.efficiency_score_weight:.1f}) * discount({discount:.6f}) = {efficiency_score:.3f}")
+            print(f"  GlobalScore = DealScore({deal_score:.3f}) + QualityScore({quality_score:.3f}) + EfficiencyScore({efficiency_score:.3f}) = {global_score:.3f}")
+            
+            return global_score
+        else:
+            # Calculate failure penalty
+            failure_penalty = -self.failure_penalty_weight * (1.0 - discount)
+            
+            # Debug output for failure case
+            print(f"  FailurePenalty = -F({self.failure_penalty_weight:.1f}) * (1 - discount({discount:.6f})) = {failure_penalty:.3f}")
+            print(f"  GlobalScore = {failure_penalty:.3f}")
+            
+            return failure_penalty
+    
+    def _calculate_buyer_score(self) -> float:
+        """Calculate BuyerScore based on the formula
+        
+        Uses the selected seller's min_price for calculation.
+        If no seller is selected, calculates failure penalty.
+        
+        Returns:
+            BuyerScore value (only calculated at final result)
+        """
+        # Get selected seller's min_price
+        selected_seller_min_price = self._get_selected_seller_min_price()
+        
+        # Check if we have required prices
+        if self.buyer_max_price is None or selected_seller_min_price is None:
+            # Calculate discount for failure penalty
+            round_index = max(0, self.current_round)
+            discount = self.gamma ** round_index
+            buyer_score = -self.buyer_failure_penalty_weight * (1.0 - discount)
+            
+            print(f"\n[BuyerScore Calculation]")
+            print(f"  buyer_max_price or selected_seller_min_price is None")
+            print(f"  round_index = {round_index}, gamma = {self.gamma}, discount = γ^{round_index} = {discount:.6f}")
+            print(f"  BuyerScore = -Fb({self.buyer_failure_penalty_weight:.1f}) * (1 - discount({discount:.6f})) = {buyer_score:.3f}")
+            return buyer_score
+        
+        # Calculate Z
+        Z = self.buyer_max_price - selected_seller_min_price
+        
+        # Calculate discount = γ^(t-1)
+        round_index = max(0, self.current_round)
+        discount = self.gamma ** round_index
+        
+        # Check feasible_deal: whether negotiation reached agreement
+        feasible_deal = (self.negotiation_info.status == NegotiationStatus.AGREED) or (self.final_deal_price is not None)
+        
+        # Get the final price
+        if self.final_deal_price is not None:
+            final_price = self.final_deal_price
+        else:
+            # No price available - calculate failure penalty
+            buyer_score = -self.buyer_failure_penalty_weight * (1.0 - discount)
+            
+            print(f"\n[BuyerScore Calculation]")
+            print(f"  Z = buyer_max_price({self.buyer_max_price:.2f}) - selected_seller_min_price({selected_seller_min_price:.2f}) = {Z:.2f}")
+            print(f"  No final price available")
+            print(f"  round_index = {round_index}, gamma = {self.gamma}, discount = γ^{round_index} = {discount:.6f}")
+            print(f"  BuyerScore = -Fb({self.buyer_failure_penalty_weight:.1f}) * (1 - discount({discount:.6f})) = {buyer_score:.3f}")
+            return buyer_score
+        
+        # Check valid_range: (Z > 0) and (selected_seller_min_price <= p <= buyer_max_price)
+        valid_range = (Z > 0) and (selected_seller_min_price <= final_price <= self.buyer_max_price)
+        
+        # Debug output header
+        print(f"\n[BuyerScore Calculation]")
+        print(f"  Z = buyer_max_price({self.buyer_max_price:.2f}) - selected_seller_min_price({selected_seller_min_price:.2f}) = {Z:.2f}")
+        print(f"  final_price = {final_price:.2f}")
+        print(f"  feasible_deal = {feasible_deal} (negotiation status: {self.negotiation_info.status.value})")
+        print(f"  valid_range = (Z > 0) and (selected_seller_min_price({selected_seller_min_price:.2f}) <= final_price({final_price:.2f}) <= buyer_max_price({self.buyer_max_price:.2f})) = {valid_range}")
+        print(f"  round_index = {round_index}, gamma = {self.gamma}, discount = γ^{round_index} = {discount:.6f}")
+        
+        # If feasible_deal and valid_range, calculate success score
+        if feasible_deal and valid_range:
+            # Calculate utility
+            u_b = (self.buyer_max_price - final_price) / Z
+            
+            # Calculate BuyerScore = discount * (Db + Wb * u_b + Eb)
+            buyer_score = discount * (self.buyer_deal_weight + self.buyer_utility_weight * u_b + self.buyer_efficiency_weight)
+            
+            # Debug output for success case
+            print(f"  u_b = (buyer_max_price({self.buyer_max_price:.2f}) - final_price({final_price:.2f})) / Z({Z:.2f}) = {u_b:.4f}")
+            print(f"  BuyerScore = discount({discount:.6f}) * (Db({self.buyer_deal_weight:.1f}) + Wb({self.buyer_utility_weight:.1f}) * u_b({u_b:.4f}) + Eb({self.buyer_efficiency_weight:.1f}))")
+            print(f"  BuyerScore = {discount:.6f} * ({self.buyer_deal_weight:.1f} + {self.buyer_utility_weight * u_b:.4f} + {self.buyer_efficiency_weight:.1f}) = {buyer_score:.3f}")
+            
+            return buyer_score
+        else:
+            # Calculate failure penalty (out-of-range deals treated as failures)
+            buyer_score = -self.buyer_failure_penalty_weight * (1.0 - discount)
+            
+            # Debug output for failure case
+            print(f"  BuyerScore = -Fb({self.buyer_failure_penalty_weight:.1f}) * (1 - discount({discount:.6f})) = {buyer_score:.3f}")
+            
+            return buyer_score
+    
+    def _calculate_seller_score(self) -> float:
+        """Calculate SellerScore based on the formula
+        
+        Uses the selected seller's min_price for calculation.
+        If no seller is selected, calculates failure penalty.
+        
+        Returns:
+            SellerScore value (only calculated at final result)
+        """
+        # Get selected seller's min_price
+        selected_seller_min_price = self._get_selected_seller_min_price()
+        
+        # Check if we have required prices
+        if self.buyer_max_price is None or selected_seller_min_price is None:
+            # Calculate discount for failure penalty
+            round_index = max(0, self.current_round)
+            discount = self.gamma ** round_index
+            seller_score = -self.seller_failure_penalty_weight * (1.0 - discount)
+            
+            print(f"\n[SellerScore Calculation]")
+            print(f"  buyer_max_price or selected_seller_min_price is None")
+            print(f"  round_index = {round_index}, gamma = {self.gamma}, discount = γ^{round_index} = {discount:.6f}")
+            print(f"  SellerScore = -Fs({self.seller_failure_penalty_weight:.1f}) * (1 - discount({discount:.6f})) = {seller_score:.3f}")
+            return seller_score
+        
+        # Calculate Z
+        Z = self.buyer_max_price - selected_seller_min_price
+        
+        # Calculate discount = γ^(t-1)
+        round_index = max(0, self.current_round)
+        discount = self.gamma ** round_index
+        
+        # Check feasible_deal: whether negotiation reached agreement
+        feasible_deal = (self.negotiation_info.status == NegotiationStatus.AGREED) or (self.final_deal_price is not None)
+        
+        # Get the final price
+        if self.final_deal_price is not None:
+            final_price = self.final_deal_price
+        else:
+            # No price available - calculate failure penalty
+            seller_score = -self.seller_failure_penalty_weight * (1.0 - discount)
+            
+            print(f"\n[SellerScore Calculation]")
+            print(f"  Z = buyer_max_price({self.buyer_max_price:.2f}) - selected_seller_min_price({selected_seller_min_price:.2f}) = {Z:.2f}")
+            print(f"  No final price available")
+            print(f"  round_index = {round_index}, gamma = {self.gamma}, discount = γ^{round_index} = {discount:.6f}")
+            print(f"  SellerScore = -Fs({self.seller_failure_penalty_weight:.1f}) * (1 - discount({discount:.6f})) = {seller_score:.3f}")
+            return seller_score
+        
+        # Check valid_range: (Z > 0) and (selected_seller_min_price <= p <= buyer_max_price)
+        valid_range = (Z > 0) and (selected_seller_min_price <= final_price <= self.buyer_max_price)
+        
+        # Debug output header
+        print(f"\n[SellerScore Calculation]")
+        print(f"  Z = buyer_max_price({self.buyer_max_price:.2f}) - selected_seller_min_price({selected_seller_min_price:.2f}) = {Z:.2f}")
+        print(f"  final_price = {final_price:.2f}")
+        print(f"  feasible_deal = {feasible_deal} (negotiation status: {self.negotiation_info.status.value})")
+        print(f"  valid_range = (Z > 0) and (selected_seller_min_price({selected_seller_min_price:.2f}) <= final_price({final_price:.2f}) <= buyer_max_price({self.buyer_max_price:.2f})) = {valid_range}")
+        print(f"  round_index = {round_index}, gamma = {self.gamma}, discount = γ^{round_index} = {discount:.6f}")
+        
+        # If feasible_deal and valid_range, calculate success score
+        if feasible_deal and valid_range:
+            # Calculate utility
+            u_s = (final_price - selected_seller_min_price) / Z
+            
+            # Calculate SellerScore = discount * (Ds + Ws * u_s + Es)
+            seller_score = discount * (self.seller_deal_weight + self.seller_utility_weight * u_s + self.seller_efficiency_weight)
+            
+            # Debug output for success case
+            print(f"  u_s = (final_price({final_price:.2f}) - selected_seller_min_price({selected_seller_min_price:.2f})) / Z({Z:.2f}) = {u_s:.4f}")
+            print(f"  SellerScore = discount({discount:.6f}) * (Ds({self.seller_deal_weight:.1f}) + Ws({self.seller_utility_weight:.1f}) * u_s({u_s:.4f}) + Es({self.seller_efficiency_weight:.1f}))")
+            print(f"  SellerScore = {discount:.6f} * ({self.seller_deal_weight:.1f} + {self.seller_utility_weight * u_s:.4f} + {self.seller_efficiency_weight:.1f}) = {seller_score:.3f}")
+            
+            return seller_score
+        else:
+            # Calculate failure penalty (out-of-range deals treated as failures)
+            seller_score = -self.seller_failure_penalty_weight * (1.0 - discount)
+            
+            # Debug output for failure case
+            print(f"  SellerScore = -Fs({self.seller_failure_penalty_weight:.1f}) * (1 - discount({discount:.6f})) = {seller_score:.3f}")
+            
+            return seller_score
