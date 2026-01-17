@@ -7,6 +7,7 @@ import os
 import sys
 import json
 import time
+import argparse
 from pathlib import Path
 from datetime import datetime
 from io import StringIO
@@ -59,8 +60,12 @@ def get_model_name(model):
             return model_str
 
 
-def main():
-    """Main function: Demonstrates basic negotiation flow"""
+def main(model_name=None):
+    """Main function: Demonstrates basic negotiation flow
+    
+    Args:
+        model_name: Optional model name. If None, uses default model.
+    """
 
     print("Initializing model...")
     
@@ -71,7 +76,11 @@ def main():
         print("You can set it with: export OPENAI_API_KEY='your-key-here'")
         return
     
-    model = CustomLLM(api_key=api_key, model="gemini-3-pro-all") # claude-sonnet-4-5-20250929, gpt-5.2, gemini-3-pro-all, gpt-3.5-turbo, DeepSeek-R1
+    # Use provided model name or default
+    if model_name is None:
+        model_name = "gemini-3-pro-all"  # Default model
+    
+    model = CustomLLM(api_key=api_key, model=model_name) # claude-sonnet-4-5-20250929, gpt-5.2, gemini-3-pro-all, gpt-3.5-turbo, DeepSeek-R1
 
     # Build absolute path to model directory
     # model_path = os.path.join(project_root, "models", "download_models", "Qwen3-VL-8B-Instruct")
@@ -140,12 +149,15 @@ def main():
     print(f"User Profile: {user_profile}")
     
     # Get user requirement
-    print("\n" + "="*60)
-    print("Please enter the product requirement you want to purchase:")
-    user_requirement = input("> ").strip()
-    if not user_requirement:
-        print("No requirement entered, using default requirement...")
-        user_requirement = "I need a high-quality winter jacket for cold weather"
+    # print("\n" + "="*60)
+    # print("Please enter the product requirement you want to purchase:")
+    # user_requirement = input("> ").strip()
+    # if not user_requirement:
+    #     print("No requirement entered, using default requirement...")
+    #     user_requirement = "I need a high-quality winter jacket for cold weather"
+
+    user_requirement = "I need a high-quality winter jacket for cold weather"
+
     
     # Reset environment
     print("\n" + "="*60)
@@ -404,5 +416,13 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Task1: Basic Price Negotiation")
+    parser.add_argument(
+        "--model",
+        type=str,
+        default=None,
+        help="Model name to use (e.g., 'gemini-3-pro-all', 'gpt-5.2', 'claude-sonnet-4-5-20250929'). If not provided, uses default model."
+    )
+    args = parser.parse_args()
+    main(model_name=args.model)
 

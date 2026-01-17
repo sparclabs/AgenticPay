@@ -8,6 +8,7 @@ import os
 import sys
 import json
 import time
+import argparse
 from pathlib import Path
 from datetime import datetime
 
@@ -116,8 +117,12 @@ def extract_seller_choice(buyer_response: str, observation: dict) -> int:
     return 1
 
 
-def main():
-    """Main function: Demonstrates sequential multi-seller negotiation flow"""
+def main(model_name=None):
+    """Main function: Demonstrates sequential multi-seller negotiation flow
+    
+    Args:
+        model_name: Optional model name. If None, uses default model.
+    """
     
     print("Initializing model...")
     
@@ -128,7 +133,11 @@ def main():
         print("You can set it with: export OPENAI_API_KEY='your-key-here'")
         return
     
-    model = CustomLLM(api_key=api_key, model="qwen3-14b") # claude-sonnet-4-5-20250929, gpt-5.2, gemini-3-pro-all, gpt-3.5-turbo, DeepSeek-R1
+    # Use provided model name or default
+    if model_name is None:
+        model_name = "qwen3-14b"  # Default model
+    
+    model = CustomLLM(api_key=api_key, model=model_name) # claude-sonnet-4-5-20250929, gpt-5.2, gemini-3-pro-all, gpt-3.5-turbo, DeepSeek-R1
 
     # Build absolute path to model directory
     # model_path = os.path.join(project_root, "models", "download_models", "Qwen3-VL-8B-Instruct")
@@ -589,4 +598,12 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Task4: Sequential Three-Seller Negotiation")
+    parser.add_argument(
+        "--model",
+        type=str,
+        default=None,
+        help="Model name to use (e.g., 'gemini-3-pro-all', 'gpt-5.2', 'claude-sonnet-4-5-20250929'). If not provided, uses default model."
+    )
+    args = parser.parse_args()
+    main(model_name=args.model)
