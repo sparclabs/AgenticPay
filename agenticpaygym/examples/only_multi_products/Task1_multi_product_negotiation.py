@@ -6,8 +6,13 @@ while preserving conversation context across different products.
 
 import os
 import sys
+import json
+import time
+from pathlib import Path
+from datetime import datetime
 
 # Add project path
+# sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, project_root)
 
@@ -18,11 +23,42 @@ from agenticpaygym.agents.seller_agent import SellerAgent
 from agenticpaygym.models.custom_llm import CustomLLM
 from agenticpaygym.models.qwen3_vl import Qwen3VL
 from agenticpaygym.models.vllm_vlm import VLLMVLM
+from agenticpaygym.models.sglang_vlm import SGLangVLM
 
 # Import configuration parameters
 examples_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, examples_dir)
-from config import reward_weights, buyer_reward_aggregation, seller_reward_aggregation, max_rounds, price_tolerance, OPENAI_API_KEY
+from config import reward_weights, buyer_reward_aggregation, seller_reward_aggregation, max_rounds, price_tolerance
+
+
+def get_model_name(model):
+    """Extract model name from model object
+    
+    Args:
+        model: Model object (CustomLLM, VLLMVLM, etc.)
+    
+    Returns:
+        str: Model name
+    """
+    if hasattr(model, 'model'):
+        return model.model
+    elif hasattr(model, 'model_id'):
+        return model.model_id
+    elif hasattr(model, 'model_path'):
+        # Extract model name from path
+        model_path = model.model_path
+        return os.path.basename(model_path) if model_path else str(model)
+    else:
+        # Fallback to string representation, but try to extract model name
+        model_str = str(model)
+        # Try to extract model name from string like "CustomLLM(model=qwen3-8b)"
+        if "model=" in model_str:
+            try:
+                return model_str.split("model=")[1].split(")")[0]
+            except:
+                return model_str
+        else:
+            return model_str
 
 
 def main():
@@ -31,21 +67,29 @@ def main():
     print("Initializing model...")
     
     # Check API key
-    # api_key = os.getenv("OPENAI_API_KEY")
-    # if not api_key:
-    #     print("Warning: OPENAI_API_KEY not set. Please set it to use OpenAI models.")
-    #     print("You can set it with: export OPENAI_API_KEY='your-key-here'")
-    #     return
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        print("Warning: OPENAI_API_KEY not set. Please set it to use OpenAI models.")
+        print("You can set it with: export OPENAI_API_KEY='your-key-here'")
+        return
     
-    model = CustomLLM(api_key=OPENAI_API_KEY, model="gpt-5.2") # gpt-4o-mini-2024-07-18, gpt-3.5-turbo
+    model = CustomLLM(api_key=api_key, model="gemini-3-pro-all") # claude-sonnet-4-5-20250929, gpt-5.2, gemini-3-pro-all, gpt-3.5-turbo, DeepSeek-R1
 
-    # model_path = "/root/autodl-tmp/AgenticPayGym/agenticpaygym/models/download_models/Qwen3-VL-2B-Instruct"
+    # Build absolute path to model directory
+    # model_path = os.path.join(project_root, "models", "download_models", "Qwen3-VL-8B-Instruct")
+    # model_path = os.path.abspath(model_path)
 
+    # vLLM VLM Model
     # model = VLLMVLM(
     #     model_path=model_path,
     #     trust_remote_code=True,
     #     gpu_memory_utilization=0.9,
-    #     tensor_parallel_size=2,
+    #     tensor_parallel_size=4, # 4 GPUs
+    # )
+
+    # SGLang VLM Model
+    # model = SGLangVLM(
+    #     model_path=model_path,
     # )
 
     print(f"✓ Successfully initialized: {model}")
@@ -233,9 +277,33 @@ def main():
                 print(f"Seller Reward: {info['seller_reward']:.3f}")
             if 'buyer_reward' in info:
                 print(f"Buyer Reward: {info['buyer_reward']:.3f}")
+            if 'global_score' in info:
+                print(f"GlobalScore: {info['global_score']:.3f}")
+            if 'buyer_score' in info:
+                print(f"BuyerScore: {info['buyer_score']:.3f}")
+            if 'seller_score' in info:
+                print(f"SellerScore: {info['seller_score']:.3f}")
             if info.get('termination_reason'):
                 print(f"Reason: {info['termination_reason']}")
             print("="*60)
+            
+            # Collect first product results
+            first_product_result = {
+                "product_name": selected_product.get('name', 'Unknown'),
+                "status": info.get('status', 'unknown'),
+                "success": terminated,
+                "seller_price": info.get('seller_price'),
+                "buyer_price": info.get('buyer_price'),
+                "agreed_price": info.get('agreed_price'),
+                "rounds": info.get('round', 0),
+                "seller_reward": info.get('seller_reward'),
+                "buyer_reward": info.get('buyer_reward'),
+                "global_score": info.get('global_score'),
+                "buyer_score": info.get('buyer_score'),
+                "seller_score": info.get('seller_score'),
+                "termination_reason": info.get('termination_reason'),
+            }
+            results["product_results"].append(first_product_result)
             break
     
     # Ask if user wants to continue with another product
@@ -400,9 +468,33 @@ def main():
                 print(f"Seller Reward: {info['seller_reward']:.3f}")
             if 'buyer_reward' in info:
                 print(f"Buyer Reward: {info['buyer_reward']:.3f}")
+            if 'global_score' in info:
+                print(f"GlobalScore: {info['global_score']:.3f}")
+            if 'buyer_score' in info:
+                print(f"BuyerScore: {info['buyer_score']:.3f}")
+            if 'seller_score' in info:
+                print(f"SellerScore: {info['seller_score']:.3f}")
             if info.get('termination_reason'):
                 print(f"Reason: {info['termination_reason']}")
             print("="*60)
+            
+            # Collect second product results
+            second_product_result = {
+                "product_name": selected_product.get('name', 'Unknown'),
+                "status": info.get('status', 'unknown'),
+                "success": terminated,
+                "seller_price": info.get('seller_price'),
+                "buyer_price": info.get('buyer_price'),
+                "agreed_price": info.get('agreed_price'),
+                "rounds": info.get('round', 0),
+                "seller_reward": info.get('seller_reward'),
+                "buyer_reward": info.get('buyer_reward'),
+                "global_score": info.get('global_score'),
+                "buyer_score": info.get('buyer_score'),
+                "seller_score": info.get('seller_score'),
+                "termination_reason": info.get('termination_reason'),
+            }
+            results["product_results"].append(second_product_result)
             break
     
     # Display final summary
@@ -425,6 +517,72 @@ def main():
     # Close environment
     env.close()
     print("\nMulti-product negotiation completed!")
+    
+    # Collect final summary
+    final_info = env._get_info()
+    if final_info.get("product_results"):
+        results["product_results"] = final_info["product_results"]
+    
+    # Update results with final status
+    results.update({
+        "status": "completed",
+        "total_products": len(results["product_results"]),
+        "elapsed_time": time.time() - start_time,
+        "buyer_max_price": buyer_max_price,
+        "seller_min_price": seller_min_price,
+        "model": get_model_name(model),
+    })
+    
+    # Save results to file
+    try:
+        # Create results directory structure
+        results_dir = Path(project_root) / "agenticpaygym" / "results" / "only_multi_products"
+        results_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Get model name for directory (sanitize for filesystem)
+        model_name = get_model_name(model)
+        model_name_safe = model_name.replace("/", "_").replace("\\", "_").replace(":", "_")
+        model_dir = results_dir / model_name_safe
+        model_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Create timestamped subdirectory for this run
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        run_dir = model_dir / f"batch_evaluation_{timestamp}"
+        run_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Save summary JSON
+        summary_file = run_dir / "summary.json"
+        with open(summary_file, 'w', encoding='utf-8') as f:
+            json.dump(results, f, indent=2, ensure_ascii=False)
+        
+        # Save output text
+        output_file = run_dir / "Task1_output.txt"
+        with open(output_file, 'w', encoding='utf-8') as f:
+            f.write("="*80 + "\n")
+            f.write("Task1: Multi-Product Negotiation Results\n")
+            f.write("="*80 + "\n\n")
+            f.write(f"Timestamp: {results['timestamp']}\n")
+            f.write(f"Model: {results['model']}\n")
+            f.write(f"User Profile: {results['user_profile']}\n\n")
+            f.write(f"Total Products Negotiated: {results['total_products']}\n")
+            elapsed_time = results.get('elapsed_time', 0)
+            f.write(f"Elapsed Time: {elapsed_time:.2f}s\n\n")
+            f.write("Product Results:\n")
+            for i, result in enumerate(results["product_results"], 1):
+                status_str = "✓ AGREED" if result.get("status") == "agreed" else "✗ TIMEOUT"
+                price_str = f"${result['agreed_price']:.2f}" if result.get('agreed_price') else "N/A"
+                f.write(f"  {i}. {result.get('product_name', 'Unknown')}: {status_str} @ {price_str} (Rounds: {result.get('rounds', 0)})\n")
+            f.write("\n")
+            if results.get('error'):
+                f.write(f"Error: {results['error']}\n")
+        
+        print(f"\nResults saved to: {run_dir}")
+        print(f"  - Summary JSON: {summary_file}")
+        print(f"  - Output Text: {output_file}")
+    except Exception as e:
+        print(f"\nWarning: Failed to save results: {e}")
+        import traceback
+        traceback.print_exc()
 
 
 if __name__ == "__main__":

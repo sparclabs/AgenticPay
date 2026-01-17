@@ -57,3 +57,4 @@ agenticpaygym/models/download_models/
 # Configuration files
 agenticpaygym/examples/config.py
 
+agenticpaygym/results/
