@@ -68,7 +68,7 @@ def main():
         print("You can set it with: export OPENAI_API_KEY='your-key-here'")
         return
     
-    model = CustomLLM(api_key=api_key, model="gpt-5.2") # claude-sonnet-4-5-20250929, gpt-5.2, gemini-3-pro-all, gpt-3.5-turbo, DeepSeek-R1
+    model = CustomLLM(api_key=api_key, model="qwen3-14b") # claude-sonnet-4-5-20250929, gpt-5.2, gemini-3-pro-all, gpt-3.5-turbo, DeepSeek-R1，qwen3-8b, qwen3-13b
 
     # Build absolute path to model directory
     # model_path = os.path.join(project_root, "models", "download_models", "Qwen3-VL-8B-Instruct")
@@ -91,7 +91,7 @@ def main():
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
     print("Creating agents...")
-    buyer_max_price = 120.0  # Maximum acceptable purchase price for buyer (confidential)
+    buyer_max_price = 150.0  # Maximum acceptable purchase price for buyer (confidential)
     seller1_min_price = 80.0  # Minimum acceptable selling price for seller1 (confidential)
     seller2_min_price = 85.0  # Minimum acceptable selling price for seller2 (confidential, different from seller1)
     
@@ -127,13 +127,16 @@ def main():
     print(f"User Profile: {user_profile}")
     
     # Get user requirement
-    print("\n" + "="*60)
-    print("Please enter the product requirement you want to purchase:")
-    user_requirement = input("> ").strip()
-    if not user_requirement:
-        print("No requirement entered, using default requirement...")
-        user_requirement = "I need a high-quality winter jacket for cold weather"
-        print(f"Using default requirement: {user_requirement}")
+    # print("\n" + "="*60)
+    # print("Please enter the product requirement you want to purchase:")
+    # user_requirement = input("> ").strip()
+    # if not user_requirement:
+    #     print("No requirement entered, using default requirement...")
+    #     user_requirement = "I need a high-quality winter jacket for cold weather"
+    #     print(f"Using default requirement: {user_requirement}")
+    # Use default requirement for automatic running
+    user_requirement = "I need a high-quality winter jacket for cold weather"
+    print(f"Using default requirement: {user_requirement}")
     
     # Reset environment
     print("\n" + "="*60)
@@ -379,7 +382,7 @@ def main():
     # Save results to file
     try:
         # Create results directory structure
-        results_dir = Path(project_root) / "agenticpaygym" / "results" / "only_multi_seller"
+        results_dir = Path(project_root) / "results" / "only_multi_seller"
         results_dir.mkdir(parents=True, exist_ok=True)
         
         # Get model name for directory (sanitize for filesystem)

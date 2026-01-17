@@ -96,7 +96,7 @@ def main():
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
     # buyer_max_price and seller_min_price represent total expected cost for both products
     print("Creating agents...")
-    buyer_max_price = 200.0  # Maximum acceptable total purchase price for buyer (confidential, for both products)
+    buyer_max_price = 150.0  # Maximum acceptable total purchase price for buyer (confidential, for both products)
     seller_min_price = 150.0  # Minimum acceptable total selling price for seller (confidential, for both products)
     
     buyer = BuyerAgent(model=model, buyer_max_price=buyer_max_price)
@@ -155,13 +155,9 @@ def main():
     print(f"  Total Product Price: ${total_product_price:.2f}")
     
     # Get user requirement (should describe purchasing two products)
-    print("\n" + "="*60)
-    print("Please enter the product requirement (should describe purchasing two products):")
-    user_requirement = input("> ").strip()
-    if not user_requirement:
-        print("No requirement entered, using default requirement...")
-        user_requirement = "I need a high-quality winter jacket and a pair of running shoes for my outdoor activities"
-        print(f"Using default requirement: {user_requirement}")
+    # Use default requirement for automatic running
+    user_requirement = "I need a high-quality winter jacket and a pair of running shoes for my outdoor activities"
+    print(f"Using default requirement: {user_requirement}")
     
     # Reset environment
     print("\n" + "="*60)
@@ -284,7 +280,7 @@ def main():
     # Save results to file
     try:
         # Create results directory structure
-        results_dir = Path(project_root) / "agenticpaygym" / "results" / "only_multi_products"
+        results_dir = Path(project_root) / "results" / "only_multi_products"
         results_dir.mkdir(parents=True, exist_ok=True)
         
         # Get model name for directory (sanitize for filesystem)

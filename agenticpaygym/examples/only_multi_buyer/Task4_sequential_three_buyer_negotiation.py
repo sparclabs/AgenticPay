@@ -147,9 +147,9 @@ def main():
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
     print("Creating agents...")
-    buyer1_max_price = 120.0  # Maximum acceptable purchase price for buyer1 (confidential)
-    buyer2_max_price = 130.0  # Maximum acceptable purchase price for buyer2 (confidential, different from buyer1)
-    buyer3_max_price = 125.0  # Maximum acceptable purchase price for buyer3 (confidential, different from buyer1 and buyer2)
+    buyer1_max_price = 150.0  # Maximum acceptable purchase price for buyer1 (confidential)
+    buyer2_max_price = 160.0  # Maximum acceptable purchase price for buyer2 (confidential, different from buyer1)
+    buyer3_max_price = 170.0  # Maximum acceptable purchase price for buyer3 (confidential, different from buyer1 and buyer2)
     seller_min_price = 80.0  # Minimum acceptable selling price for seller (confidential)
     
     buyer1 = BuyerAgent(model=model, buyer_max_price=buyer1_max_price)
@@ -184,13 +184,9 @@ def main():
     print(f"User Profile: {user_profile}")
     
     # Get user requirement
-    print("\n" + "="*60)
-    print("Please enter the product requirement you want to purchase:")
-    user_requirement = input("> ").strip()
-    if not user_requirement:
-        print("No requirement entered, using default requirement...")
-        user_requirement = "I need a high-quality winter jacket for cold weather"
-        print(f"Using default requirement: {user_requirement}")
+    # Use default requirement for automatic running
+    user_requirement = "I need a high-quality winter jacket for cold weather"
+    print(f"Using default requirement: {user_requirement}")
     
     # Reset environment
     print("\n" + "="*60)
@@ -569,7 +565,7 @@ def main():
     # Save results to file
     try:
         # Create results directory structure
-        results_dir = Path(project_root) / "agenticpaygym" / "results" / "only_multi_buyer"
+        results_dir = Path(project_root) / "results" / "only_multi_buyer"
         results_dir.mkdir(parents=True, exist_ok=True)
         
         # Get model name for directory (sanitize for filesystem)

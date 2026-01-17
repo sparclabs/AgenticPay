@@ -96,7 +96,7 @@ def main():
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
     # buyer_max_price and seller_min_price represent total expected cost for all five products
     print("Creating agents...")
-    buyer_max_price = 450.0  # Maximum acceptable total purchase price for buyer (confidential, for all five products)
+    buyer_max_price = 150.0  # Maximum acceptable total purchase price for buyer (confidential, for all five products)
     seller_min_price = 350.0  # Minimum acceptable total selling price for seller (confidential, for all five products)
     
     buyer = BuyerAgent(model=model, buyer_max_price=buyer_max_price)
@@ -179,13 +179,9 @@ def main():
     print(f"  Total Product Price: ${total_product_price:.2f}")
     
     # Get user requirement (should describe purchasing five products)
-    print("\n" + "="*60)
-    print("Please enter the product requirement (should describe purchasing five products):")
-    user_requirement = input("> ").strip()
-    if not user_requirement:
-        print("No requirement entered, using default requirement...")
-        user_requirement = "I need a complete outdoor gear set including a winter jacket, running shoes, a backpack, a water bottle, and a fitness tracker for my outdoor activities"
-        print(f"Using default requirement: {user_requirement}")
+    # Use default requirement for automatic running
+    user_requirement = "I need a complete outdoor gear set including a winter jacket, running shoes, a backpack, a water bottle, and a fitness tracker for my outdoor activities"
+    print(f"Using default requirement: {user_requirement}")
     
     # Reset environment
     print("\n" + "="*60)
@@ -308,7 +304,7 @@ def main():
     # Save results to file
     try:
         # Create results directory structure
-        results_dir = Path(project_root) / "agenticpaygym" / "results" / "only_multi_products"
+        results_dir = Path(project_root) / "results" / "only_multi_products"
         results_dir.mkdir(parents=True, exist_ok=True)
         
         # Get model name for directory (sanitize for filesystem)

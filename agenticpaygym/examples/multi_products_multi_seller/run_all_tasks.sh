@@ -1,0 +1,10 @@
+#!/bin/bash
+
+# 切换到脚本所在目录
+cd "$(dirname "$0")"
+
+# 运行所有任务
+python Task1_parallel_two_seller_per_one_product_negotiation.py
+python Task2_parallel_three_seller_per_one_product_negotiation.py
+python Task3_sequential_two_seller_per_one_product_negotiation.py
+python Task4_sequential_three_seller_per_one_product_negotiation.py

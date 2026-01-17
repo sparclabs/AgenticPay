@@ -229,13 +229,9 @@ def main():
     print(f"  Total Product Price: ${total_product_price:.2f}")
     
     # Get user requirement
-    print("\n" + "="*60)
-    print("Please enter the product requirement (should describe purchasing three products):")
-    user_requirement = input("> ").strip()
-    if not user_requirement:
-        print("No requirement entered, using default requirement...")
-        user_requirement = "I need a high-quality winter jacket, a pair of running shoes, and a hiking backpack for my outdoor activities"
-        print(f"Using default requirement: {user_requirement}")
+    # Use default requirement for automatic running
+    user_requirement = "I need a high-quality winter jacket, a pair of running shoes, and a hiking backpack for my outdoor activities"
+    print(f"Using default requirement: {user_requirement}")
     
     # Reset environment
     print("\n" + "="*60)
@@ -719,7 +715,7 @@ def main():
     # Save results to file
     try:
         # Create results directory structure
-        results_dir = Path(project_root) / "agenticpaygym" / "results" / "multi_buyer_multi_products_multi_seller"
+        results_dir = Path(project_root) / "results" / "multi_buyer_multi_products_multi_seller"
         results_dir.mkdir(parents=True, exist_ok=True)
         
         # Get model name for directory (sanitize for filesystem)

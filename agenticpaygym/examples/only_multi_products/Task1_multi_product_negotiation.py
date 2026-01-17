@@ -96,7 +96,7 @@ def main():
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
     print("Creating agents...")
-    buyer_max_price = 120.0  # Maximum acceptable purchase price for buyer (confidential)
+    buyer_max_price = 150.0  # Maximum acceptable purchase price for buyer (confidential)
     seller_min_price = 80.0  # Minimum acceptable selling price for seller (confidential)
     
     buyer = BuyerAgent(model=model, buyer_max_price=buyer_max_price)
@@ -146,18 +146,27 @@ def main():
         },
     ]
     
+    # Initialize results dictionary and start time
+    start_time = time.time()
+    results = {
+        "task": "Task1_multi_product_negotiation",
+        "timestamp": datetime.now().isoformat(),
+        "user_profile": user_profile,
+        "product_results": [],
+        "status": "unknown",
+        "success": False,
+        "error": None,
+    }
+    
     # First product negotiation (Winter Jacket)
     print("\n" + "="*60)
     print("Starting first product negotiation...")
     print("="*60)
     
     # Get user requirement
-    print("\nPlease enter the product requirement you want to purchase:")
-    user_requirement = input("> ").strip()
-    if not user_requirement:
-        print("No requirement entered, using default requirement...")
-        user_requirement = "I need a high-quality winter jacket for cold weather"
-        print(f"Using default requirement: {user_requirement}")
+    # Use default requirement for automatic running
+    user_requirement = "I need a high-quality winter jacket for cold weather"
+    print(f"Using default requirement: {user_requirement}")
     
     # Reset environment
     print("\n" + "="*60)
@@ -306,37 +315,10 @@ def main():
             results["product_results"].append(first_product_result)
             break
     
-    # Ask if user wants to continue with another product
-    print("\n" + "="*60)
-    print("Please enter the product requirement you want to purchase:")
-    user_requirement = input("> ").strip()
-    
-    # If user enters "no", exit
-    if user_requirement.lower() == "no":
-        # Display final summary and exit
-        print("\n" + "="*60)
-        print("All Products Negotiation Summary")
-        print("="*60)
-        
-        final_info = env._get_info()
-        if final_info.get("product_results"):
-            print(f"\nTotal products negotiated: {len(final_info['product_results'])}")
-            for i, result in enumerate(final_info["product_results"], 1):
-                status_str = "✓ AGREED" if result["status"] == "agreed" else "✗ TIMEOUT"
-                price_str = f"${result['agreed_price']:.2f}" if result.get('agreed_price') else "N/A"
-                print(f"  {i}. {result['product_name']}: {status_str} @ {price_str} (Rounds: {result['rounds']})")
-        else:
-            print("No products were negotiated.")
-        
-        print("="*60)
-        env.close()
-        print("\nMulti-product negotiation completed!")
-        return
-    
-    # If user entered a requirement, use it; otherwise use default
-    if not user_requirement:
-        print("No requirement entered, using default requirement...")
-        user_requirement = "I need a high-quality pair of running shoes for jogging"
+    # Continue with second product using default requirement
+    # Use default requirement for automatic running
+    user_requirement = "I need a high-quality pair of running shoes for jogging"
+    print(f"Using default requirement for second product: {user_requirement}")
     
     # Select the most appropriate product based on user requirement
     print("\nSelecting the most appropriate product based on your requirement...")
@@ -536,7 +518,7 @@ def main():
     # Save results to file
     try:
         # Create results directory structure
-        results_dir = Path(project_root) / "agenticpaygym" / "results" / "only_multi_products"
+        results_dir = Path(project_root) / "results" / "only_multi_products"
         results_dir.mkdir(parents=True, exist_ok=True)
         
         # Get model name for directory (sanitize for filesystem)

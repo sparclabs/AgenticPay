@@ -132,7 +132,7 @@ def main():
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
     print("Creating agents...")
-    buyer_max_price = 120.0  # Maximum acceptable purchase price for buyer (confidential)
+    buyer_max_price = 150.0  # Maximum acceptable purchase price for buyer (confidential)
     seller1_min_price = 80.0  # Minimum acceptable selling price for seller1 (confidential)
     seller2_min_price = 85.0  # Minimum acceptable selling price for seller2 (confidential, different from seller1)
     
@@ -166,13 +166,9 @@ def main():
     print(f"User Profile: {user_profile}")
     
     # Get user requirement
-    print("\n" + "="*60)
-    print("Please enter the product requirement you want to purchase:")
-    user_requirement = input("> ").strip()
-    if not user_requirement:
-        print("No requirement entered, using default requirement...")
-        user_requirement = "I need a high-quality winter jacket for cold weather"
-        print(f"Using default requirement: {user_requirement}")
+    # Use default requirement for automatic running
+    user_requirement = "I need a high-quality winter jacket for cold weather"
+    print(f"Using default requirement: {user_requirement}")
     
     # Reset environment with different products for each seller
     print("\n" + "="*60)
@@ -448,7 +444,7 @@ def main():
     # Save results to file
     try:
         # Create results directory structure
-        results_dir = Path(project_root) / "agenticpaygym" / "results" / "multi_products_multi_seller"
+        results_dir = Path(project_root) / "results" / "multi_products_multi_seller"
         results_dir.mkdir(parents=True, exist_ok=True)
         
         # Get model name for directory (sanitize for filesystem)
