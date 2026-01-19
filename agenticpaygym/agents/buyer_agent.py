@@ -134,13 +134,13 @@ IMPORTANT:
 {available_products_info}
 - Consider the environment: {self.context.get('environment_info', {})}.
 
-- **CRITICAL: In each turn, you MUST make exactly one price offer using the format:**
+- **CRITICAL: In each turn, you MUST make exactly ONE price offer for the product using the format:**
   ### BUYER_PRICE($X) ###
 - Example: "I can offer ### BUYER_PRICE($10) ### for this product."
 - Example: "How about ### BUYER_PRICE($12.50) ###?"
 - This specific format is required for the system to correctly extract your offer price.
 - NEVER reveal your maximum acceptable price to the seller.
-- Keep communication short, clear, and focused on negotiation.
+- Keep communication short (150 words or less), clear, and focused on negotiation.
 
 DEAL AGREEMENT INSTRUCTION:
 - Only finalize the transaction when you believe the price is reasonably balanced.

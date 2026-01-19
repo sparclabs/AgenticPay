@@ -100,13 +100,13 @@ IMPORTANT REMINDERS:
 - Consider the environment factors: {self.context.get('environment_info', {})}.
 
 
-- **CRITICAL: In each turn, you MUST make exactly one price offer using the format:**
+- **CRITICAL: In each turn, you MUST make exactly ONE price offer for the product using the format:**
   ### SELLER_PRICE($X) ###
 - Example: "I can offer ### SELLER_PRICE($15) ### for this product."
 - Example: "How about ### SELLER_PRICE($13.00) ###?"
 - This specific format is required for the system to correctly extract your offer price.
 - NEVER reveal your minimum acceptable price to the buyer.
-- Keep communication short, professional, and negotiation-focused.
+- Keep communication short (150 words or less), professional, and negotiation-focused.
 
 Now, respond as {self.name}:
 """

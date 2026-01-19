@@ -84,7 +84,7 @@ def main(model_name=None):
     
     # Use provided model name or default
     if model_name is None:
-        model_name = "gpt-5.2"  # Default model
+        model_name = "gpt-5-mini-2025-08-07"  # Default model
     
     model = CustomLLM(api_key=api_key, model=model_name)  # claude-sonnet-4-5-20250929, gpt-5.2, gemini-3-pro-all, gpt-3.5-turbo, DeepSeek-R1
     
