@@ -316,7 +316,13 @@ def main(model_name=None):
                 weighted_round_cost = round_cost * weights["time_cost"]
                 print(f"  Seller2 Step Reward = round_cost({round_cost:.2f} * {weights['time_cost']:.2f}) = {weighted_round_cost:.2f} (seller2_price not specified, round={info['round']})")
         
+        # If this is the final round (agreed or timeout), display score calculations after Step Rewards
         if done:
+            # Print score calculations after Step Rewards
+            env._print_global_score_details()
+            env._print_buyer_score_details()
+            env._print_seller_score_details()
+            
             print("\n" + "="*60)
             print("Negotiation Ended")
             print("="*60)
@@ -326,7 +332,9 @@ def main(model_name=None):
                 print(f"Final Deal Price: ${info.get('final_deal_price', 0):.2f}")
             print(f"Seller1 Prices: Seller=${info.get('seller1_price', 0):.2f} | Buyer=${info.get('buyer_price_seller1', 0):.2f}")
             print(f"Seller2 Prices: Seller=${info.get('seller2_price', 0):.2f} | Buyer=${info.get('buyer_price_seller2', 0):.2f}")
-            print(f"Total Rounds: {info['round']}")
+            # current_round has been incremented to reflect the completed round
+            actual_rounds = info['round']
+            print(f"Total Rounds: {actual_rounds}")
             print(f"Global Reward: {reward:.3f}")
             if 'buyer_reward' in info:
                 print(f"Buyer Reward: {info['buyer_reward']:.3f}")

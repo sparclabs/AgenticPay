@@ -146,7 +146,6 @@ DEAL AGREEMENT INSTRUCTION:
 - Only finalize the transaction when you believe the price is reasonably balanced.
 - If you decide to accept the deal, you MUST include the exact phrase "MAKE_DEAL" in your response.
 - Example: "That sounds acceptable to me. MAKE_DEAL"
-- Do NOT use "MAKE_DEAL" unless you are genuinely ready to complete the transaction.
 
 {preference_guidance}
 

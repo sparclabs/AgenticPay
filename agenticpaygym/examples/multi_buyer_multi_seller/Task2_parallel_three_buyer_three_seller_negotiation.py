@@ -130,7 +130,7 @@ def main(model_name=None):
             "season": "summer",
             "weather": "sunny",
         },
-        price_tolerance=price_tolerance,
+        price_tolerance=0,
         reward_weights=reward_weights,  # Reward weights configuration
         buyer_reward_aggregation=buyer_reward_aggregation,  # Buyer reward aggregation method
         seller_reward_aggregation=seller_reward_aggregation,  # Seller reward aggregation method
@@ -552,7 +552,14 @@ def main(model_name=None):
             print(f"Buyer3-Seller1 Prices: Buyer=${info.get('b3s1_buyer_price', 0):.2f} | Seller=${info.get('b3s1_seller_price', 0):.2f}")
             print(f"Buyer3-Seller2 Prices: Buyer=${info.get('b3s2_buyer_price', 0):.2f} | Seller=${info.get('b3s2_seller_price', 0):.2f}")
             print(f"Buyer3-Seller3 Prices: Buyer=${info.get('b3s3_buyer_price', 0):.2f} | Seller=${info.get('b3s3_seller_price', 0):.2f}")
-            print(f"Total Rounds: {info['round']}")
+            # Print score calculations after Step Rewards
+            env._print_global_score_details()
+            env._print_buyer_score_details()
+            env._print_seller_score_details()
+            
+            # current_round has been incremented to reflect the completed round
+            actual_rounds = info['round']
+            print(f"Total Rounds: {actual_rounds}")
             print(f"Global Reward: {reward:.3f}")
             if 'buyer1_reward' in info:
                 print(f"Buyer1 Reward: {info['buyer1_reward']:.3f}")
@@ -603,6 +610,7 @@ def main(model_name=None):
                 "b3s2_seller_price": info.get('b3s2_seller_price'),
                 "b3s3_buyer_price": info.get('b3s3_buyer_price'),
                 "b3s3_seller_price": info.get('b3s3_seller_price'),
+                # current_round has been incremented to reflect the completed round
                 "total_rounds": info.get('round', 0),
                 "total_reward": float(reward) if reward is not None else None,
                 "buyer1_reward": info.get('buyer1_reward'),

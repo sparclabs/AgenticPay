@@ -96,23 +96,46 @@ class CustomLLM(BaseLLM):
         Returns:
             Generated text
         """
-        try:
-            # response = self.client.chat.completions.create(
-            #     model=self.model,
-            #     messages=[
-            #         {"role": "user", "content": prompt}
-            #     ],
-            #     temperature=temperature,
-            #     max_tokens=max_tokens,
-            #     **kwargs,
-            # )
-            # return response.choices[0].message.content.strip()
+        max_retries = 3
+        retry_count = 0
+        
+        while retry_count <= max_retries:
+            try:
+                # response = self.client.chat.completions.create(
+                #     model=self.model,
+                #     messages=[
+                #         {"role": "user", "content": prompt}
+                #     ],
+                #     temperature=temperature,
+                #     max_tokens=max_tokens,
+                #     **kwargs,
+                # )
+                # return response.choices[0].message.content.strip()
 
-            response = self.model_api(prompt, self.api_key, temperature, max_tokens, self.model)
-            return response
+                response = self.model_api(prompt, self.api_key, temperature, max_tokens, self.model)
+                
+                # Check if response is empty, None, or only whitespace
+                if response is not None and isinstance(response, str) and response.strip():
+                    return response
+                else:
+                    # Empty response, retry if not exceeded max retries
+                    retry_count += 1
+                    if retry_count <= max_retries:
+                        continue
+                    else:
+                        # Exceeded max retries, return "No response"
+                        return "No response"
 
-        except Exception as e:
-            raise RuntimeError(f"Custom API error: {e}")
+            except Exception as e:
+                # If exception occurs, retry if not exceeded max retries
+                retry_count += 1
+                if retry_count <= max_retries:
+                    continue
+                else:
+                    raise RuntimeError(f"Custom API error: {e}")
+        
+        # Should not reach here, but return "No response" as fallback
+        return "No response"
     
     def __repr__(self) -> str:
         """Return string representation of LLM"""

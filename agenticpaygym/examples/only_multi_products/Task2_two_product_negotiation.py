@@ -231,7 +231,13 @@ def main(model_name=None):
         # Flush output to ensure complete display
         sys.stdout.flush()
         
+        # If this is the final round (agreed or timeout), display score calculations after Round Summary
         if done:
+            # Print score calculations after Round Summary
+            env._print_global_score_details()
+            env._print_buyer_score_details()
+            env._print_seller_score_details()
+            
             print("\n" + "="*60)
             print("Negotiation Ended")
             print("="*60)
@@ -243,7 +249,9 @@ def main(model_name=None):
             print(f"Final Total Prices: Seller={seller_price_str} | Buyer={buyer_price_str}")
             if info.get('agreed_price'):
                 print(f"Agreed Total Price: ${info.get('agreed_price', 0):.2f}")
-            print(f"Total Rounds: {info['round']}")
+            # current_round has been incremented to reflect the completed round
+            actual_rounds = info['round']
+            print(f"Total Rounds: {actual_rounds}")
             print(f"Reward: {reward:.3f}")
             if 'global_score' in info:
                 print(f"GlobalScore: {info['global_score']:.3f}")

@@ -33,7 +33,7 @@ except ImportError:
     buyer_reward_aggregation = "average"
     seller_reward_aggregation = "average"
     max_rounds = 20
-    price_tolerance = 1.0
+    price_tolerance = 0
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 
@@ -85,7 +85,7 @@ def main(model_name=None):
     
     # Use provided model name or default
     if model_name is None:
-        model_name = "gpt-5.2"  # Default model
+        model_name = "qwen3-8b"  # Default model
     
     model = CustomLLM(api_key=api_key, model=model_name)  # claude-sonnet-4-5-20250929, gpt-5.2, gemini-3-pro-all, gpt-3.5-turbo, DeepSeek-R1
     
@@ -560,21 +560,32 @@ def main(model_name=None):
                     weighted_round_cost = round_cost * weights["time_cost"]
                     print(f"  Seller3 Step Reward = round_cost({round_cost:.2f} * {weights['time_cost']:.2f}) = {weighted_round_cost:.2f} (seller_price not specified, round={info['round']})")
         
+        # If this is the final round (agreed or timeout), display score calculations after Step Rewards
         if done:
+            # Print score calculations after Step Rewards
+            env._print_global_score_details()
+            env._print_buyer_score_details()
+            env._print_seller_score_details()
+            
             print("\n" + "="*60)
             print("Negotiation Ended")
             print("="*60)
             print(f"Status: {info['status']}")
             if info.get('selected_buyer') and info.get('selected_seller'):
                 print(f"Selected Deal: Buyer {info['selected_buyer']} - Seller {info['selected_seller']}")
-                print(f"Final Deal Total Price: ${info.get('final_deal_price', 0):.2f}")
+                final_deal_price = info.get('final_deal_price') or 0
+                print(f"Final Deal Total Price: ${final_deal_price:.2f}")
             # Display all 9 buyer-seller pairs
             for buyer_id in [1, 2, 3]:
                 for seller_id in [1, 2, 3]:
                     buyer_price_key = f'b{buyer_id}s{seller_id}_buyer_price'
                     seller_price_key = f'b{buyer_id}s{seller_id}_seller_price'
-                    print(f"Buyer{buyer_id}-Seller{seller_id} Total Prices: Buyer=${info.get(buyer_price_key, 0):.2f} | Seller=${info.get(seller_price_key, 0):.2f}")
-            print(f"Total Rounds: {info['round']}")
+                    buyer_price = info.get(buyer_price_key) or 0
+                    seller_price = info.get(seller_price_key) or 0
+                    print(f"Buyer{buyer_id}-Seller{seller_id} Total Prices: Buyer=${buyer_price:.2f} | Seller=${seller_price:.2f}")
+            # current_round has been incremented to reflect the completed round
+            actual_rounds = info['round']
+            print(f"Total Rounds: {actual_rounds}")
             print(f"Global Reward: {reward:.3f}")
             if 'buyer1_reward' in info:
                 print(f"Buyer1 Reward: {info['buyer1_reward']:.3f}")

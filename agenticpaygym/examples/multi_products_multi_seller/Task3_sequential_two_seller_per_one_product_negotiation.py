@@ -81,11 +81,10 @@ def extract_seller_choice(buyer_response: str, observation: dict) -> int:
     response_lower = buyer_response.lower()
     
     # Look for explicit seller mentions
-    if re.search(r'seller\s*[12]|first\s+seller|seller\s*one', response_lower):
-        if re.search(r'seller\s*2|second\s+seller|seller\s*two', response_lower):
-            return 2
-        elif re.search(r'seller\s*1|first\s+seller|seller\s*one', response_lower):
-            return 1
+    if re.search(r'seller\s*2|second\s+seller|seller\s*two', response_lower):
+        return 2
+    elif re.search(r'seller\s*1|first\s+seller|seller\s*one', response_lower):
+        return 1
     
     # If no explicit mention, try to infer from context
     # Check if buyer mentions prices or other indicators
@@ -166,7 +165,7 @@ def main(model_name=None):
             "season": "summer",
             "weather": "sunny",
         },
-        price_tolerance=price_tolerance,
+        price_tolerance=0,
         reward_weights=reward_weights,  # Reward weights configuration
     )
     
@@ -304,7 +303,7 @@ def main(model_name=None):
         sys.stdout.flush()
         
         # Display step rewards for each round with detailed calculation
-        if 'step_buyer_reward' in info or 'step_seller1_reward' in info or 'step_seller2_reward' in info:
+        if 'step_seller1_reward' in info or 'step_seller2_reward' in info or 'step_buyer_reward' in info:
             print(f"\n[Step Rewards] ", end="")
             if 'step_buyer_reward' in info:
                 print(f"Buyer: {info['step_buyer_reward']:.3f}", end="")
@@ -371,7 +370,13 @@ def main(model_name=None):
                 weighted_round_cost = round_cost * weights["time_cost"]
                 print(f"  Seller2 Step Reward = round_cost({round_cost:.2f} * {weights['time_cost']:.2f}) = {weighted_round_cost:.2f} (seller2_price not specified, round={info['round']})")
         
+        # If this is the final round (agreed or timeout), display score calculations after Step Rewards
         if done:
+            # Print score calculations after Step Rewards
+            env._print_global_score_details()
+            env._print_buyer_score_details()
+            env._print_seller_score_details()
+            
             print("\n" + "="*60)
             print("Negotiation Ended")
             print("="*60)
@@ -392,7 +397,9 @@ def main(model_name=None):
             buyer_price_seller2 = info.get('buyer_price_seller2', 0) or 0
             print(f"Seller1 Prices: Seller=${seller1_price:.2f} | Buyer=${buyer_price_seller1:.2f}")
             print(f"Seller2 Prices: Seller=${seller2_price:.2f} | Buyer=${buyer_price_seller2:.2f}")
-            print(f"Total Rounds: {info['round']}")
+            # current_round has been incremented to reflect the completed round
+            actual_rounds = info['round']
+            print(f"Total Rounds: {actual_rounds}")
             print(f"Global Reward: {reward:.3f}")
             if 'buyer_reward' in info:
                 print(f"Buyer Reward: {info['buyer_reward']:.3f}")
@@ -414,6 +421,8 @@ def main(model_name=None):
             elapsed_time = time.time() - start_time
             seller1_product_info = info.get('seller1_product_info', {})
             seller2_product_info = info.get('seller2_product_info', {})
+            # current_round has been incremented to reflect the completed round
+            actual_rounds = info.get('round', 0)
             results.update({
                 "status": info.get('status', 'unknown'),
                 "success": terminated,
@@ -423,7 +432,7 @@ def main(model_name=None):
                 "seller2_price": info.get('seller2_price'),
                 "buyer_price_seller1": info.get('buyer_price_seller1'),
                 "buyer_price_seller2": info.get('buyer_price_seller2'),
-                "total_rounds": info.get('round', 0),
+                "total_rounds": actual_rounds,
                 "total_reward": float(reward) if reward is not None else None,
                 "buyer_reward": info.get('buyer_reward'),
                 "seller1_reward": info.get('seller1_reward'),

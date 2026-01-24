@@ -286,7 +286,13 @@ def main(model_name=None):
                 weighted_round_cost = round_cost * weights["time_cost"]
                 print(f"  Buyer Step Reward = round_cost({round_cost:.2f} * {weights['time_cost']:.2f}) = {weighted_round_cost:.2f} (buyer_price not specified, round={info['round']})")
         
+        # If this is the final round (agreed or timeout), display score calculations after Step Rewards
         if done:
+            # Print score calculations after Step Rewards
+            env._print_global_score_details()
+            env._print_buyer_score_details()
+            env._print_seller_score_details()
+            
             print("\n" + "="*60)
             print("Negotiation Ended")
             print("="*60)
@@ -296,7 +302,9 @@ def main(model_name=None):
             seller_price_str = f"${seller_price:.2f}" if seller_price is not None else "Not specified"
             buyer_price_str = f"${buyer_price:.2f}" if buyer_price is not None else "Not specified"
             print(f"Final Prices: Seller={seller_price_str} | Buyer={buyer_price_str}")
-            print(f"Total Rounds: {info['round']}")
+            # current_round has been incremented to reflect the completed round
+            actual_rounds = info['round']
+            print(f"Total Rounds: {actual_rounds}")
             print(f"Total Reward: {reward:.3f}")
             if 'seller_reward' in info:
                 print(f"Seller Reward: {info['seller_reward']:.3f}")
@@ -332,13 +340,15 @@ def main(model_name=None):
             
             # Collect results
             elapsed_time = time.time() - start_time
+            # current_round has been incremented to reflect the completed round
+            actual_rounds = info.get('round', 0)
             results.update({
                 "status": info.get('status', 'unknown'),
                 "success": terminated,
                 "seller_price": info.get('seller_price'),
                 "buyer_price": info.get('buyer_price'),
                 "agreed_price": agreed_price,
-                "total_rounds": info.get('round', 0),
+                "total_rounds": actual_rounds,
                 "total_reward": float(reward) if reward is not None else None,
                 "seller_reward": info.get('seller_reward'),
                 "buyer_reward": info.get('buyer_reward'),

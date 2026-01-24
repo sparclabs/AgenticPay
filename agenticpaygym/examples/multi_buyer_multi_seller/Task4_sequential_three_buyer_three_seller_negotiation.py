@@ -191,7 +191,7 @@ def main(model_name=None):
             "season": "summer",
             "weather": "sunny",
         },
-        price_tolerance=price_tolerance,
+        price_tolerance=0,
         reward_weights=reward_weights,  # Reward weights configuration
     )
     
@@ -558,7 +558,14 @@ def main(model_name=None):
                     seller_price = info.get(f'b{buyer_id}s{seller_id}_seller_price', 0) or 0
                     print(f"Buyer{buyer_id}-Seller{seller_id} Prices: Buyer=${buyer_price:.2f} | Seller=${seller_price:.2f}")
             
-            print(f"Total Rounds: {info['round']}")
+            # Print score calculations after Step Rewards
+            env._print_global_score_details()
+            env._print_buyer_score_details()
+            env._print_seller_score_details()
+            
+            # current_round has been incremented to reflect the completed round
+            actual_rounds = info['round']
+            print(f"Total Rounds: {actual_rounds}")
             print(f"Global Reward: {reward:.3f}")
             if 'buyer1_reward' in info:
                 print(f"Buyer1 Reward: {info['buyer1_reward']:.3f}")
@@ -609,6 +616,7 @@ def main(model_name=None):
                 "b3s2_seller_price": info.get('b3s2_seller_price'),
                 "b3s3_buyer_price": info.get('b3s3_buyer_price'),
                 "b3s3_seller_price": info.get('b3s3_seller_price'),
+                # current_round has been incremented to reflect the completed round
                 "total_rounds": info.get('round', 0),
                 "total_reward": float(reward) if reward is not None else None,
                 "buyer1_reward": info.get('buyer1_reward'),

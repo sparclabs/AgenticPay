@@ -279,7 +279,13 @@ def main(model_name=None):
                 weighted_round_cost = round_cost * weights["time_cost"]
                 print(f"  Buyer Step Reward = round_cost({round_cost:.2f} * {weights['time_cost']:.2f}) = {weighted_round_cost:.2f} (buyer_price not specified, round={info['round']})")
         
+        # If this is the final round (agreed or timeout), display score calculations after Step Rewards
         if done:
+            # Print score calculations after Step Rewards
+            env._print_global_score_details()
+            env._print_buyer_score_details()
+            env._print_seller_score_details()
+            
             print("\n" + "="*60)
             print("Negotiation Ended")
             print("="*60)
@@ -289,7 +295,9 @@ def main(model_name=None):
             seller_price_str = f"${seller_price:.2f}" if seller_price is not None else "Not specified"
             buyer_price_str = f"${buyer_price:.2f}" if buyer_price is not None else "Not specified"
             print(f"Final Prices: Seller={seller_price_str} | Buyer={buyer_price_str}")
-            print(f"Total Rounds: {info['round']}")
+            # current_round has been incremented to reflect the completed round
+            actual_rounds = info['round']
+            print(f"Total Rounds: {actual_rounds}")
             print(f"Total Reward: {reward:.3f}")
             if 'seller_reward' in info:
                 print(f"Seller Reward: {info['seller_reward']:.3f}")
@@ -443,7 +451,13 @@ def main(model_name=None):
                 weighted_round_cost = round_cost * weights["time_cost"]
                 print(f"  Buyer Step Reward = round_cost({round_cost:.2f} * {weights['time_cost']:.2f}) = {weighted_round_cost:.2f} (buyer_price not specified, round={info['round']})")
         
+        # If this is the final round (agreed or timeout), display score calculations after Step Rewards
         if done:
+            # Print score calculations after Step Rewards
+            env._print_global_score_details()
+            env._print_buyer_score_details()
+            env._print_seller_score_details()
+            
             print("\n" + "="*60)
             print("Negotiation Ended")
             print("="*60)
@@ -453,7 +467,9 @@ def main(model_name=None):
             seller_price_str = f"${seller_price:.2f}" if seller_price is not None else "Not specified"
             buyer_price_str = f"${buyer_price:.2f}" if buyer_price is not None else "Not specified"
             print(f"Final Prices: Seller={seller_price_str} | Buyer={buyer_price_str}")
-            print(f"Total Rounds: {info['round']}")
+            # current_round has been incremented to reflect the completed round
+            actual_rounds = info['round']
+            print(f"Total Rounds: {actual_rounds}")
             print(f"Total Reward: {reward:.3f}")
             if 'seller_reward' in info:
                 print(f"Seller Reward: {info['seller_reward']:.3f}")
@@ -514,9 +530,29 @@ def main(model_name=None):
     if final_info.get("product_results"):
         results["product_results"] = final_info["product_results"]
     
+    # Calculate overall success: all products must be successfully negotiated
+    all_success = len(results["product_results"]) > 0 and all(
+        p.get("success", False) for p in results["product_results"]
+    )
+    
+    # Determine overall status based on product results
+    # If any product has timeout/error, the overall status should reflect that
+    has_timeout = any(p.get("status") == "timeout" for p in results["product_results"])
+    has_error = any(p.get("error") is not None for p in results["product_results"])
+    
+    if has_error:
+        overall_status = "error"
+    elif has_timeout:
+        overall_status = "timeout"
+    elif all_success:
+        overall_status = "agreed"
+    else:
+        overall_status = "completed"
+    
     # Update results with final status
     results.update({
-        "status": "completed",
+        "status": overall_status,
+        "success": all_success,
         "total_products": len(results["product_results"]),
         "elapsed_time": time.time() - start_time,
         "buyer_max_price": buyer_max_price,
