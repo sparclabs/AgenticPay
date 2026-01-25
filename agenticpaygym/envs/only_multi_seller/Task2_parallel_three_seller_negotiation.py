@@ -667,48 +667,51 @@ class Task2ParallelThreeSellerNegotiation(BaseEnv):
         Returns:
             Extracted price, returns None if not found
         """
+        def parse_price(price_str: str) -> Optional[float]:
+            """Parse price string, removing commas and converting to float"""
+            try:
+                # Remove commas from price string (e.g., "8,750" -> "8750")
+                cleaned = price_str.replace(',', '')
+                price = float(cleaned)
+                if price > 0:
+                    return price
+            except ValueError:
+                pass
+            return None
+        
         # Priority 1: Extract price from ### BUYER_PRICE($X) ### or ### SELLER_PRICE($X) ### format
-        # Matches: ### BUYER_PRICE($100.50) ###, ### SELLER_PRICE($150) ###, etc.
-        labeled_price_pattern = r'###\s*(?:BUYER_PRICE|SELLER_PRICE)\s*\(\$(\d+\.?\d*)\)\s*###'
+        # Matches: ### BUYER_PRICE($100.50) ###, ### SELLER_PRICE($150) ###, ### BUYER_PRICE($8,750) ###, etc.
+        labeled_price_pattern = r'###\s*(?:BUYER_PRICE|SELLER_PRICE)\s*\(\$([\d,]+\.?\d*)\)\s*###'
         matches = re.findall(labeled_price_pattern, text, re.IGNORECASE)
         if matches:
-            try:
-                price = float(matches[-1])  # Take the last match
-                if price > 0:
-                    return price
-            except ValueError:
-                pass
+            price = parse_price(matches[-1])  # Take the last match
+            if price is not None:
+                return price
         
         # Priority 2: Extract price from ### $X ### format (backward compatibility)
-        # Matches: ### $100.50 ###, ### $100 ###, ###$120###, etc.
-        triple_hash_pattern = r'###\s*\$(\d+\.?\d*)\s*###'
+        # Matches: ### $100.50 ###, ### $100 ###, ###$120###, ### $8,750 ###, etc.
+        triple_hash_pattern = r'###\s*\$([\d,]+\.?\d*)\s*###'
         matches = re.findall(triple_hash_pattern, text, re.IGNORECASE)
         if matches:
-            try:
-                price = float(matches[-1])  # Take the last match
-                if price > 0:
-                    return price
-            except ValueError:
-                pass
+            price = parse_price(matches[-1])  # Take the last match
+            if price is not None:
+                return price
         
         # Priority 3: Fall back to other price patterns
         fallback_patterns = [
-            r'\$(\d+\.?\d*)',  # $100.50 or $100
-            r'(\d+\.?\d*)\s*dollars?',  # 100.50 dollars
-            r'(\d+\.?\d*)\s*USD',  # 100.50 USD
-            r'price.*?(\d+\.?\d*)',  # price 100.50
-            r'offer.*?(\d+\.?\d*)',  # offer 100.50
+            r'\$([\d,]+\.?\d*)',  # $100.50 or $100 or $8,750
+            r'([\d,]+\.?\d*)\s*dollars?',  # 100.50 dollars or 8,750 dollars
+            r'([\d,]+\.?\d*)\s*USD',  # 100.50 USD or 8,750 USD
+            r'price.*?([\d,]+\.?\d*)',  # price 100.50 or price 8,750
+            r'offer.*?([\d,]+\.?\d*)',  # offer 100.50 or offer 8,750
         ]
         
         for pattern in fallback_patterns:
             matches = re.findall(pattern, text, re.IGNORECASE)
             if matches:
-                try:
-                    price = float(matches[-1])  # Take the last match
-                    if price > 0:
-                        return price
-                except ValueError:
-                    continue
+                price = parse_price(matches[-1])  # Take the last match
+                if price is not None:
+                    return price
         
         return None
     
