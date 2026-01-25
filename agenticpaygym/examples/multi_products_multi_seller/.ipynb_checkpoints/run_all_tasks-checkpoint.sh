@@ -49,39 +49,85 @@ save_run_history() {
 # If the list is empty, each script will use its default model
 # Example:
 # MODELS=("gpt-5.2" "gemini-3-pro-all" "claude-sonnet-4-5-20250929")
-MODELS=("gemini-3-pro-all" "qwen3-8b")
+MODELS=("claude-opus-4-5-20251101" "Qwen/Qwen3-14B")
+
+
+# ============================================
+# Configuration: Task List
+# ============================================
+# Configure which tasks to run
+# If the list is empty, all available tasks will be run
+# Format: Just specify task numbers (e.g., "Task1", "Task4", "Task5")
+# Example:
+# TASKS=("Task1" "Task4" "Task5")
+TASKS=("Task5" "Task6" "Task7" "Task8" "Task9" "Task10" "Task11" "Task12" "Task13" "Task14")
 
 # ============================================
 # Execute Tasks
 # ============================================
+# Define all available tasks mapping
+declare -A TASK_SCRIPTS
+TASK_SCRIPTS["Task1"]="Task1_parallel_two_seller_per_one_product_negotiation"
+TASK_SCRIPTS["Task2"]="Task2_parallel_three_seller_per_one_product_negotiation"
+TASK_SCRIPTS["Task3"]="Task3_sequential_two_seller_per_one_product_negotiation"
+TASK_SCRIPTS["Task4"]="Task4_sequential_three_seller_per_one_product_negotiation"
+TASK_SCRIPTS["Task5"]="Task5_s1_used_smartphone_negotiation"
+TASK_SCRIPTS["Task6"]="Task6_s2_used_car_negotiation"
+TASK_SCRIPTS["Task7"]="Task7_s3_short_term_rental_negotiation"
+TASK_SCRIPTS["Task8"]="Task8_s4_website_development_negotiation"
+TASK_SCRIPTS["Task9"]="Task9_s5_commercial_photography_negotiation"
+TASK_SCRIPTS["Task10"]="Task10_s6_home_renovation_negotiation"
+TASK_SCRIPTS["Task11"]="Task11_s7_saas_software_negotiation"
+TASK_SCRIPTS["Task12"]="Task12_s8_raw_materials_procurement_negotiation"
+TASK_SCRIPTS["Task13"]="Task13_s9_luxury_watch_negotiation"
+TASK_SCRIPTS["Task14"]="Task14_s10_business_acquisition_negotiation"
+
+# Determine which tasks to run
+if [ ${#TASKS[@]} -eq 0 ]; then
+    # If TASKS is empty, run all available tasks
+    echo "TASKS list is empty. Running all available tasks..."
+    TASKS_TO_RUN=("Task1" "Task2" "Task3" "Task4" "Task5" "Task6" "Task7" "Task8" "Task9" "Task10" "Task11" "Task12" "Task13" "Task14")
+else
+    # Use the specified task list
+    TASKS_TO_RUN=("${TASKS[@]}")
+fi
+
+echo "Tasks to run: ${#TASKS_TO_RUN[@]}"
+for task_name in "${TASKS_TO_RUN[@]}"; do
+    echo "  - $task_name"
+done
+echo ""
+
 if [ ${#MODELS[@]} -eq 0 ]; then
     # Model list is empty: use default behavior (each script uses its own default model)
-    echo "Running all tasks (using default models)..."
+    echo "Running selected tasks (using default models)..."
     
     # Create temporary log file
     TEMP_LOG=$(mktemp)
     
     # Run each task with tee to capture output
-    echo "Running Task1..."
-    python Task1_parallel_two_seller_per_one_product_negotiation.py 2>&1 | tee "$TEMP_LOG"
-    
-    echo ""
-    echo "Running Task2..."
-    python Task2_parallel_three_seller_per_one_product_negotiation.py 2>&1 | tee "$TEMP_LOG"
-    
-    echo ""
-    echo "Running Task3..."
-    python Task3_sequential_two_seller_per_one_product_negotiation.py 2>&1 | tee "$TEMP_LOG"
-    
-    echo ""
-    echo "Running Task4..."
-    python Task4_sequential_three_seller_per_one_product_negotiation.py 2>&1 | tee "$TEMP_LOG"
+    for task_name in "${TASKS_TO_RUN[@]}"; do
+        script_name="${TASK_SCRIPTS[$task_name]}"
+        
+        if [ -z "$script_name" ]; then
+            echo "Warning: Unknown task '$task_name', skipping..."
+            continue
+        fi
+        
+        if [ -f "${script_name}.py" ]; then
+            echo ""
+            echo "Running ${task_name}..."
+            python "${script_name}.py" 2>&1 | tee "$TEMP_LOG"
+        else
+            echo "Warning: ${script_name}.py not found, skipping..."
+        fi
+    done
     
     # Clean up
     rm -f "$TEMP_LOG"
 else
-    # Model list is provided: loop through each model and run all tasks for each model
-    echo "Running all tasks with the following model list: ${MODELS[*]}"
+    # Model list is provided: loop through each model and run selected tasks for each model
+    echo "Running selected tasks with the following model list: ${MODELS[*]}"
     for model in "${MODELS[@]}"; do
         echo ""
         echo "=========================================="
@@ -92,24 +138,23 @@ else
         # Create temporary log file for this model's tasks
         TEMP_LOG=$(mktemp)
         
-        echo "Running Task1 (model: $model)..."
-        python Task1_parallel_two_seller_per_one_product_negotiation.py --model "$model" 2>&1 | tee "$TEMP_LOG"
-        save_run_history "$TEMP_LOG" "$model" "Task1"
-        
-        echo ""
-        echo "Running Task2 (model: $model)..."
-        python Task2_parallel_three_seller_per_one_product_negotiation.py --model "$model" 2>&1 | tee "$TEMP_LOG"
-        save_run_history "$TEMP_LOG" "$model" "Task2"
-        
-        echo ""
-        echo "Running Task3 (model: $model)..."
-        python Task3_sequential_two_seller_per_one_product_negotiation.py --model "$model" 2>&1 | tee "$TEMP_LOG"
-        save_run_history "$TEMP_LOG" "$model" "Task3"
-        
-        echo ""
-        echo "Running Task4 (model: $model)..."
-        python Task4_sequential_three_seller_per_one_product_negotiation.py --model "$model" 2>&1 | tee "$TEMP_LOG"
-        save_run_history "$TEMP_LOG" "$model" "Task4"
+        for task_name in "${TASKS_TO_RUN[@]}"; do
+            script_name="${TASK_SCRIPTS[$task_name]}"
+            
+            if [ -z "$script_name" ]; then
+                echo "Warning: Unknown task '$task_name', skipping..."
+                continue
+            fi
+            
+            if [ -f "${script_name}.py" ]; then
+                echo ""
+                echo "Running ${task_name} (model: $model)..."
+                python "${script_name}.py" --model "$model" 2>&1 | tee "$TEMP_LOG"
+                save_run_history "$TEMP_LOG" "$model" "$task_name"
+            else
+                echo "Warning: ${script_name}.py not found, skipping ${task_name}..."
+            fi
+        done
         
         # Clean up temporary log file
         rm -f "$TEMP_LOG"

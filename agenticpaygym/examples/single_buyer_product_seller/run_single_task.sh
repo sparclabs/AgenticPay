@@ -5,8 +5,8 @@
 # ============================================
 # You can set these variables directly in the script,
 # or pass them via command line arguments (--task and --model)
-TASK_NAME="Task1"          # Options: Task1, Task2, Task3
-MODEL_NAME="gemini-3-pro-all"  # Model name, or leave empty for default
+TASK_NAME="Task4_s1"          # Options: Task1, Task2, Task3, Task4_s1
+MODEL_NAME="gpt-5.2"  # Model name, or leave empty for default
 
 # ============================================
 # Change to script directory
@@ -67,20 +67,26 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         -h|--help)
-            echo "Usage: $0 [--task <Task1|Task2|Task3>] [--model <model_name>]"
+            echo "Usage: $0 [--task <Task1|Task2|Task3|Task4_s1>] [--model <model_name>]"
             echo ""
             echo "You can set TASK_NAME and MODEL_NAME directly in the script,"
             echo "or pass them via command line arguments."
             echo ""
             echo "Options:"
-            echo "  --task <Task1|Task2|Task3>        Override task name (optional)"
-            echo "  --model <model_name>              Override model name (optional)"
-            echo "  -h, --help                        Show this help message"
+            echo "  --task <Task1|Task2|Task3|Task4_s1>   Override task name (optional)"
+            echo "  --model <model_name>                   Override model name (optional)"
+            echo "  -h, --help                             Show this help message"
+            echo ""
+            echo "Available Tasks:"
+            echo "  Task1    - Basic Price Negotiation (Winter Jacket)"
+            echo "  Task2    - Close Price Negotiation"
+            echo "  Task3    - Close to Market Price Negotiation"
+            echo "  Task4_s1 - Used Smartphone Negotiation (iPhone 14 Pro)"
             echo ""
             echo "Examples:"
             echo "  $0                                    # Uses TASK_NAME and MODEL_NAME from script"
             echo "  $0 --task Task2                      # Override task, use MODEL_NAME from script"
-            echo "  $0 --task Task2 --model gemini-3-pro-all  # Override both"
+            echo "  $0 --task Task4_s1 --model gpt-5.2  # Run new smartphone scenario"
             exit 0
             ;;
         *)
@@ -113,9 +119,13 @@ case "$TASK_NAME" in
         TASK_SCRIPT="Task3_close_to_market_price_negotiation.py"
         TASK_DISPLAY="Task3"
         ;;
+    Task4_s1|task4_s1)
+        TASK_SCRIPT="Task4_s1_basic_price_negotiation.py"
+        TASK_DISPLAY="Task4_s1"
+        ;;
     *)
         echo "Error: Invalid task name: $TASK_NAME"
-        echo "Valid task names: Task1, Task2, Task3"
+        echo "Valid task names: Task1, Task2, Task3, Task4_s1"
         exit 1
         ;;
 esac
