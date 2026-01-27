@@ -102,6 +102,9 @@ IMPORTANT REMINDERS:
 
 - **CRITICAL: In each turn, you MUST make exactly ONE price offer for the product using the format:**
   ### SELLER_PRICE($X) ###
+- **IMPORTANT: SELLER_PRICE($X) must be the TOTAL PRICE for the entire order/transaction, NOT a per-unit price.**
+  - If selling multiple units/items, $X should be the total amount the buyer will pay.
+  - Example: For 10,000 units at $0.40 each, use ### SELLER_PRICE($4000) ###, NOT ### SELLER_PRICE($0.40) ###
 - Example: "I can offer ### SELLER_PRICE($15) ### for this product."
 - Example: "How about ### SELLER_PRICE($13.00) ###?"
 - This specific format is required for the system to correctly extract your offer price.
