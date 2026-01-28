@@ -185,9 +185,10 @@ class VLLMVLM(BaseVLM):
         self,
         prompt: str,
         images: Optional[Union[str, Path, List[Union[str, Path]], Any]] = None,
-        temperature: float = 0.7,
+        temperature: float = 0.0,
         max_tokens: Optional[int] = None,
         top_p: float = 0.9,
+        seed: int = 0,
         **kwargs,
     ) -> str:
         """Generate text from text prompt and optional images using vLLM
@@ -202,9 +203,10 @@ class VLLMVLM(BaseVLM):
                 - numpy.ndarray: Image as numpy array
                 - bytes: Image as bytes
                 - None: No images (text-only generation)
-            temperature: Temperature parameter (controls randomness, 0.0-2.0)
+            temperature: Temperature parameter (controls randomness, 0.0-2.0), default 0.0 for deterministic
             max_tokens: Maximum number of tokens to generate
             top_p: Nucleus sampling parameter (0.0-1.0)
+            seed: Random seed for reproducibility (default 0)
             **kwargs: Other parameters passed to SamplingParams
             
         Returns:
@@ -223,6 +225,7 @@ class VLLMVLM(BaseVLM):
                 temperature=temperature,
                 max_tokens=max_tokens or 256,
                 top_p=top_p,
+                seed=seed,
                 **kwargs
             )
             
@@ -316,8 +319,9 @@ if __name__ == "__main__":
         print("\n2. Testing text-only generation...")
         response = vlm.generate(
             prompt="你好，请介绍一下你自己。你是什么模型？",
-            temperature=0.7,
-            max_tokens=256
+            temperature=0.0,
+            max_tokens=256,
+            seed=0
         )
         print(f"Response: {response}")
         print("✓ Text-only generation test completed")

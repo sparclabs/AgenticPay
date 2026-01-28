@@ -48,7 +48,7 @@ class CustomLLM(BaseLLM):
                 "OpenAI package is required. Install it with: pip install openai"
             )
     
-    def model_api(self, input_str: str, key: str, temperature: float = 0.7, max_tokens: int = 4096, model_name: str = "gpt-4o-mini-2024-07-18") -> str:
+    def model_api(self, input_str: str, key: str, temperature: float = 0.0, max_tokens: int = 4096, model_name: str = "gpt-4o-mini-2024-07-18") -> str:
         conn = http.client.HTTPSConnection("api2.aigcbest.top")
         payload = json.dumps({
            "model": model_name,
@@ -58,9 +58,9 @@ class CustomLLM(BaseLLM):
                  "content": input_str
               }
            ],
-            "temperature": 0.7,
-            "max_tokens": max_tokens
-        
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+            "seed": 0
         })
         headers = {
            'Accept': 'application/json',
@@ -81,7 +81,7 @@ class CustomLLM(BaseLLM):
     def generate(
         self,
         prompt: str,
-        temperature: float = 0.7,
+        temperature: float = 0.0,
         max_tokens: Optional[int] = None,
         **kwargs,
     ) -> str:
@@ -163,7 +163,7 @@ if __name__ == "__main__":
         
         response = llm.generate(
             prompt=test_prompt,
-            temperature=0.7,
+            temperature=0.0,
             max_tokens=1024
         )
         

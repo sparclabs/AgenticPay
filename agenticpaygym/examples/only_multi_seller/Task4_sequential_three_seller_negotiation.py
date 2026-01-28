@@ -21,7 +21,7 @@ from agenticpaygym.agents.buyer_agent import BuyerAgent
 from agenticpaygym.agents.seller_agent import SellerAgent
 from agenticpaygym.models.custom_llm import CustomLLM
 from agenticpaygym.models.qwen3_vl import Qwen3VL
-from agenticpaygym.models.vllm_vlm import VLLMVLM
+from agenticpaygym.models.vllm_lm import VLLMLLM
 from agenticpaygym.models.sglang_vlm import SGLangVLM
 from agenticpaygym.examples.config import reward_weights, max_rounds, price_tolerance
 import re
@@ -31,7 +31,7 @@ def get_model_name(model):
     """Extract model name from model object
     
     Args:
-        model: Model object (CustomLLM, VLLMVLM, etc.)
+        model: Model object (CustomLLM, VLLMLLM, etc.)
     
     Returns:
         str: Model name
@@ -140,11 +140,11 @@ def main(model_name=None):
     model = CustomLLM(api_key=api_key, model=model_name) # claude-sonnet-4-5-20250929, gpt-5.2, gemini-3-pro-all, gpt-3.5-turbo, DeepSeek-R1
 
     # Build absolute path to model directory
-    # model_path = os.path.join(project_root, "models", "download_models", "Qwen3-VL-8B-Instruct")
+    # model_path = os.path.join(project_root, "models", "download_models", "Qwen3-8B-Instruct")
     # model_path = os.path.abspath(model_path)
 
-    # vLLM VLM Model
-    # model = VLLMVLM(
+    # vLLM LLM Model
+    # model = VLLMLLM(
     #     model_path=model_path,
     #     trust_remote_code=True,
     #     gpu_memory_utilization=0.9,

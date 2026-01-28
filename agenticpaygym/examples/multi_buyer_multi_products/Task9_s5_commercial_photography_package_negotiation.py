@@ -41,7 +41,7 @@ def get_model_name(model):
     """Extract model name from model object
     
     Args:
-        model: Model object (CustomLLM, VLLMVLM, etc.)
+        model: Model object (CustomLLM, VLLMLLM, etc.)
     
     Returns:
         str: Model name

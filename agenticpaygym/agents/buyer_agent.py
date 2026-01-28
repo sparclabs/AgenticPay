@@ -179,13 +179,13 @@ Now, respond as {self.name}:
             response = self.model.generate(
                 full_prompt, 
                 images=images,
-                temperature=0.7,
+                temperature=0.0,
                 max_tokens=1024  # Ensure complete response generation
             )
         else:
             response = self.model.generate(
                 full_prompt, 
-                temperature=0.7,
+                temperature=0.0,
                 max_tokens=1024  # Ensure complete response generation
             )
         

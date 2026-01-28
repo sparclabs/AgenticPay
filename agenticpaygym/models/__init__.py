@@ -50,6 +50,16 @@ try:
 except ImportError:
     pass  # VLLMVLM is optional
 
+# Try to import vLLM LLM implementation, but don't fail if not available
+try:
+    from agenticpaygym.models.vllm_lm import VLLMLLM
+    if len(__all__) > 2:
+        __all__.append("VLLMLLM")
+    else:
+        __all__ = ["BaseLLM", "BaseVLM", "VLLMLLM"]
+except ImportError:
+    pass  # VLLMLLM is optional
+
 # Try to import SGLang VLM implementation, but don't fail if not available
 try:
     from agenticpaygym.models.sglang_vlm import SGLangVLM
