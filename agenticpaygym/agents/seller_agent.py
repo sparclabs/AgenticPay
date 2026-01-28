@@ -19,6 +19,7 @@ class SellerAgent(BaseAgent):
         name: str = "Seller",
         role_description: str = "You are a seller trying to maximize profit while being reasonable. You are professional, friendly, and want to close a deal that benefits both parties.",
         seller_min_price: Optional[float] = None,
+        system_prompt_suffix: Optional[str] = None,
     ):
         """Initialize Seller Agent
         
@@ -27,9 +28,11 @@ class SellerAgent(BaseAgent):
             name: Agent name
             role_description: Role description
             seller_min_price: Minimum acceptable selling price for seller (bottom price, confidential information)
+            system_prompt_suffix: Additional text to append to system prompt (e.g., personality profile)
         """
         super().__init__(model, role_description, name)
         self.seller_min_price = seller_min_price
+        self.system_prompt_suffix = system_prompt_suffix
     
     def respond(
         self,
@@ -91,6 +94,11 @@ class SellerAgent(BaseAgent):
 
 # Now, respond as {self.name}:
 # """
+        # Add personality profile if provided
+        personality_section = ""
+        if self.system_prompt_suffix:
+            personality_section = f"\n{self.system_prompt_suffix}\n"
+        
         seller_guidance = f"""
 IMPORTANT REMINDERS:
 - Your initial asking price is ${initial_price}.
@@ -98,8 +106,7 @@ IMPORTANT REMINDERS:
 - Current product information: {product_info}
 {available_products_info}
 - Consider the environment factors: {self.context.get('environment_info', {})}.
-
-
+{personality_section}
 - **CRITICAL: In each turn, you MUST make exactly ONE price offer for the product using the format:**
   ### SELLER_PRICE($X) ###
 - **IMPORTANT: SELLER_PRICE($X) must be the TOTAL PRICE for the entire order/transaction, NOT a per-unit price.**

@@ -20,6 +20,7 @@ class BuyerAgent(BaseAgent):
         name: str = "Buyer",
         role_description: str = "You are a buyer looking for a good deal. You are polite, strategic, and want to get the best price within your budget.",
         buyer_max_price: Optional[float] = None,
+        system_prompt_suffix: Optional[str] = None,
     ):
         """Initialize Buyer Agent
         
@@ -28,9 +29,11 @@ class BuyerAgent(BaseAgent):
             name: Agent name
             role_description: Role description
             buyer_max_price: Maximum acceptable purchase price for buyer (bottom price, confidential information)
+            system_prompt_suffix: Additional text to append to system prompt (e.g., personality profile)
         """
         super().__init__(model, role_description, name)
         self.buyer_max_price = buyer_max_price
+        self.system_prompt_suffix = system_prompt_suffix
     
     def respond(
         self,
@@ -127,13 +130,18 @@ class BuyerAgent(BaseAgent):
 # Now, respond as {self.name}:
 # """
 
+        # Add personality profile if provided
+        personality_section = ""
+        if self.system_prompt_suffix:
+            personality_section = f"\n{self.system_prompt_suffix}\n"
+        
         buyer_guidance = f"""
 IMPORTANT:
 - Your top price is ${max_price} (confidential, do not reveal).
 - Current product information: {product_info}
 {available_products_info}
 - Consider the environment: {self.context.get('environment_info', {})}.
-
+{personality_section}
 - **CRITICAL: In each turn, you MUST make exactly ONE price offer for the product using the format:**
   ### BUYER_PRICE($X) ###
 - **IMPORTANT: BUYER_PRICE($X) must be the TOTAL PRICE for the entire order/transaction, NOT a per-unit price.**
