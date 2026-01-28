@@ -495,18 +495,13 @@ class Task1ParallelTwoBuyerTwoSellerNegotiation(BaseEnv):
         # - If no agreement: current_round is incremented, messages are in current_round - 1
         
         # Determine which round's messages to display
-        # If negotiation is agreed or timed out, messages are in current_round
-        # Otherwise, messages are in current_round - 1 (because current_round was incremented)
-        if self.negotiation_info.status in [NegotiationStatus.AGREED, NegotiationStatus.TIMEOUT]:
-            round_to_display = self.current_round
-        else:
-            round_to_display = self.current_round - 1 if self.current_round > 0 else 0
+        # Messages are stored with the round value at the time of storage (before current_round is incremented)
+        # In step(), messages are added first, then current_round is incremented
+        # So for any completed round, messages are stored at current_round - 1
+        round_to_display = self.current_round - 1 if self.current_round > 0 else 0
         
-        # Display round number (use round_to_display + 1 for display, or current_round if agreed)
-        if self.negotiation_info.status in [NegotiationStatus.AGREED, NegotiationStatus.TIMEOUT]:
-            display_round = self.current_round
-        else:
-            display_round = self.current_round if self.current_round > 0 else 0
+        # Display round number: current_round is already incremented, so it represents the completed round number
+        display_round = self.current_round
         
         output_lines.append(f"\n{'='*60}")
         output_lines.append(f"Round {display_round} - Parallel Negotiation Output")

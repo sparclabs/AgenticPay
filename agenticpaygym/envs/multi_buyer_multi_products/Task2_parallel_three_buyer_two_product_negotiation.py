@@ -476,14 +476,12 @@ class Task2ParallelThreeBuyerTwoProductNegotiation(BaseEnv):
         history_buyer3 = self.memory_buyer3.get_history()
         
         # Determine which round's messages to display
-        # If negotiation is agreed or timed out, messages are in current_round
-        # Otherwise, messages are in current_round - 1 (because current_round was incremented)
-        if self.negotiation_info.status in [NegotiationStatus.AGREED, NegotiationStatus.TIMEOUT]:
-            round_to_display = self.current_round
-            display_round = self.current_round
-        else:
-            round_to_display = self.current_round - 1 if self.current_round > 0 else 0
-            display_round = self.current_round if self.current_round > 0 else 0
+        # Messages are stored with the round value at the time of storage (before current_round is incremented)
+        # In step(), messages are added first, then current_round is incremented
+        # So for any completed round, messages are stored at current_round - 1
+        round_to_display = self.current_round - 1 if self.current_round > 0 else 0
+        # Display round number: current_round is already incremented, so it represents the completed round number
+        display_round = self.current_round
         
         # Display product info
         if self.product_info:

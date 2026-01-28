@@ -536,10 +536,10 @@ class Task3SequentialTwoBuyerTwoSellerTwoProductNegotiation(BaseEnv):
         history_b2s2 = self.memory_b2s2.get_history()
         
         # Determine which round's messages to display
-        if self.negotiation_info.status in [NegotiationStatus.AGREED, NegotiationStatus.TIMEOUT]:
-            round_to_display = self.current_round
-        else:
-            round_to_display = self.current_round - 1 if self.current_round > 0 else 0
+        # Messages are stored with the round value at the time of storage (before current_round is incremented)
+        # In step(), messages are added first, then current_round is incremented
+        # So for any completed round, messages are stored at current_round - 1
+        round_to_display = self.current_round - 1 if self.current_round > 0 else 0
         
         # Determine display round number
         if self.negotiation_info.status in [NegotiationStatus.AGREED, NegotiationStatus.TIMEOUT]:
