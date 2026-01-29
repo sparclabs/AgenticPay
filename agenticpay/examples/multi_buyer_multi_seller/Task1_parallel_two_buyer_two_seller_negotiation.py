@@ -1,0 +1,575 @@
+"""Task1 Parallel Two-Buyer Two-Seller Negotiation Example
+
+Demonstrates how to use the Task1ParallelTwoBuyerTwoSellerNegotiation to negotiate with
+two buyers and two sellers in parallel for the same product.
+"""
+
+import os
+import sys
+import json
+import time
+import argparse
+from pathlib import Path
+from datetime import datetime
+
+# Add project path
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, project_root)
+
+from agenticpay.envs.multi_buyer_multi_seller.Task1_parallel_two_buyer_two_seller_negotiation import Task1ParallelTwoBuyerTwoSellerNegotiation
+from agenticpay.agents.buyer_agent import BuyerAgent
+from agenticpay.agents.seller_agent import SellerAgent
+from agenticpay.models.custom_llm import CustomLLM
+
+# Import configuration parameters
+examples_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, examples_dir)
+try:
+    from config import reward_weights, buyer_reward_aggregation, seller_reward_aggregation, max_rounds, price_tolerance, OPENAI_API_KEY
+except ImportError:
+    # Default values if config not available
+    reward_weights = {"buyer_savings": 1.0, "seller_profit": 1.0, "time_cost": 0.1}
+    buyer_reward_aggregation = "average"
+    seller_reward_aggregation = "average"
+    max_rounds = 20
+    price_tolerance = 1.0
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+
+def get_model_name(model):
+    """Extract model name from model object
+    
+    Args:
+        model: Model object (CustomLLM, VLLMLLM, etc.)
+    
+    Returns:
+        str: Model name
+    """
+    if hasattr(model, 'model'):
+        return model.model
+    elif hasattr(model, 'model_id'):
+        return model.model_id
+    elif hasattr(model, 'model_path'):
+        # Extract model name from path
+        model_path = model.model_path
+        return os.path.basename(model_path) if model_path else str(model)
+    else:
+        # Fallback to string representation, but try to extract model name
+        model_str = str(model)
+        # Try to extract model name from string like "CustomLLM(model=qwen3-8b)"
+        if "model=" in model_str:
+            try:
+                return model_str.split("model=")[1].split(")")[0]
+            except:
+                return model_str
+        else:
+            return model_str
+
+
+def main(model_name=None):
+    """Main function: Demonstrates multi-buyer multi-seller negotiation flow
+    
+    Args:
+        model_name: Optional model name. If None, uses default model.
+    """
+    
+    print("Initializing model...")
+    
+    # Check API key
+    api_key = OPENAI_API_KEY or os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        print("Warning: OPENAI_API_KEY not set. Please set it to use OpenAI models.")
+        print("You can set it with: export OPENAI_API_KEY='your-key-here'")
+        return
+    
+    # Use provided model name or default
+    if model_name is None:
+        model_name = "gpt-5.2"  # Default model
+    
+    model = CustomLLM(api_key=api_key, model=model_name)  # claude-sonnet-4-5-20250929, gpt-5.2, gemini-3-pro-all, gpt-3.5-turbo, DeepSeek-R1
+    
+    print(f"✓ Successfully initialized: {model}")
+    
+    # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
+    print("Creating agents...")
+    buyer1_max_price = 150.0  # Maximum acceptable purchase price for buyer1 (confidential)
+    buyer2_max_price = 160.0  # Maximum acceptable purchase price for buyer2 (confidential)
+    seller1_min_price = 80.0  # Minimum acceptable selling price for seller1 (confidential)
+    seller2_min_price = 85.0  # Minimum acceptable selling price for seller2 (confidential)
+    
+    buyer1 = BuyerAgent(model=model, buyer_max_price=buyer1_max_price)
+    buyer2 = BuyerAgent(model=model, buyer_max_price=buyer2_max_price)
+    seller1 = SellerAgent(model=model, seller_min_price=seller1_min_price)
+    seller2 = SellerAgent(model=model, seller_min_price=seller2_min_price)
+    
+    # Create environment
+    print("Creating multi-buyer multi-seller negotiation environment...")
+    env = Task1ParallelTwoBuyerTwoSellerNegotiation(
+        buyer1_agent=buyer1,
+        buyer2_agent=buyer2,
+        seller1_agent=seller1,
+        seller2_agent=seller2,
+        max_rounds=max_rounds,
+        initial_seller1_price=150.0,  # Initial price offered by seller1
+        initial_seller2_price=160.0,  # Initial price offered by seller2
+        buyer1_max_price=buyer1_max_price,  # Buyer1 bottom price (confidential)
+        buyer2_max_price=buyer2_max_price,  # Buyer2 bottom price (confidential)
+        seller1_min_price=seller1_min_price,  # Seller1 bottom price (confidential)
+        seller2_min_price=seller2_min_price,  # Seller2 bottom price (confidential)
+        environment_info={
+            "temperature": "warm",
+            "season": "summer",
+            "weather": "sunny",
+        },
+        price_tolerance=0,
+        reward_weights=reward_weights,  # Reward weights configuration
+        buyer_reward_aggregation=buyer_reward_aggregation,  # Buyer reward aggregation method
+        seller_reward_aggregation=seller_reward_aggregation,  # Seller reward aggregation method
+    )
+    
+    # Create user profile (text description of personal preferences)
+    user_profile = "User prefers business/professional style and likes to compare prices before making purchases. In negotiations, they may mention comparing other options and seek better deals."
+    print(f"User Profile: {user_profile}")
+    
+    # Get user requirement
+    # Use default requirement for automatic running
+    user_requirement = "I need a high-quality winter jacket for cold weather"
+    print(f"Using default requirement: {user_requirement}")
+    
+    # Reset environment
+    print("\n" + "="*60)
+    print("Starting new negotiation with two buyers and two sellers...")
+    print("="*60)
+    
+    observation, info = env.reset(
+        user_requirement=user_requirement,
+        product_info={
+            "name": "Premium Winter Jacket",
+            "brand": "Mountain Gear",
+            "price": 180.0,  # The product's own price
+            "features": ["Waterproof", "Insulated", "Windproof", "Breathable"],
+            "condition": "New",
+            "material": "Gore-Tex",
+        },
+        user_profile=user_profile,  # Pass user profile
+    )
+    
+    # Start negotiation loop
+    done = False
+    start_time = time.time()
+    
+    # Initialize results dictionary
+    results = {
+        "task": "Task1_parallel_two_buyer_two_seller_negotiation",
+        "timestamp": datetime.now().isoformat(),
+        "user_requirement": user_requirement,
+        "user_profile": user_profile,
+        "status": "unknown",
+        "success": False,
+        "error": None,
+    }
+    
+    while not done:
+        # Each round: buyers respond first, then sellers respond (seeing buyers' messages)
+        # Get buyer1's responses
+        buyer1_action_seller1 = buyer1.respond(
+            conversation_history=observation["conversation_history_b1s1"],
+            current_state=observation
+        )
+        
+        buyer1_action_seller2 = buyer1.respond(
+            conversation_history=observation["conversation_history_b1s2"],
+            current_state=observation
+        )
+        
+        # Get buyer2's responses
+        buyer2_action_seller1 = buyer2.respond(
+            conversation_history=observation["conversation_history_b2s1"],
+            current_state=observation
+        )
+        
+        buyer2_action_seller2 = buyer2.respond(
+            conversation_history=observation["conversation_history_b2s2"],
+            current_state=observation
+        )
+        
+        # Create updated conversation histories that include buyers' responses
+        # So sellers can see buyers' messages before responding
+        updated_conversation_history_b1s1 = observation["conversation_history_b1s1"].copy()
+        updated_conversation_history_b1s2 = observation["conversation_history_b1s2"].copy()
+        updated_conversation_history_b2s1 = observation["conversation_history_b2s1"].copy()
+        updated_conversation_history_b2s2 = observation["conversation_history_b2s2"].copy()
+        
+        if buyer1_action_seller1:
+            current_round = observation.get("current_round", 0)
+            updated_conversation_history_b1s1.append({
+                "role": "buyer",
+                "content": buyer1_action_seller1,
+                "round": current_round
+            })
+        
+        if buyer1_action_seller2:
+            current_round = observation.get("current_round", 0)
+            updated_conversation_history_b1s2.append({
+                "role": "buyer",
+                "content": buyer1_action_seller2,
+                "round": current_round
+            })
+        
+        if buyer2_action_seller1:
+            current_round = observation.get("current_round", 0)
+            updated_conversation_history_b2s1.append({
+                "role": "buyer",
+                "content": buyer2_action_seller1,
+                "round": current_round
+            })
+        
+        if buyer2_action_seller2:
+            current_round = observation.get("current_round", 0)
+            updated_conversation_history_b2s2.append({
+                "role": "buyer",
+                "content": buyer2_action_seller2,
+                "round": current_round
+            })
+        
+        # Get seller1's responses (seller1 can now see buyers' messages)
+        seller1_action_buyer1 = seller1.respond(
+            conversation_history=updated_conversation_history_b1s1,
+            current_state=observation
+        )
+        
+        seller1_action_buyer2 = seller1.respond(
+            conversation_history=updated_conversation_history_b2s1,
+            current_state=observation
+        )
+        
+        # Get seller2's responses (seller2 can now see buyers' messages)
+        seller2_action_buyer1 = seller2.respond(
+            conversation_history=updated_conversation_history_b1s2,
+            current_state=observation
+        )
+        
+        seller2_action_buyer2 = seller2.respond(
+            conversation_history=updated_conversation_history_b2s2,
+            current_state=observation
+        )
+        
+        # Execute step with all actions
+        observation, reward, terminated, truncated, info = env.step(
+            buyer1_action_seller1=buyer1_action_seller1,
+            buyer1_action_seller2=buyer1_action_seller2,
+            buyer2_action_seller1=buyer2_action_seller1,
+            buyer2_action_seller2=buyer2_action_seller2,
+            seller1_action_buyer1=seller1_action_buyer1,
+            seller1_action_buyer2=seller1_action_buyer2,
+            seller2_action_buyer1=seller2_action_buyer1,
+            seller2_action_buyer2=seller2_action_buyer2
+        )
+        done = terminated or truncated
+        
+        # Render current state (includes all print information)
+        env.render()
+        
+        # Flush output to ensure complete display
+        sys.stdout.flush()
+        
+        # Display step rewards for each round with detailed calculation
+        if ('step_buyer1_reward' in info or 'step_buyer2_reward' in info or
+            'step_seller1_reward' in info or 'step_seller2_reward' in info):
+            print(f"\n[Step Rewards] ", end="")
+            if 'step_buyer1_reward' in info:
+                print(f"Buyer1: {info['step_buyer1_reward']:.3f}", end="")
+            if 'step_buyer2_reward' in info:
+                if 'step_buyer1_reward' in info:
+                    print(f" | ", end="")
+                print(f"Buyer2: {info['step_buyer2_reward']:.3f}", end="")
+            if 'step_seller1_reward' in info:
+                if 'step_buyer1_reward' in info or 'step_buyer2_reward' in info:
+                    print(f" | ", end="")
+                print(f"Seller1: {info['step_seller1_reward']:.3f}", end="")
+            if 'step_seller2_reward' in info:
+                if 'step_buyer1_reward' in info or 'step_buyer2_reward' in info or 'step_seller1_reward' in info:
+                    print(f" | ", end="")
+                print(f"Seller2: {info['step_seller2_reward']:.3f}", end="")
+            print()
+            
+            # Display detailed calculation with weights
+            round_cost = -info['round']
+            weights = env.reward_weights
+            
+            # Buyer1 step reward details
+            if 'step_buyer1_reward' in info:
+                buyer_rewards_detail = []
+                if info.get('b1s1_buyer_price') is not None and env.buyer1_max_price is not None:
+                    buyer_price_s1 = info.get('b1s1_buyer_price', 0)
+                    buyer_savings_s1 = env.buyer1_max_price - buyer_price_s1
+                    weighted_savings_s1 = buyer_savings_s1 * weights["buyer_savings"]
+                    buyer_rewards_detail.append(f"buyer_savings_s1({buyer_savings_s1:.2f} * {weights['buyer_savings']:.2f})={weighted_savings_s1:.2f}")
+                
+                if info.get('b1s2_buyer_price') is not None and env.buyer1_max_price is not None:
+                    buyer_price_s2 = info.get('b1s2_buyer_price', 0)
+                    buyer_savings_s2 = env.buyer1_max_price - buyer_price_s2
+                    weighted_savings_s2 = buyer_savings_s2 * weights["buyer_savings"]
+                    buyer_rewards_detail.append(f"buyer_savings_s2({buyer_savings_s2:.2f} * {weights['buyer_savings']:.2f})={weighted_savings_s2:.2f}")
+                
+                if buyer_rewards_detail:
+                    aggregated_detail = f"aggregated({env.buyer_reward_aggregation})"
+                    weighted_round_cost = round_cost * weights["time_cost"]
+                    print(f"  Buyer1 Step Reward = {aggregated_detail}[{', '.join(buyer_rewards_detail)}] + round_cost({round_cost:.2f} * {weights['time_cost']:.2f}) = {info['step_buyer1_reward']:.2f} (buyer1_max={env.buyer1_max_price}, round={info['round']}, aggregation={env.buyer_reward_aggregation})")
+                else:
+                    weighted_round_cost = round_cost * weights["time_cost"]
+                    print(f"  Buyer1 Step Reward = round_cost({round_cost:.2f} * {weights['time_cost']:.2f}) = {weighted_round_cost:.2f} (buyer_price not specified, round={info['round']})")
+            
+            # Buyer2 step reward details
+            if 'step_buyer2_reward' in info:
+                buyer_rewards_detail = []
+                if info.get('b2s1_buyer_price') is not None and env.buyer2_max_price is not None:
+                    buyer_price_s1 = info.get('b2s1_buyer_price', 0)
+                    buyer_savings_s1 = env.buyer2_max_price - buyer_price_s1
+                    weighted_savings_s1 = buyer_savings_s1 * weights["buyer_savings"]
+                    buyer_rewards_detail.append(f"buyer_savings_s1({buyer_savings_s1:.2f} * {weights['buyer_savings']:.2f})={weighted_savings_s1:.2f}")
+                
+                if info.get('b2s2_buyer_price') is not None and env.buyer2_max_price is not None:
+                    buyer_price_s2 = info.get('b2s2_buyer_price', 0)
+                    buyer_savings_s2 = env.buyer2_max_price - buyer_price_s2
+                    weighted_savings_s2 = buyer_savings_s2 * weights["buyer_savings"]
+                    buyer_rewards_detail.append(f"buyer_savings_s2({buyer_savings_s2:.2f} * {weights['buyer_savings']:.2f})={weighted_savings_s2:.2f}")
+                
+                if buyer_rewards_detail:
+                    aggregated_detail = f"aggregated({env.buyer_reward_aggregation})"
+                    weighted_round_cost = round_cost * weights["time_cost"]
+                    print(f"  Buyer2 Step Reward = {aggregated_detail}[{', '.join(buyer_rewards_detail)}] + round_cost({round_cost:.2f} * {weights['time_cost']:.2f}) = {info['step_buyer2_reward']:.2f} (buyer2_max={env.buyer2_max_price}, round={info['round']}, aggregation={env.buyer_reward_aggregation})")
+                else:
+                    weighted_round_cost = round_cost * weights["time_cost"]
+                    print(f"  Buyer2 Step Reward = round_cost({round_cost:.2f} * {weights['time_cost']:.2f}) = {weighted_round_cost:.2f} (buyer_price not specified, round={info['round']})")
+            
+            # Seller1 step reward details
+            if 'step_seller1_reward' in info:
+                seller_rewards_detail = []
+                if info.get('b1s1_seller_price') is not None and env.seller1_min_price is not None:
+                    seller_price_b1 = info.get('b1s1_seller_price', 0)
+                    seller_profit_b1 = seller_price_b1 - env.seller1_min_price
+                    weighted_profit_b1 = seller_profit_b1 * weights["seller_profit"]
+                    seller_rewards_detail.append(f"seller_profit_b1({seller_profit_b1:.2f} * {weights['seller_profit']:.2f})={weighted_profit_b1:.2f}")
+                
+                if info.get('b2s1_seller_price') is not None and env.seller1_min_price is not None:
+                    seller_price_b2 = info.get('b2s1_seller_price', 0)
+                    seller_profit_b2 = seller_price_b2 - env.seller1_min_price
+                    weighted_profit_b2 = seller_profit_b2 * weights["seller_profit"]
+                    seller_rewards_detail.append(f"seller_profit_b2({seller_profit_b2:.2f} * {weights['seller_profit']:.2f})={weighted_profit_b2:.2f}")
+                
+                if seller_rewards_detail:
+                    aggregated_detail = f"aggregated({env.seller_reward_aggregation})"
+                    weighted_round_cost = round_cost * weights["time_cost"]
+                    print(f"  Seller1 Step Reward = {aggregated_detail}[{', '.join(seller_rewards_detail)}] + round_cost({round_cost:.2f} * {weights['time_cost']:.2f}) = {info['step_seller1_reward']:.2f} (seller1_min={env.seller1_min_price}, round={info['round']}, aggregation={env.seller_reward_aggregation})")
+                else:
+                    weighted_round_cost = round_cost * weights["time_cost"]
+                    print(f"  Seller1 Step Reward = round_cost({round_cost:.2f} * {weights['time_cost']:.2f}) = {weighted_round_cost:.2f} (seller_price not specified, round={info['round']})")
+            
+            # Seller2 step reward details
+            if 'step_seller2_reward' in info:
+                seller_rewards_detail = []
+                if info.get('b1s2_seller_price') is not None and env.seller2_min_price is not None:
+                    seller_price_b1 = info.get('b1s2_seller_price', 0)
+                    seller_profit_b1 = seller_price_b1 - env.seller2_min_price
+                    weighted_profit_b1 = seller_profit_b1 * weights["seller_profit"]
+                    seller_rewards_detail.append(f"seller_profit_b1({seller_profit_b1:.2f} * {weights['seller_profit']:.2f})={weighted_profit_b1:.2f}")
+                
+                if info.get('b2s2_seller_price') is not None and env.seller2_min_price is not None:
+                    seller_price_b2 = info.get('b2s2_seller_price', 0)
+                    seller_profit_b2 = seller_price_b2 - env.seller2_min_price
+                    weighted_profit_b2 = seller_profit_b2 * weights["seller_profit"]
+                    seller_rewards_detail.append(f"seller_profit_b2({seller_profit_b2:.2f} * {weights['seller_profit']:.2f})={weighted_profit_b2:.2f}")
+                
+                if seller_rewards_detail:
+                    aggregated_detail = f"aggregated({env.seller_reward_aggregation})"
+                    weighted_round_cost = round_cost * weights["time_cost"]
+                    print(f"  Seller2 Step Reward = {aggregated_detail}[{', '.join(seller_rewards_detail)}] + round_cost({round_cost:.2f} * {weights['time_cost']:.2f}) = {info['step_seller2_reward']:.2f} (seller2_min={env.seller2_min_price}, round={info['round']}, aggregation={env.seller_reward_aggregation})")
+                else:
+                    weighted_round_cost = round_cost * weights["time_cost"]
+                    print(f"  Seller2 Step Reward = round_cost({round_cost:.2f} * {weights['time_cost']:.2f}) = {weighted_round_cost:.2f} (seller_price not specified, round={info['round']})")
+        
+        if done:
+            print("\n" + "="*60)
+            print("Negotiation Ended")
+            print("="*60)
+            print(f"Status: {info['status']}")
+            if info.get('selected_buyer') and info.get('selected_seller'):
+                print(f"Selected Deal: Buyer {info['selected_buyer']} - Seller {info['selected_seller']}")
+                print(f"Final Deal Price: ${info.get('final_deal_price', 0):.2f}")
+            print(f"Buyer1-Seller1 Prices: Buyer=${info.get('b1s1_buyer_price', 0):.2f} | Seller=${info.get('b1s1_seller_price', 0):.2f}")
+            print(f"Buyer1-Seller2 Prices: Buyer=${info.get('b1s2_buyer_price', 0):.2f} | Seller=${info.get('b1s2_seller_price', 0):.2f}")
+            print(f"Buyer2-Seller1 Prices: Buyer=${info.get('b2s1_buyer_price', 0):.2f} | Seller=${info.get('b2s1_seller_price', 0):.2f}")
+            print(f"Buyer2-Seller2 Prices: Buyer=${info.get('b2s2_buyer_price', 0):.2f} | Seller=${info.get('b2s2_seller_price', 0):.2f}")
+            # Print score calculations after Step Rewards
+            env._print_global_score_details()
+            env._print_buyer_score_details()
+            env._print_seller_score_details()
+            
+            # current_round has been incremented to reflect the completed round
+            actual_rounds = info['round']
+            print(f"Total Rounds: {actual_rounds}")
+            print(f"Global Reward: {reward:.3f}")
+            if 'buyer1_reward' in info:
+                print(f"Buyer1 Reward: {info['buyer1_reward']:.3f}")
+            if 'buyer2_reward' in info:
+                print(f"Buyer2 Reward: {info['buyer2_reward']:.3f}")
+            if 'seller1_reward' in info:
+                print(f"Seller1 Reward: {info['seller1_reward']:.3f}")
+            if 'seller2_reward' in info:
+                print(f"Seller2 Reward: {info['seller2_reward']:.3f}")
+            if 'global_score' in info:
+                print(f"GlobalScore: {info['global_score']:.3f}")
+            if 'buyer_score' in info:
+                print(f"BuyerScore: {info['buyer_score']:.3f}")
+            if 'seller_score' in info:
+                print(f"SellerScore: {info['seller_score']:.3f}")
+            if info.get('termination_reason'):
+                print(f"Reason: {info['termination_reason']}")
+            print("="*60)
+            
+            # Collect results
+            elapsed_time = time.time() - start_time
+            product_info = info.get('product_info', {})
+            results.update({
+                "status": info.get('status', 'unknown'),
+                "success": terminated,
+                "selected_buyer": info.get('selected_buyer'),
+                "selected_seller": info.get('selected_seller'),
+                "final_deal_price": info.get('final_deal_price'),
+                "b1s1_buyer_price": info.get('b1s1_buyer_price'),
+                "b1s1_seller_price": info.get('b1s1_seller_price'),
+                "b1s2_buyer_price": info.get('b1s2_buyer_price'),
+                "b1s2_seller_price": info.get('b1s2_seller_price'),
+                "b2s1_buyer_price": info.get('b2s1_buyer_price'),
+                "b2s1_seller_price": info.get('b2s1_seller_price'),
+                "b2s2_buyer_price": info.get('b2s2_buyer_price'),
+                "b2s2_seller_price": info.get('b2s2_seller_price'),
+                # current_round has been incremented to reflect the completed round
+                "total_rounds": info.get('round', 0),
+                "total_reward": float(reward) if reward is not None else None,
+                "buyer1_reward": info.get('buyer1_reward'),
+                "buyer2_reward": info.get('buyer2_reward'),
+                "seller1_reward": info.get('seller1_reward'),
+                "seller2_reward": info.get('seller2_reward'),
+                "global_score": info.get('global_score'),
+                "buyer_score": info.get('buyer_score'),
+                "seller_score": info.get('seller_score'),
+                "termination_reason": info.get('termination_reason'),
+                "elapsed_time": elapsed_time,
+                "buyer1_max_price": buyer1_max_price,
+                "buyer2_max_price": buyer2_max_price,
+                "seller1_min_price": seller1_min_price,
+                "seller2_min_price": seller2_min_price,
+                "product_info": product_info,
+                "model": get_model_name(model),
+            })
+            break
+    
+    # Close environment
+    env.close()
+    print("\nMulti-buyer multi-seller negotiation completed!")
+    
+    # Ensure elapsed_time is set even if negotiation didn't complete normally
+    if "elapsed_time" not in results:
+        results["elapsed_time"] = time.time() - start_time
+    
+    # Save results to file
+    try:
+        # Create results directory structure
+        results_dir = Path(project_root) / "results" / "multi_buyer_multi_seller"
+        results_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Get model name for directory (sanitize for filesystem)
+        model_name = get_model_name(model)
+        model_name_safe = model_name.replace("/", "_").replace("\\", "_").replace(":", "_")
+        model_dir = results_dir / model_name_safe
+        model_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Create timestamped subdirectory for this run
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        run_dir = model_dir / f"batch_evaluation_{timestamp}"
+        run_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Save summary JSON
+        summary_file = run_dir / "summary.json"
+        with open(summary_file, 'w', encoding='utf-8') as f:
+            json.dump(results, f, indent=2, ensure_ascii=False)
+        
+        # Save output text
+        output_file = run_dir / "Task1_output.txt"
+        with open(output_file, 'w', encoding='utf-8') as f:
+            f.write("="*80 + "\n")
+            f.write("Task1: Parallel Two-Buyer Two-Seller Negotiation Results\n")
+            f.write("="*80 + "\n\n")
+            f.write(f"Timestamp: {results['timestamp']}\n")
+            f.write(f"Model: {results['model']}\n")
+            f.write(f"User Requirement: {results['user_requirement']}\n")
+            f.write(f"User Profile: {results['user_profile']}\n\n")
+            f.write(f"Status: {results['status']}\n")
+            f.write(f"Success: {results['success']}\n")
+            f.write(f"Total Rounds: {results['total_rounds']}\n")
+            elapsed_time = results.get('elapsed_time', 0)
+            f.write(f"Elapsed Time: {elapsed_time:.2f}s\n\n")
+            if results.get('selected_buyer') and results.get('selected_seller'):
+                f.write(f"Selected Deal: Buyer {results['selected_buyer']} - Seller {results['selected_seller']}\n")
+                f.write(f"Final Deal Price: ${results.get('final_deal_price', 0):.2f}\n\n")
+            f.write("Final Prices:\n")
+            f.write(f"  Buyer1-Seller1: Buyer=${results['b1s1_buyer_price']:.2f} | Seller=${results['b1s1_seller_price']:.2f}" if results.get('b1s1_buyer_price') is not None and results.get('b1s1_seller_price') is not None else "  Buyer1-Seller1: Not specified")
+            f.write("\n")
+            f.write(f"  Buyer1-Seller2: Buyer=${results['b1s2_buyer_price']:.2f} | Seller=${results['b1s2_seller_price']:.2f}" if results.get('b1s2_buyer_price') is not None and results.get('b1s2_seller_price') is not None else "  Buyer1-Seller2: Not specified")
+            f.write("\n")
+            f.write(f"  Buyer2-Seller1: Buyer=${results['b2s1_buyer_price']:.2f} | Seller=${results['b2s1_seller_price']:.2f}" if results.get('b2s1_buyer_price') is not None and results.get('b2s1_seller_price') is not None else "  Buyer2-Seller1: Not specified")
+            f.write("\n")
+            f.write(f"  Buyer2-Seller2: Buyer=${results['b2s2_buyer_price']:.2f} | Seller=${results['b2s2_seller_price']:.2f}" if results.get('b2s2_buyer_price') is not None and results.get('b2s2_seller_price') is not None else "  Buyer2-Seller2: Not specified")
+            f.write("\n\n")
+            product_info = results.get('product_info', {})
+            f.write("Product:\n")
+            f.write(f"  Name: {product_info.get('name', 'N/A')}\n")
+            f.write(f"  Brand: {product_info.get('brand', 'N/A')}\n")
+            f.write(f"  Price: ${product_info.get('price', 0):.2f}\n")
+            f.write("\n")
+            f.write("Rewards:\n")
+            if results.get('total_reward') is not None:
+                f.write(f"  Total Reward: {results['total_reward']:.3f}\n")
+            if results.get('buyer1_reward') is not None:
+                f.write(f"  Buyer1 Reward: {results['buyer1_reward']:.3f}\n")
+            if results.get('buyer2_reward') is not None:
+                f.write(f"  Buyer2 Reward: {results['buyer2_reward']:.3f}\n")
+            if results.get('seller1_reward') is not None:
+                f.write(f"  Seller1 Reward: {results['seller1_reward']:.3f}\n")
+            if results.get('seller2_reward') is not None:
+                f.write(f"  Seller2 Reward: {results['seller2_reward']:.3f}\n")
+            f.write("\n")
+            f.write("Scores:\n")
+            if results.get('global_score') is not None:
+                f.write(f"  Global Score: {results['global_score']:.3f}\n")
+            if results.get('buyer_score') is not None:
+                f.write(f"  Buyer Score: {results['buyer_score']:.3f}\n")
+            if results.get('seller_score') is not None:
+                f.write(f"  Seller Score: {results['seller_score']:.3f}\n")
+            f.write("\n")
+            if results.get('termination_reason'):
+                f.write(f"Termination Reason: {results['termination_reason']}\n")
+            if results.get('error'):
+                f.write(f"\nError: {results['error']}\n")
+        
+        print(f"\nResults saved to: {run_dir}")
+        print(f"  - Summary JSON: {summary_file}")
+        print(f"  - Output Text: {output_file}")
+    except Exception as e:
+        print(f"\nWarning: Failed to save results: {e}")
+        import traceback
+        traceback.print_exc()
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Task1: Parallel Two-Buyer Two-Seller Negotiation")
+    parser.add_argument(
+        "--model",
+        type=str,
+        default=None,
+        help="Model name to use (e.g., 'gemini-3-pro-all', 'gpt-5.2', 'claude-sonnet-4-5-20250929'). If not provided, uses default model."
+    )
+    args = parser.parse_args()
+    main(model_name=args.model)

@@ -1,6 +1,6 @@
 
 
-<h1 align="center" style="font-size: 30px;"><strong><em>AgenticPayGym</em></strong>: A Multi-Agent LLM Negotiation System for Buyer–Seller Transactions</h1>
+<h1 align="center" style="font-size: 30px;"><strong><em>AgenticPay</em></strong>: A Multi-Agent LLM Negotiation System for Buyer–Seller Transactions</h1>
 
 **A Multi-Agent Negotiation Framework for Buyer-Seller Transactions using LLM-based Agents.**
 
@@ -20,7 +20,7 @@
   * [Environment Parameters](#environment-parameters)
   * [Agent Configuration](#agent-configuration)
   * [User Profile](#user-profile)
-  * [LLM/VLM Configuration](#llmvlm-configuration)
+  * [LLM Configuration](#llm-configuration)
 - [Examples](#examples)
   * [Available Examples](#available-examples)
   * [Registering New Environments](#registering-new-environments)
@@ -34,16 +34,16 @@
 
 ## Overview
 
-AgenticPayGym is a framework for simulating multi-agent negotiations between buyers and sellers. It uses Large Language Models (LLMs) as the foundation for intelligent agents that can engage in realistic price negotiations. The framework is designed with a Gymnasium-like API for easy integration and extensibility.
+AgenticPay is a framework for simulating multi-agent negotiations between buyers and sellers. It uses Large Language Models (LLMs) as the foundation for intelligent agents that can engage in realistic price negotiations. The framework is designed with a Gymnasium-like API for easy integration and extensibility.
 
 ## Features
 
-- 🤖 **LLM/VLM-based Agents**: Buyer and Seller agents powered by LLMs and Vision Language Models (currently supports OpenAI, vLLM, and SGLang) for both text and image-based negotiations
+- 🤖 **LLM-based Agents**: Buyer and Seller agents powered by LLMs (currently supports OpenAI, vLLM, and SGLang)
 - 💬 **Multi-turn Conversations**: Support for extended negotiation dialogues
 - 🧠 **Memory System**: Conversation history management for context-aware negotiations
 - 📊 **State Tracking**: Comprehensive tracking of prices, rounds, and negotiation status
 - 🎯 **Flexible Configuration**: Customizable negotiation parameters and agent behaviors
-- 🔌 **Extensible Design**: Easy to add new agent types or LLM/VLM providers
+- 🔌 **Extensible Design**: Easy to add new agent types or LLM providers
 - 🏪 **Environment Registration System**: Gymnasium-like environment registration for easy environment management
 - 🛍️ **Multi-Product Negotiations**: Support for negotiating multiple products with context preservation
 - 👥 **Multi-Agent Scenarios**: Support for multiple buyers, sellers, and products in various combinations
@@ -54,11 +54,11 @@ AgenticPayGym is a framework for simulating multi-agent negotiations between buy
 
 ```bash
 # Create conda environment
-conda create -n agenticpaygym python=3.10 -y
-conda activate agenticpaygym
+conda create -n agenticpay python=3.10 -y
+conda activate agenticpay
 
 # Navigate to project directory
-cd AgenticPayGym
+cd AgenticPay
 
 # Install dependencies
 pip install -r requirements.txt
@@ -67,7 +67,7 @@ pip install -r requirements.txt
 pip install -e .
 ```
 
-**Model Download**: Download models from Hugging Face and save them to the `agenticpaygym/models/download_models` directory for local model usage.
+**Model Download**: Download models from Hugging Face and save them to the `agenticpay/models/download_models` directory for local model usage.
 
 ## Quick Start
 
@@ -76,7 +76,7 @@ pip install -e .
 To quickly try a negotiation simulation, you can run the provided example script from the command line:
 
 ```bash
-python agenticpaygym/examples/single_buyer_product_seller/Task1_basic_price_negotiation.py
+python agenticpay/examples/single_buyer_product_seller/Task1_basic_price_negotiation.py
 ```
 
 This script runs a simple negotiation task between a buyer and a seller.
@@ -84,23 +84,23 @@ This script runs a simple negotiation task between a buyer and a seller.
 ### Basic Single-Product Negotiation
 
 ```python
-from agenticpaygym import make  # Recommended: use registration system
-from agenticpaygym.agents.buyer_agent import BuyerAgent
-from agenticpaygym.agents.seller_agent import SellerAgent
+from agenticpay import make  # Recommended: use registration system
+from agenticpay.agents.buyer_agent import BuyerAgent
+from agenticpay.agents.seller_agent import SellerAgent
 import os
 
 
 # Local models (SGLang, vLLM, etc.)
-from agenticpaygym.models.sglang_vlm import SGLangVLM
-from agenticpaygym.models.vllm_vlm import VLLMVLM
+from agenticpay.models.sglang_lm import SGLangLM
+from agenticpay.models.vllm_lm import VLLMLM
 
-model_path = "agenticpaygym/models/download_models/Qwen3-VL-8B-Instruct"
+model_path = "agenticpay/models/download_models/Qwen3-8B-Instruct"
 
-# Option 1: SGLang VLM
-model = SGLangVLM(model_path=model_path)
+# Option 1: SGLang LM
+model = SGLangLM(model_path=model_path)
 
-# Option 2: vLLM VLM (for multi-GPU setups)
-# model = VLLMVLM(
+# Option 2: vLLM LM (for multi-GPU setups)
+# model = VLLMLM(
 #     model_path=model_path,
 #     trust_remote_code=True,
 #     gpu_memory_utilization=0.9,
@@ -197,8 +197,8 @@ env.close()
 ## Project Structure
 
 ```
-AgenticPayGym/
-├── agenticpaygym/
+AgenticPay/
+├── agenticpay/
 │   ├── agents/                    # Agent implementations (buyer, seller)
 │   ├── envs/                      # Environment implementations
 │   │   ├── single_buyer_product_seller/  # Basic negotiation
@@ -206,7 +206,7 @@ AgenticPayGym/
 │   │   ├── only_multi_seller/     # Multi-seller scenarios
 │   │   ├── only_multi_buyer/      # Multi-buyer scenarios
 │   │   └── multi_*/               # Complex multi-agent scenarios
-│   ├── models/                    # LLM/VLM implementations (supports vllm, sglang, Openai API)
+│   ├── models/                    # LLM implementations (supports vLLM, SGLang, OpenAI API)
 │   ├── memory/                    # Conversation history management
 │   ├── utils/                     # Utilities (state, user profile)
 │   └── examples/                   # Example scripts organized by scenario
@@ -296,7 +296,7 @@ Gymnasium-like environment registration system for easy environment management.
 
 **Usage:**
 ```python
-from agenticpaygym import make
+from agenticpay import make
 
 # Single buyer/product/seller
 env = make("Task1_basic_price_negotiation-v0", buyer_agent=buyer, seller_agent=seller, max_rounds=20)
@@ -342,12 +342,12 @@ Common parameters across environments:
 
 User description is passed as a string to agents during negotiation initialization.
 
-### LLM/VLM Configuration
+### LLM Configuration
 
 Supports multiple providers:
-- **Local Models**: `SGLangVLM`, `VLLMVLM` - for local model inference (supports multi-GPU setups)
-- **OpenAI** (API): `OpenAILLM`, `OpenAIVLM` - requires API key
-- **HuggingFace** (local/online): `HuggingFaceLLM`, `HuggingFaceVLM` - requires model name and device
+- **Local Models**: `SGLangLM`, `VLLMLM` - for local model inference (supports multi-GPU setups)
+- **OpenAI** (API): `OpenAILLM` - requires API key
+- **HuggingFace** (local/online): `HuggingFaceLLM` - requires model name and device
 
 ## Examples
 
@@ -385,8 +385,8 @@ Examples are organized by environment category:
 
 Example:
 ```python
-from agenticpaygym.core import BaseEnv
-from agenticpaygym.envs import register
+from agenticpay.core import BaseEnv
+from agenticpay.envs import register
 
 class MyCustomEnv(BaseEnv):
     def reset(self, **kwargs):
@@ -400,7 +400,7 @@ class MyCustomEnv(BaseEnv):
 # Register environment
 register(
     id="MyCustomEnv-v0",
-    entry_point="agenticpaygym.envs.my_custom_env:MyCustomEnv",
+    entry_point="agenticpay.envs.my_custom_env:MyCustomEnv",
     max_episode_steps=100,
 )
 ```
@@ -430,16 +430,16 @@ Contributions are welcome! Please feel free to submit issues or pull requests.
 
 ## Citation
 
-If you use AgenticPayGym in your research, please cite:
+If you use AgenticPay in your research, please cite:
 
 ```bibtex
-@misc{agenticpaygym2025,
-    title={AgenticPayGym: A Multi-Agent LLM Negotiation System for Buyer–Seller Transactions},
-    author={The AgenticPayGym Team},
+@misc{agenticpay2025,
+    title={AgenticPay: A Multi-Agent LLM Negotiation System for Buyer–Seller Transactions},
+    author={The AgenticPay Team},
     year = {2025},
     publisher = {GitHub},
     journal = {GitHub repository},
-    howpublished = {\url{https://github.com/SafeRL-Lab/AgenticPayGym}},
+    howpublished = {\url{https://github.com/SafeRL-Lab/AgenticPay}},
 }
 ```
 

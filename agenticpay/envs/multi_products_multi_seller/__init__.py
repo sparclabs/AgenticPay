@@ -1,0 +1,20 @@
+"""Multi-Products + Multi-Seller Environment
+
+This category includes environments with:
+- Single buyer agent
+- Multiple products
+- Multiple seller agents
+"""
+
+from agenticpay.envs.multi_products_multi_seller.Task1_parallel_two_seller_per_one_product_negotiation import Task1ParallelTwoSellerPerOneProductNegotiation
+from agenticpay.envs.multi_products_multi_seller.Task2_parallel_three_seller_per_one_product_negotiation import Task2ParallelThreeSellerPerOneProductNegotiation
+from agenticpay.envs.multi_products_multi_seller.Task3_sequential_two_seller_per_one_product_negotiation import Task3SequentialTwoSellerPerOneProductNegotiation
+from agenticpay.envs.multi_products_multi_seller.Task4_sequential_three_seller_per_one_product_negotiation import Task4SequentialThreeSellerPerOneProductNegotiation
+
+__all__ = [
+    "Task1ParallelTwoSellerPerOneProductNegotiation",
+    "Task2ParallelThreeSellerPerOneProductNegotiation",
+    "Task3SequentialTwoSellerPerOneProductNegotiation",
+    "Task4SequentialThreeSellerPerOneProductNegotiation",
+]
+

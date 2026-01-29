@@ -17,7 +17,7 @@ def read_requirements():
     return []
 
 setup(
-    name="agenticpaygym",
+    name="agenticpay",
     version="0.1.0",
     description="A Multi-Agent Negotiation Framework for Buyer-Seller Transactions",
     long_description=read_readme(),
