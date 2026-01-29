@@ -424,22 +424,7 @@ For detailed guides, see:
 
 MIT License
 
-## Contributing
 
-Contributions are welcome! Please feel free to submit issues or pull requests.
 
-## Citation
 
-If you use AgenticPay in your research, please cite:
-
-```bibtex
-@misc{agenticpay2025,
-    title={AgenticPay: A Multi-Agent LLM Negotiation System for Buyer–Seller Transactions},
-    author={The AgenticPay Team},
-    year = {2025},
-    publisher = {GitHub},
-    journal = {GitHub repository},
-    howpublished = {\url{https://github.com/SafeRL-Lab/AgenticPay}},
-}
-```
 
