@@ -435,7 +435,7 @@ If you use AgenticPay in your research, please cite:
 ```bibtex
 @misc{agenticpay2025,
     title={AgenticPay: A Multi-Agent LLM Negotiation System for Buyer–Seller Transactions},
-    author={The AgenticPay Team},
+    author={Xianyang Liu, Shangding Gu, Dawn Song},
     year = {2025},
     publisher = {GitHub},
     journal = {GitHub repository},
