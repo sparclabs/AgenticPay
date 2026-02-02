@@ -4,6 +4,12 @@
 
 **A Multi-Agent Negotiation Framework for Buyer-Seller Transactions using LLM-based Agents.**
 
+![Framework Diagram](./rm_img//figure_1_framework.png)
+*Figure 1: AgenticPay Framework Overview*
+
+![Tasks Overview](./rm_img/figure_2_tasks.png)
+*Figure 2: Senario and Task Categories*
+
 - [Overview](#overview)
 - [Features](#features)
 - [Installation](#installation)
@@ -442,4 +448,3 @@ If you use AgenticPay in your research, please cite:
     howpublished = {\url{https://github.com/SafeRL-Lab/AgenticPay}},
 }
 ```
-
