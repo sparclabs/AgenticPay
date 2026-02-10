@@ -1,5 +1,12 @@
 
 
+
+
+<div align="center">
+  <a href="https://github.com/SafeRL-Lab/AgenticPay">
+    <img src="./rm_img/logo-agenticpay.png" alt="Logo" width="380"> 
+  </a>
+  
 <h1 align="center" style="font-size: 30px;"><strong><em>AgenticPay</em></strong>: A Multi-Agent LLM Negotiation System for Buyer–Seller Transactions</h1>
 <p align="center">
     <a href="https://arxiv.org/pdf/2602.06008">Paper</a>
@@ -11,6 +18,9 @@
     <a href="https://github.com/SafeRL-Lab/AgenticPay/issues">Issue</a>
   </p>
 </div>
+
+
+
 
 ---
 
