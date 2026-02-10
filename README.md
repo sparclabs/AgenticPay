@@ -30,11 +30,10 @@
 ![Framework Diagram](./rm_img//figure_1_framework.png)
 <h3 align="center" style="font-size: 30px;">Figure 1: AgenticPay Framework Overview</h3>
 
-
-
 ![Tasks Overview](./rm_img/figure_2_tasks.png)
 <h3 align="center" style="font-size: 30px;">Figure 2: Senario and Task Categories</h3>
 
+---
 
 - [Overview](#overview)
 - [Features](#features)
