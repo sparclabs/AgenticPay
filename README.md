@@ -462,12 +462,10 @@ Contributions are welcome! Please feel free to submit issues or pull requests.
 If you use AgenticPay in your research, please cite:
 
 ```bibtex
-@misc{agenticpay2025,
-    title={AgenticPay: A Multi-Agent LLM Negotiation System for Buyer–Seller Transactions},
-    author={Xianyang Liu, Shangding Gu, Dawn Song},
-    year = {2025},
-    publisher = {GitHub},
-    journal = {GitHub repository},
-    howpublished = {\url{https://github.com/SafeRL-Lab/AgenticPay}},
+@article{liu2026agenticpay,
+  title={AgenticPay: A Multi-Agent LLM Negotiation System for Buyer-Seller Transactions},
+  author={Liu, Xianyang and Gu, Shangding and Song, Dawn},
+  journal={arXiv preprint arXiv:2602.06008},
+  year={2026}
 }
 ```
