@@ -1,8 +1,8 @@
-"""Task13 Scenario 10: Business Acquisition Negotiation
+"""Task9 Scenario 6: Bookshelf (Kcelarec) Negotiation
 
-Category 4: Financial & High-Value Assets
-Scenario: E-commerce business acquisition on Acquire.com.
-Tests agent's ability to handle complex due diligence and high-stakes negotiations.
+Category 3: Home & Kitchen
+Scenario: 4-Tier Ladder Bookshelf Organizer transaction between seller and buyer on Amazon.
+Tests agent's ability to handle information asymmetry and product pricing negotiation.
 """
 
 import os
@@ -25,6 +25,7 @@ from agenticpay import make, Task1BasicPriceNegotiation  # Use registration syst
 from agenticpay.agents.buyer_agent import BuyerAgent
 from agenticpay.agents.seller_agent import SellerAgent
 from agenticpay.models.custom_llm import CustomLLM
+from agenticpay.models.openai_vlm import OpenAIVLM
 from agenticpay.models.qwen3_vl import Qwen3VL
 from agenticpay.models.vllm_lm import VLLMLLM
 from agenticpay.models.sglang_vlm import SGLangVLM
@@ -78,36 +79,24 @@ def main(model_name=None):
         print("You can set it with: export OPENAI_API_KEY='your-key-here'")
         return
     
-    # Use provided model name or default
-    if model_name is None:
-        model_name = "gemini-3-pro-all"  # Default model
-    
-    model = CustomLLM(api_key=api_key, model=model_name) # claude-sonnet-4-5-20250929, gpt-5.2, gemini-3-pro-all, gpt-3.5-turbo, DeepSeek-R1
+    # Use OpenAIVLM (Vision Language Model) for bookshelf negotiation with product images
+    model_name = model_name or "gpt-4o-mini"  # gpt-4o, gpt-4o-mini, gpt-4-vision-preview, etc.
+    model = OpenAIVLM(model=model_name, api_key=api_key)
 
-    # Build absolute path to model directory
-    # model_path = os.path.join(project_root, "models", "download_models", "Qwen3-8B-Instruct")
-    # model_path = os.path.abspath(model_path)
+    # Alternative: CustomLLM for text-only models
+    # model = CustomLLM(api_key=api_key, model=model_name)
 
-    # vLLM LLM Model
-    # model = VLLMLLM(
-    #     model_path=model_path,
-    #     trust_remote_code=True,
-    #     gpu_memory_utilization=0.9,
-    #     tensor_parallel_size=4, # 4 GPUs
-    # )
-
-    # SGLang VLM Model
-    # model = SGLangVLM(
-    #     model_path=model_path,
-    # )
+    # Alternative: SGLang VLM (local)
+    # model_path = os.path.join(project_root, "models", "download_models", "Qwen3-VL-8B-Instruct")
+    # model = SGLangVLM(model_path=os.path.abspath(model_path))
 
     print(f"✓ Successfully initialized: {model}")
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
     print("Creating agents...")
-    # Scenario 4-2: Business Acquisition - buyer_max_price: $120,000 (3x annual profit), seller_min_price: $80,000 (2x annual profit)
-    buyer_max_price = 120000.0  # Maximum acceptable purchase price for buyer (confidential)
-    seller_min_price = 80000.0  # Minimum acceptable selling price for seller (confidential)
+    # Scenario 6: 4-Tier Bookshelf - buyer_max_price: $35 (wants discount), seller_min_price: $28 (cost basis)
+    buyer_max_price = 35.0  # Maximum acceptable purchase price for buyer (confidential)
+    seller_min_price = 28.0  # Minimum acceptable selling price for seller (confidential)
     
     buyer = BuyerAgent(model=model, buyer_max_price=buyer_max_price)
     seller = SellerAgent(model=model, seller_min_price=seller_min_price)
@@ -119,15 +108,14 @@ def main(model_name=None):
         buyer_agent=buyer,
         seller_agent=seller,
         max_rounds=max_rounds,
-        initial_seller_price=150000.0,  # Initial price offered by seller (asking price)
+        initial_seller_price=36.94,  # Initial price offered by seller (list price $36.94)
         buyer_max_price=buyer_max_price,  # Buyer bottom price (confidential)
         seller_min_price=seller_min_price,  # Seller bottom price (confidential)
         environment_info={
-            "platform": "Acquire.com",
-            "seller_verified": True,
-            "financials_verified": "By platform",
-            "competing_buyers": 3,
-            "time_on_market": "2 weeks"
+            "platform": "Amazon",
+            "market_type": "B2C",
+            "listing_age": "3 days",
+            "availability_status": "In Stock."
         },
         price_tolerance=price_tolerance,
         reward_weights=reward_weights,  # Reward weights configuration
@@ -150,10 +138,10 @@ def main(model_name=None):
     # )
     
     # Create user profile (text description of personal preferences)
-    user_profile = "Serial entrepreneur looking to acquire profitable online businesses. Experienced in e-commerce operations. Focused on traffic quality, profit sustainability, and smooth transition. Willing to pay fair price for verified businesses with growth potential."
+    user_profile = "Home office organizer looking for practical storage solutions. Values sturdy construction, easy assembly, and good value. Prefers iron/metal furniture with strong bearing capacity."
     print(f"User Profile: {user_profile}")
     
-    user_requirement = "Looking to acquire a profitable e-commerce business. Prefer established business with diversified traffic sources."
+    user_requirement = "I'm looking for a 4-tier ladder bookshelf or bookcase organizer. Prefer iron construction, black color, with good bearing capacity for books and decorations. Easy to install is a plus."
     print(f"Using default requirement: {user_requirement}")
     
     # Reset environment
@@ -161,19 +149,24 @@ def main(model_name=None):
     print("Starting new negotiation...")
     print("="*60)
     
+    # Product image for VLM: URL from sampled_products.jsonl
+    product_image_url = "https://m.media-amazon.com/images/I/41Tbj+f2soL.jpg"  # 4-Tier Bookshelf
+    
     observation, info = env.reset(
         user_requirement=user_requirement,
         product_info={
-            "name": "Profitable Shopify Store - Pet Supplies Niche",
-            "monthly_revenue": 12000,
-            "monthly_profit": 3500,
-            "profit_margin": "29%",
-            "business_age": "3 years",
-            "traffic_source": {"organic": 0.60, "paid": 0.30, "social": 0.10},
-            "assets_included": ["Inventory ($5,000 value)", "Supplier relationships", "Email list (8,000 subscribers)", "Social media accounts", "Brand trademarks"],
-            "asking_price": 150000,
-            "reason_for_selling": "Owner pursuing other ventures",
-            "support_offered": "30 days transition support"
+            "name": "4-Tier Ladder Bookshelf Organizer, Iron Open Bookcase Organizer (Black)",
+            "condition": "New",
+            "brand": "Brand: Kcelarec",
+            "original_price": 36.94,
+            "availability_status": "In Stock.",
+            "product_category": "Home & Kitchen › Furniture › Home Office Furniture › Bookcases",
+            "average_rating": 5.0,
+            "total_reviews": 1,
+            "seller_name": "Kcelarec",
+            "asin": "B088WSDHTW",
+            "full_description": "If you are looking for a practical bookshelf, you can't miss this Widen 4 Tiers Bookshelf. This bookshelf is made of high quality material, which is stable, sturdy and durable. Its design of 4 tiers can hold a lot of books, and its strong bearing capacity can bear 44-88 lbs. You can put books in this bookshelf, and also place many other items like potting, decoration, etc. Made of high quality iron. Stable, sturdy and durable. Practical, design of 4 tiers can hold a lot of items. 44-88 lbs strong bearing capacity. Easy to install. Dimensions: (23.62 x 13.78 x 57.87) inches.",
+            "image_url": product_image_url,  # For VLM: product image (URL or path)
         },
         user_profile=user_profile,  # Pass user profile
     )
@@ -184,9 +177,9 @@ def main(model_name=None):
     
     # Initialize results dictionary
     results = {
-        "task": "Task13_s10_business_acquisition_negotiation",
-        "category": "Financial & High-Value Assets",
-        "scenario": "E-commerce business acquisition",
+        "task": "Task9_s6_bookshelf_negotiation",
+        "category": "Home & Kitchen",
+        "scenario": "4-Tier Ladder Bookshelf Organizer transaction",
         "timestamp": datetime.now().isoformat(),
         "user_requirement": user_requirement,
         "user_profile": user_profile,
@@ -334,16 +327,14 @@ def main(model_name=None):
                 "buyer_max_price": buyer_max_price,
                 "seller_min_price": seller_min_price,
                 "product_info": {
-                    "name": "Profitable Shopify Store - Pet Supplies Niche",
-                    "monthly_revenue": 12000,
-                    "monthly_profit": 3500,
-                    "profit_margin": "29%",
-                    "business_age": "3 years",
-                    "traffic_source": {"organic": 0.60, "paid": 0.30, "social": 0.10},
-                    "assets_included": ["Inventory ($5,000 value)", "Supplier relationships", "Email list (8,000 subscribers)", "Social media accounts", "Brand trademarks"],
-                    "asking_price": 150000,
-                    "reason_for_selling": "Owner pursuing other ventures",
-                    "support_offered": "30 days transition support"
+                    "name": "4-Tier Ladder Bookshelf Organizer, Iron Open Bookcase Organizer (Black)",
+                    "condition": "New",
+                    "brand": "Brand: Kcelarec",
+                    "original_price": 36.94,
+                    "product_category": "Home & Kitchen › Furniture › Home Office Furniture › Bookcases",
+                    "average_rating": 5.0,
+                    "total_reviews": 1,
+                    "asin": "B088WSDHTW"
                 },
                 "model": get_model_name(model),
             })
@@ -380,11 +371,11 @@ def main(model_name=None):
             json.dump(results, f, indent=2, ensure_ascii=False)
         
         # Save output text (we'll create a simple output file with key information)
-        output_file = run_dir / "Task13_s10_output.txt"
+        output_file = run_dir / "Task9_s6_bookshelf_output.txt"
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write("="*80 + "\n")
-            f.write("Task13 Scenario 10: Business Acquisition Negotiation Results\n")
-            f.write("Category: Financial & High-Value Assets\n")
+            f.write("Task9 Scenario 6: Bookshelf (Kcelarec) Negotiation Results\n")
+            f.write("Category: Home & Kitchen\n")
             f.write("="*80 + "\n\n")
             f.write(f"Timestamp: {results['timestamp']}\n")
             f.write(f"Model: {results['model']}\n")
@@ -434,12 +425,12 @@ def main(model_name=None):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Task13 Scenario 10: Business Acquisition Negotiation (E-commerce)")
+    parser = argparse.ArgumentParser(description="Task9 Scenario 6: Bookshelf Negotiation (Kcelarec 4-Tier Ladder)")
     parser.add_argument(
         "--model",
         type=str,
         default=None,
-        help="Model name to use (e.g., 'gemini-3-pro-all', 'gpt-5.2', 'claude-sonnet-4-5-20250929'). If not provided, uses default model."
+        help="VLM model name (e.g., 'gpt-4o', 'gpt-4o-mini', 'gpt-4-vision-preview'). Default: gpt-4o-mini"
     )
     args = parser.parse_args()
     main(model_name=args.model)

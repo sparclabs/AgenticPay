@@ -49,7 +49,7 @@ save_run_history() {
 # If the list is empty, each script will use its default model
 # Example:
 # MODELS=("gpt-5.2" "gemini-3-pro-all" "claude-sonnet-4-5-20250929")
-MODELS=("gpt-5.2")
+MODELS=("llama-3.1-8b")
 
 
 # ============================================
@@ -60,7 +60,7 @@ MODELS=("gpt-5.2")
 # Format: Just specify task numbers (e.g., "Task1", "Task4", "Task5")
 # Example:
 # TASKS=("Task1" "Task4" "Task5")
-TASKS=("Task1")
+TASKS=("Task12")
 
 # ============================================
 # Execute Tasks
@@ -70,16 +70,16 @@ declare -A TASK_SCRIPTS
 TASK_SCRIPTS["Task1"]="Task1_basic_price_negotiation"
 TASK_SCRIPTS["Task2"]="Task2_close_price_negotiation"
 TASK_SCRIPTS["Task3"]="Task3_close_to_market_price_negotiation"
-TASK_SCRIPTS["Task4"]="Task4_s1_used_smartphone_negotiation"
-TASK_SCRIPTS["Task5"]="Task5_s2_used_car_negotiation"
-TASK_SCRIPTS["Task6"]="Task6_s3_short_term_rental_negotiation"
-TASK_SCRIPTS["Task7"]="Task7_s4_website_development_negotiation"
-TASK_SCRIPTS["Task8"]="Task8_s5_commercial_photography_negotiation"
-TASK_SCRIPTS["Task9"]="Task9_s6_home_renovation_negotiation"
-TASK_SCRIPTS["Task10"]="Task10_s7_saas_procurement_negotiation"
-TASK_SCRIPTS["Task11"]="Task11_s8_raw_materials_procurement_negotiation"
-TASK_SCRIPTS["Task12"]="Task12_s9_luxury_watch_negotiation"
-TASK_SCRIPTS["Task13"]="Task13_s10_business_acquisition_negotiation"
+TASK_SCRIPTS["Task4"]="Task4_s1_beauty_product_negotiation"
+TASK_SCRIPTS["Task5"]="Task5_s2_toothpaste_negotiation"
+TASK_SCRIPTS["Task6"]="Task6_s3_riflescope_negotiation"
+TASK_SCRIPTS["Task7"]="Task7_s4_headphones_negotiation"
+TASK_SCRIPTS["Task8"]="Task8_s5_wall_lantern_negotiation"
+TASK_SCRIPTS["Task9"]="Task9_s6_bookshelf_negotiation"
+TASK_SCRIPTS["Task10"]="Task10_s7_sandals_negotiation"
+TASK_SCRIPTS["Task11"]="Task11_s8_jeans_negotiation"
+TASK_SCRIPTS["Task12"]="Task12_s9_beverage_negotiation"
+TASK_SCRIPTS["Task13"]="Task13_s10_food_color_negotiation"
 
 # Determine which tasks to run
 if [ ${#TASKS[@]} -eq 0 ]; then

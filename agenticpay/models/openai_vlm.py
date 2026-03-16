@@ -1,7 +1,15 @@
 """OpenAI VLM (Vision Language Model) Implementation"""
 
-from typing import Optional, Union, List, Any
+import sys
 from pathlib import Path
+
+# Add project root to path when running as script (python agenticpay/models/openai_vlm.py)
+if __name__ == "__main__":
+    _project_root = Path(__file__).resolve().parent.parent.parent
+    if str(_project_root) not in sys.path:
+        sys.path.insert(0, str(_project_root))
+
+from typing import Optional, Union, List, Any
 import os
 import base64
 import io
@@ -31,13 +39,18 @@ class OpenAIVLM(BaseVLM):
         """
         self.model = model
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
-        self.base_url = base_url
+        self.base_url = base_url or os.getenv("OPENAI_URL")
         
         if not self.api_key:
             raise ValueError(
                 "OpenAI API key is required. "
                 "Set it via api_key parameter or OPENAI_API_KEY environment variable."
             )
+        # if not self.base_url:
+        #     raise ValueError(
+        #         "OpenAI base URL is required. "
+        #         "Set it via base_url parameter or OPENAI_URL environment variable."
+        #     )
         
         # Lazy import openai to avoid errors when not installed
         try:
@@ -265,22 +278,18 @@ if __name__ == "__main__":
         vlm = OpenAIVLM(model="gpt-4o")
         print(f"✓ Successfully initialized: {vlm}")
         
-        # Test generation with image (requires an actual image file)
+        # Test generation with image (URL or local path)
         print("\n2. Testing image-to-text generation...")
-        print("Note: This requires an image file. Using a placeholder test.")
-        
-        # For actual testing, you would provide an image path:
-        # test_image = "path/to/your/image.jpg"
-        # response = vlm.generate(
-        #     prompt="What's in this image?",
-        #     images=test_image,
-        #     temperature=0.7,
-        #     max_tokens=1024
-        # )
-        # print(f"Response: {response}")
-        
-        print("✓ VLM model initialized successfully")
-        print("To test with actual images, provide an image path to the generate() method.")
+        test_image = "https://m.media-amazon.com/images/I/41IiEBGouZL.jpg"  # Eyeshadow/makeup image
+        # Or use local: test_image = "path/to/your/image.jpg"
+        response = vlm.generate(
+            prompt="What's in this image? Describe it briefly.",
+            images=test_image,
+            temperature=0.7,
+            max_tokens=256
+        )
+        print(f"Response: {response}")
+        print("✓ Image-to-text generation test completed")
         
         print("\n" + "=" * 50)
         print("Test completed!")

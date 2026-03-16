@@ -1,8 +1,8 @@
-"""Task12 Scenario 9: Luxury Watch Negotiation
+"""Task13 Scenario 10: Food Color (AmeriColor AmeriMist) Negotiation
 
-Category 4: Financial & High-Value Assets
-Scenario: Used Rolex Submariner transaction on Chrono24.
-Tests agent's ability to handle high-value items with authenticity concerns.
+Category: Grocery
+Scenario: AmeriColor AmeriMist Lemon Yellow Airbrush Food Color transaction between seller and buyer on Amazon.
+Tests agent's ability to handle information asymmetry and product pricing negotiation.
 """
 
 import os
@@ -25,6 +25,7 @@ from agenticpay import make, Task1BasicPriceNegotiation  # Use registration syst
 from agenticpay.agents.buyer_agent import BuyerAgent
 from agenticpay.agents.seller_agent import SellerAgent
 from agenticpay.models.custom_llm import CustomLLM
+from agenticpay.models.openai_vlm import OpenAIVLM
 from agenticpay.models.qwen3_vl import Qwen3VL
 from agenticpay.models.vllm_lm import VLLMLLM
 from agenticpay.models.sglang_vlm import SGLangVLM
@@ -78,13 +79,11 @@ def main(model_name=None):
         print("You can set it with: export OPENAI_API_KEY='your-key-here'")
         return
     
-    # Use provided model name or default
-    if model_name is None:
-        model_name = "gemini-3-pro-all"  # Default model
-    
-    model = CustomLLM(api_key=api_key, model=model_name) # claude-sonnet-4-5-20250929, gpt-5.2, gemini-3-pro-all, gpt-3.5-turbo, DeepSeek-R1
+    # Use OpenAIVLM (Vision Language Model) for product negotiation with product images
+    model_name = model_name or "gpt-4o-mini"  # gpt-4o, gpt-4o-mini, gpt-4-vision-preview, etc.
+    model = OpenAIVLM(model=model_name, api_key=api_key)
 
-    # Build absolute path to model directory
+    # Alternative: CustomLLM for text-only models
     # model_path = os.path.join(project_root, "models", "download_models", "Qwen3-8B-Instruct")
     # model_path = os.path.abspath(model_path)
 
@@ -105,9 +104,9 @@ def main(model_name=None):
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
     print("Creating agents...")
-    # Scenario 4-1: Luxury Watch - buyer_max_price: $9,500, seller_min_price: $7,000
-    buyer_max_price = 9500.0  # Maximum acceptable purchase price for buyer (confidential)
-    seller_min_price = 7000.0  # Minimum acceptable selling price for seller (confidential)
+    # Scenario 10: Food Color - buyer_max_price: $6.00, seller_min_price: $4.50
+    buyer_max_price = 6.0  # Maximum acceptable purchase price for buyer (confidential)
+    seller_min_price = 4.5  # Minimum acceptable selling price for seller (confidential)
     
     buyer = BuyerAgent(model=model, buyer_max_price=buyer_max_price)
     seller = SellerAgent(model=model, seller_min_price=seller_min_price)
@@ -119,14 +118,14 @@ def main(model_name=None):
         buyer_agent=buyer,
         seller_agent=seller,
         max_rounds=max_rounds,
-        initial_seller_price=9200.0,  # Initial price offered by seller
+        initial_seller_price=6.25,  # Initial price offered by seller (list price $6.25)
         buyer_max_price=buyer_max_price,  # Buyer bottom price (confidential)
         seller_min_price=seller_min_price,  # Seller bottom price (confidential)
         environment_info={
-            "platform": "Chrono24",
-            "seller_rating": "4.8/5 (23 transactions)",
-            "market_trend": "Prices stabilizing after 2022 peak",
-            "escrow_available": True
+            "platform": "Amazon",
+            "market_type": "B2C",
+            "availability_status": "In Stock.",
+            "listing_age": "5 days"
         },
         price_tolerance=price_tolerance,
         reward_weights=reward_weights,  # Reward weights configuration
@@ -149,10 +148,10 @@ def main(model_name=None):
     # )
     
     # Create user profile (text description of personal preferences)
-    user_profile = "Watch collector and enthusiast. Very concerned about authenticity and condition. Values complete documentation and service history. Willing to pay premium for verified genuine pieces with full box and papers."
+    user_profile = "Home baker and cake decorator who values professional-grade food coloring. Prefers concentrated colors that go far and work well with non-dairy icings. Values quality brands with good reviews."
     print(f"User Profile: {user_profile}")
     
-    user_requirement = "Looking for a Submariner Date in excellent condition with full box and papers. Authenticity is my top priority."
+    user_requirement = "I'm looking for AmeriColor AmeriMist Lemon Yellow airbrush food color for cake decorating. Need something that works on non-dairy whipped toppings."
     print(f"Using default requirement: {user_requirement}")
     
     # Reset environment
@@ -160,18 +159,26 @@ def main(model_name=None):
     print("Starting new negotiation...")
     print("="*60)
     
+    # Product image for VLM: URL from sampled_products.jsonl
+    product_image_url = "https://m.media-amazon.com/images/I/41p+jdUZTJL.jpg"
+    
     observation, info = env.reset(
         user_requirement=user_requirement,
         product_info={
-            "name": "Rolex Submariner Date 116610LN",
-            "year": 2019,
-            "condition": "Excellent, minor desk diving marks",
-            "box_papers": "Full set with warranty card",
-            "service_history": "Serviced by Rolex in 2023",
-            "authentication": "Seller offers third-party verification",
-            "market_reference_price": 10500,
-            "original_msrp": 9150,
-            "seller_type": "Private collector"
+            "name": "AmeriColor AmeriMist - Lemon Yellow Airbrush Food Color.65 oz.",
+            "condition": "New",
+            "brand": "AmeriColor",
+            "color": "Lemon Yellow",
+            "size": "0.65 oz",
+            "original_price": 6.25,
+            "availability_status": "In Stock.",
+            "product_category": "Grocery & Gourmet Food › Pantry Staples › Cooking & Baking › Food Coloring",
+            "average_rating": 5.0,
+            "total_reviews": 1,
+            "seller_name": "AmeriColor Corp.",
+            "asin": "B00FBPHZKC",
+            "full_description": "AmeriMist is a super-strength, highly concentrated spray-on air brush food color that is extremely effective—even on hard to color non-dairy whipped toppings and icings. AmeriMist air brush colors prevent the need to over-spray, eliminating water spots and preventing icing from breaking down.",
+            "image_url": product_image_url,
         },
         user_profile=user_profile,  # Pass user profile
     )
@@ -182,9 +189,9 @@ def main(model_name=None):
     
     # Initialize results dictionary
     results = {
-        "task": "Task12_s9_luxury_watch_negotiation",
-        "category": "Financial & High-Value Assets",
-        "scenario": "Used Rolex Submariner transaction",
+        "task": "Task13_s10_food_color_negotiation",
+        "category": "Grocery",
+        "scenario": "AmeriColor AmeriMist Food Color transaction",
         "timestamp": datetime.now().isoformat(),
         "user_requirement": user_requirement,
         "user_profile": user_profile,
@@ -332,15 +339,14 @@ def main(model_name=None):
                 "buyer_max_price": buyer_max_price,
                 "seller_min_price": seller_min_price,
                 "product_info": {
-                    "name": "Rolex Submariner Date 116610LN",
-                    "year": 2019,
-                    "condition": "Excellent, minor desk diving marks",
-                    "box_papers": "Full set with warranty card",
-                    "service_history": "Serviced by Rolex in 2023",
-                    "authentication": "Seller offers third-party verification",
-                    "market_reference_price": 10500,
-                    "original_msrp": 9150,
-                    "seller_type": "Private collector"
+                    "name": "AmeriColor AmeriMist - Lemon Yellow Airbrush Food Color.65 oz.",
+                    "brand": "AmeriColor",
+                    "color": "Lemon Yellow",
+                    "original_price": 6.25,
+                    "product_category": "Grocery & Gourmet Food › Pantry Staples › Cooking & Baking › Food Coloring",
+                    "average_rating": 5.0,
+                    "total_reviews": 1,
+                    "asin": "B00FBPHZKC"
                 },
                 "model": get_model_name(model),
             })
@@ -377,11 +383,11 @@ def main(model_name=None):
             json.dump(results, f, indent=2, ensure_ascii=False)
         
         # Save output text (we'll create a simple output file with key information)
-        output_file = run_dir / "Task12_s9_output.txt"
+        output_file = run_dir / "Task13_s10_food_color_output.txt"
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write("="*80 + "\n")
-            f.write("Task12 Scenario 9: Luxury Watch Negotiation Results\n")
-            f.write("Category: Financial & High-Value Assets\n")
+            f.write("Task13 Scenario 10: Food Color (AmeriColor AmeriMist) Negotiation Results\n")
+            f.write("Category: Grocery\n")
             f.write("="*80 + "\n\n")
             f.write(f"Timestamp: {results['timestamp']}\n")
             f.write(f"Model: {results['model']}\n")
@@ -431,7 +437,7 @@ def main(model_name=None):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Task12 Scenario 9: Luxury Watch Negotiation (Rolex Submariner)")
+    parser = argparse.ArgumentParser(description="Task13 Scenario 10: Food Color Negotiation (AmeriColor AmeriMist)")
     parser.add_argument(
         "--model",
         type=str,

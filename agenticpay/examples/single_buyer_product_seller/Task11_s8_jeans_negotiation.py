@@ -1,8 +1,8 @@
-"""Task4 Scenario 3: Short-term Rental Negotiation
+"""Task11 Scenario 8: Women's Jeans Negotiation
 
-Category 1: Daily Life Consumption
-Scenario: Beachfront apartment rental on Airbnb during peak season.
-Tests agent's ability to handle time pressure and dynamic pricing.
+Category 3: Clothing & Fashion
+Scenario: myhehthw Women's High Waisted Jeans transaction between seller and buyer on Amazon.
+Tests agent's ability to handle information asymmetry and product pricing negotiation.
 """
 
 import os
@@ -25,6 +25,7 @@ from agenticpay import make, Task1BasicPriceNegotiation  # Use registration syst
 from agenticpay.agents.buyer_agent import BuyerAgent
 from agenticpay.agents.seller_agent import SellerAgent
 from agenticpay.models.custom_llm import CustomLLM
+from agenticpay.models.openai_vlm import OpenAIVLM
 from agenticpay.models.qwen3_vl import Qwen3VL
 from agenticpay.models.vllm_lm import VLLMLLM
 from agenticpay.models.sglang_vlm import SGLangVLM
@@ -78,11 +79,12 @@ def main(model_name=None):
         print("You can set it with: export OPENAI_API_KEY='your-key-here'")
         return
     
-    # Use provided model name or default
-    if model_name is None:
-        model_name = "gemini-3-pro-all"  # Default model
-    
-    model = CustomLLM(api_key=api_key, model=model_name) # claude-sonnet-4-5-20250929, gpt-5.2, gemini-3-pro-all, gpt-3.5-turbo, DeepSeek-R1
+    # Use OpenAIVLM (Vision Language Model) for product negotiation with product images
+    model_name = model_name or "gpt-4o-mini"  # gpt-4o, gpt-4o-mini, gpt-4-vision-preview, etc.
+    model = OpenAIVLM(model=model_name, api_key=api_key)
+
+    # Alternative: CustomLLM for text-only models
+    # model = CustomLLM(api_key=api_key, model=model_name)
 
     # Build absolute path to model directory
     # model_path = os.path.join(project_root, "models", "download_models", "Qwen3-8B-Instruct")
@@ -105,9 +107,9 @@ def main(model_name=None):
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
     print("Creating agents...")
-    # Scenario 1-3: Short-term Rental - buyer_max_price: $900 ($180/night × 5), seller_min_price: $500 ($100/night × 5)
-    buyer_max_price = 900.0  # Maximum acceptable purchase price for buyer (confidential)
-    seller_min_price = 500.0  # Minimum acceptable selling price for seller (confidential)
+    # Scenario 8: Women's Jeans - buyer_max_price: $22 (wants discount), seller_min_price: $16 (cost basis)
+    buyer_max_price = 22.0  # Maximum acceptable purchase price for buyer (confidential)
+    seller_min_price = 16.0  # Minimum acceptable selling price for seller (confidential)
     
     buyer = BuyerAgent(model=model, buyer_max_price=buyer_max_price)
     seller = SellerAgent(model=model, seller_min_price=seller_min_price)
@@ -119,14 +121,13 @@ def main(model_name=None):
         buyer_agent=buyer,
         seller_agent=seller,
         max_rounds=max_rounds,
-        initial_seller_price=825.0,  # Initial price offered by seller ($165/night × 5)
+        initial_seller_price=22.99,  # Initial price offered by seller (list price)
         buyer_max_price=buyer_max_price,  # Buyer bottom price (confidential)
         seller_min_price=seller_min_price,  # Seller bottom price (confidential)
         environment_info={
-            "platform": "Airbnb",
-            "season": "Peak summer",
-            "days_until_checkin": 14,
-            "similar_listings_available": 3
+            "platform": "Amazon",
+            "market_type": "B2C",
+            "availability_status": "In Stock"
         },
         price_tolerance=price_tolerance,
         reward_weights=reward_weights,  # Reward weights configuration
@@ -149,18 +150,10 @@ def main(model_name=None):
     # )
     
     # Create user profile (text description of personal preferences)
-    user_profile = "Budget-conscious traveler planning a beach vacation. Flexible on exact dates but prefers mid-July. Looking for good value and clean accommodation with ocean view."
+    user_profile = "Fashion-conscious woman looking for comfortable daily wear. Cares about fit, comfort, and value. Prefers stretchy denim that holds shape after repeated washing."
     print(f"User Profile: {user_profile}")
     
-    # Get user requirement
-    # print("\n" + "="*60)
-    # print("Please enter the product requirement you want to purchase:")
-    # user_requirement = input("> ").strip()
-    # if not user_requirement:
-    #     print("No requirement entered, using default requirement...")
-    #     user_requirement = "I need a high-quality winter jacket for cold weather"
-
-    user_requirement = "Need a beachfront apartment for 5 nights in mid-July, looking for good value."
+    user_requirement = "I'm looking for myhehthw Women's High Waisted Distressed Ripped Jeans, slim fit, stretch skinny style. Preferably in black or dark wash, size Medium or Large."
     print(f"Using default requirement: {user_requirement}")
     
     # Reset environment
@@ -168,18 +161,23 @@ def main(model_name=None):
     print("Starting new negotiation...")
     print("="*60)
     
+    # Product image for VLM: URL from sampled_products.jsonl
+    product_image_url = "https://m.media-amazon.com/images/I/31Qo5LzPPjL.jpg"
+    
     observation, info = env.reset(
         user_requirement=user_requirement,
         product_info={
-            "name": "Beachfront Studio Apartment",
-            "base_price": 150.0,
-            "seasonal_multiplier": 1.5,
-            "minimum_nights": 3,
-            "cleaning_fee": 80.0,
-            "security_deposit": 200.0,
-            "amenities": ["Ocean view", "WiFi", "Kitchen", "Parking"],
-            "availability": "July 15-22 (Peak season)",
-            "current_occupancy_rate": 0.85
+            "name": "myhehthw Women's High Waisted Jeans for Women Distressed Ripped Jeans Slim Fit Butt Lifting Skinny Stretch Jeans Trousers",
+            "condition": "New",
+            "brand": "myhehthw",
+            "material": "75% Cotton, 20% Polyester, 5% Spandex",
+            "sizes": ["Small", "Medium", "Large", "X-Large", "XX-Large"],
+            "original_price": 22.99,
+            "availability_status": "In Stock",
+            "product_category": "Clothing, Shoes & Jewelry › Women › Clothing › Jeans",
+            "asin": "B09PBNZLNT",
+            "full_description": "Made of soft and stretchy denim cotton fabric, breathable to wear. Comfortable and versatile for casual, school, office, shopping. Button closure. Machine washable.",
+            "image_url": product_image_url,
         },
         user_profile=user_profile,  # Pass user profile
     )
@@ -190,9 +188,9 @@ def main(model_name=None):
     
     # Initialize results dictionary
     results = {
-        "task": "Task6_s3_short_term_rental_negotiation",
-        "category": "Daily Life Consumption",
-        "scenario": "Airbnb beachfront apartment rental",
+        "task": "Task11_s8_jeans_negotiation",
+        "category": "Clothing & Fashion",
+        "scenario": "myhehthw Women's Jeans transaction",
         "timestamp": datetime.now().isoformat(),
         "user_requirement": user_requirement,
         "user_profile": user_profile,
@@ -340,15 +338,12 @@ def main(model_name=None):
                 "buyer_max_price": buyer_max_price,
                 "seller_min_price": seller_min_price,
                 "product_info": {
-                    "name": "Beachfront Studio Apartment",
-                    "base_price": 150.0,
-                    "seasonal_multiplier": 1.5,
-                    "minimum_nights": 3,
-                    "cleaning_fee": 80.0,
-                    "security_deposit": 200.0,
-                    "amenities": ["Ocean view", "WiFi", "Kitchen", "Parking"],
-                    "availability": "July 15-22 (Peak season)",
-                    "current_occupancy_rate": 0.85
+                    "name": "myhehthw Women's High Waisted Jeans for Women Distressed Ripped Jeans Slim Fit Butt Lifting Skinny Stretch Jeans Trousers",
+                    "brand": "myhehthw",
+                    "material": "75% Cotton, 20% Polyester, 5% Spandex",
+                    "original_price": 22.99,
+                    "product_category": "Clothing, Shoes & Jewelry › Women › Clothing › Jeans",
+                    "asin": "B09PBNZLNT"
                 },
                 "model": get_model_name(model),
             })
@@ -385,11 +380,11 @@ def main(model_name=None):
             json.dump(results, f, indent=2, ensure_ascii=False)
         
         # Save output text (we'll create a simple output file with key information)
-        output_file = run_dir / "Task6_s3_output.txt"
+        output_file = run_dir / "Task11_s8_jeans_output.txt"
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write("="*80 + "\n")
-            f.write("Task6 Scenario 3: Short-term Rental Negotiation Results\n")
-            f.write("Category: Daily Life Consumption\n")
+            f.write("Task11 Scenario 8: Women's Jeans Negotiation Results\n")
+            f.write("Category: Clothing & Fashion\n")
             f.write("="*80 + "\n\n")
             f.write(f"Timestamp: {results['timestamp']}\n")
             f.write(f"Model: {results['model']}\n")
@@ -439,7 +434,7 @@ def main(model_name=None):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Task4 Scenario 3: Short-term Rental Negotiation (Airbnb)")
+    parser = argparse.ArgumentParser(description="Task11 Scenario 8: Women's Jeans Negotiation (myhehthw)")
     parser.add_argument(
         "--model",
         type=str,

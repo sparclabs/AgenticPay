@@ -74,13 +74,23 @@ class BaseAgent(ABC):
             Complete prompt string
         """
         # Base prompt template
+#         prompt = f"""You are {self.name}, {self.role_description}
+
+# Context Information:
+# {self._format_context()}
+
+# Current Negotiation State:
+# {self._format_state(current_state)}
+
+# Conversation History:
+# {self._format_history(conversation_history)}
+
+# Please respond naturally as {self.name} would. Be strategic but realistic in your negotiation.
+# """
         prompt = f"""You are {self.name}, {self.role_description}
 
 Context Information:
 {self._format_context()}
-
-Current Negotiation State:
-{self._format_state(current_state)}
 
 Conversation History:
 {self._format_history(conversation_history)}

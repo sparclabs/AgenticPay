@@ -5,6 +5,7 @@ from typing import Dict, List, Any, Optional, Union
 from agenticpay.agents.base_agent import BaseAgent
 from agenticpay.models.base_llm import BaseLLM
 from agenticpay.models.base_vlm import BaseVLM
+from loguru import logger
 
 
 class SellerAgent(BaseAgent):
@@ -116,13 +117,15 @@ IMPORTANT REMINDERS:
 - Example: "How about ### SELLER_PRICE($13.00) ###?"
 - This specific format is required for the system to correctly extract your offer price.
 - NEVER reveal your minimum acceptable price to the buyer.
-- Keep communication short (150 words or less), professional, and negotiation-focused.
 
 Now, respond as {self.name}:
 """
 
         full_prompt = prompt + seller_guidance
-        
+
+        # logger.info(f"Seller prompt: {full_prompt}")
+
+
         # Extract images from current_state if VLM is used
         images = None
         if self.is_vlm:

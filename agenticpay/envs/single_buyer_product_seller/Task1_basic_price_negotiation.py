@@ -138,21 +138,37 @@ class Task1BasicPriceNegotiation(BaseEnv):
         self.current_round = 0
         self.negotiation_info = NegotiationInfo()
         
+        # Extract product_images for VLM (from kwargs, product_info, or product_info sub-fields)
+        product_info = product_info or {}
+        product_images = kwargs.get("product_images")
+        if product_images is None:
+            product_images = product_info.get("product_images") or product_info.get("images")
+        if product_images is None:
+            # Support single image in product_info
+            img_path = product_info.get("image_path") or product_info.get("image_url")
+            if img_path is not None:
+                product_images = [img_path]
+        if product_images is not None and not isinstance(product_images, list):
+            product_images = [product_images]
+        self.product_images = product_images  # Store for observation
+        
         # Initialize Agents
         buyer_context = {
             "user_requirement": user_requirement,
             "max_price": self.buyer_max_price,
             "user_profile": user_profile,
             "environment_info": self.environment_info,
-            "product_info": product_info or {},  # Buyer can now see product information
+            "product_info": product_info,  # Buyer can now see product information
+            "product_images": product_images,  # For VLM: product images (path/URL)
         }
         self.buyer_agent.initialize(buyer_context)
         
         seller_context = {
-            "product_info": product_info or {},
+            "product_info": product_info,
             "initial_price": self.initial_seller_price,
             "min_price": self.seller_min_price,
             "environment_info": self.environment_info,
+            "product_images": product_images,  # For VLM: product images (path/URL)
         }
         self.seller_agent.initialize(seller_context)
         
@@ -401,13 +417,17 @@ class Task1BasicPriceNegotiation(BaseEnv):
     
     def _get_observation(self) -> Dict[str, Any]:
         """Get current observation"""
-        return {
+        obs = {
             "conversation_history": self.memory.get_history(),
             "current_round": self.current_round,
             "seller_price": self.state.seller_price,
             "buyer_price": self.state.buyer_price,
             "status": self.negotiation_info.status.value,
         }
+        # Include product_images for VLM agents
+        if getattr(self, "product_images", None):
+            obs["product_images"] = self.product_images
+        return obs
     
     def _get_info(self) -> Dict[str, Any]:
         """Get current info"""
@@ -761,7 +781,7 @@ class Task1BasicPriceNegotiation(BaseEnv):
         # Check if we have required prices
         if self.buyer_max_price is None or self.seller_min_price is None:
             # Calculate discount for failure penalty
-            round_index = max(0, self.current_round)
+            round_index = max(0, self.current_round - 1)
             discount = self.gamma ** round_index
             failure_penalty = -self.failure_penalty_weight * (1.0 - discount)
             
@@ -778,9 +798,9 @@ class Task1BasicPriceNegotiation(BaseEnv):
         
         # Calculate discount = γ^(t-1)
         # Note: Formula uses t-1 where t is 1-based (first round = 1)
-        # Our current_round is 0-based, so round_index = current_round
-        # This means: round=0 (first round) -> γ^0=1, round=1 (second round) -> γ^1, etc.
-        round_index = max(0, self.current_round)
+        # current_round = completed round count, so round_index = current_round - 1
+        # This means: 1 round completed -> γ^0=1, 2 rounds completed -> γ^1, etc.
+        round_index = max(0, self.current_round - 1)
         discount = self.gamma ** round_index
         
         # Check feasible_deal: whether negotiation reached agreement
@@ -894,7 +914,7 @@ class Task1BasicPriceNegotiation(BaseEnv):
         # Check if we have required prices
         if self.buyer_max_price is None or self.seller_min_price is None:
             # Calculate discount for failure penalty
-            round_index = max(0, self.current_round)
+            round_index = max(0, self.current_round - 1)
             discount = self.gamma ** round_index
             buyer_score = -self.buyer_failure_penalty_weight * (1.0 - discount)
             
@@ -908,8 +928,8 @@ class Task1BasicPriceNegotiation(BaseEnv):
         # Calculate Z
         Z = self.buyer_max_price - self.seller_min_price
         
-        # Calculate discount = γ^(t-1)
-        round_index = max(0, self.current_round)
+        # Calculate discount = γ^(t-1) where t is completed round count (1-based)
+        round_index = max(0, self.current_round - 1)
         discount = self.gamma ** round_index
         
         # Check feasible_deal: whether negotiation reached agreement
@@ -1005,7 +1025,7 @@ class Task1BasicPriceNegotiation(BaseEnv):
         # Check if we have required prices
         if self.buyer_max_price is None or self.seller_min_price is None:
             # Calculate discount for failure penalty
-            round_index = max(0, self.current_round)
+            round_index = max(0, self.current_round - 1)
             discount = self.gamma ** round_index
             seller_score = -self.seller_failure_penalty_weight * (1.0 - discount)
             
@@ -1019,8 +1039,8 @@ class Task1BasicPriceNegotiation(BaseEnv):
         # Calculate Z
         Z = self.buyer_max_price - self.seller_min_price
         
-        # Calculate discount = γ^(t-1)
-        round_index = max(0, self.current_round)
+        # Calculate discount = γ^(t-1) where t is completed round count (1-based)
+        round_index = max(0, self.current_round - 1)
         discount = self.gamma ** round_index
         
         # Check feasible_deal: whether negotiation reached agreement

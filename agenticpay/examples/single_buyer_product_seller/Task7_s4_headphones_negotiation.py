@@ -1,8 +1,8 @@
-"""Task4 Scenario 8: Raw Materials Procurement Negotiation
+"""Task7 Scenario 4: Kids Headphones Negotiation
 
-Category 3: Business Procurement
-Scenario: Electronic components supply contract with MOQ tiers.
-Tests agent's ability to handle long-term supplier relationships and payment terms.
+Category 2: Electronics
+Scenario: Kids Wireless Headphones transaction between seller and buyer on Amazon.
+Tests agent's ability to handle information asymmetry and product pricing negotiation.
 """
 
 import os
@@ -25,6 +25,7 @@ from agenticpay import make, Task1BasicPriceNegotiation  # Use registration syst
 from agenticpay.agents.buyer_agent import BuyerAgent
 from agenticpay.agents.seller_agent import SellerAgent
 from agenticpay.models.custom_llm import CustomLLM
+from agenticpay.models.openai_vlm import OpenAIVLM
 from agenticpay.models.qwen3_vl import Qwen3VL
 from agenticpay.models.vllm_lm import VLLMLLM
 from agenticpay.models.sglang_vlm import SGLangVLM
@@ -78,36 +79,24 @@ def main(model_name=None):
         print("You can set it with: export OPENAI_API_KEY='your-key-here'")
         return
     
-    # Use provided model name or default
-    if model_name is None:
-        model_name = "gemini-3-pro-all"  # Default model
-    
-    model = CustomLLM(api_key=api_key, model=model_name) # claude-sonnet-4-5-20250929, gpt-5.2, gemini-3-pro-all, gpt-3.5-turbo, DeepSeek-R1
+    # Use OpenAIVLM (Vision Language Model) for headphones negotiation with product images
+    model_name = model_name or "gpt-4o-mini"  # gpt-4o, gpt-4o-mini, gpt-4-vision-preview, etc.
+    model = OpenAIVLM(model=model_name, api_key=api_key)
 
-    # Build absolute path to model directory
-    # model_path = os.path.join(project_root, "models", "download_models", "Qwen3-8B-Instruct")
-    # model_path = os.path.abspath(model_path)
+    # Alternative: CustomLLM for text-only models
+    # model = CustomLLM(api_key=api_key, model=model_name)
 
-    # vLLM LLM Model
-    # model = VLLMLLM(
-    #     model_path=model_path,
-    #     trust_remote_code=True,
-    #     gpu_memory_utilization=0.9,
-    #     tensor_parallel_size=4, # 4 GPUs
-    # )
-
-    # SGLang VLM Model
-    # model = SGLangVLM(
-    #     model_path=model_path,
-    # )
+    # Alternative: SGLang VLM (local)
+    # model_path = os.path.join(project_root, "models", "download_models", "Qwen3-VL-8B-Instruct")
+    # model = SGLangVLM(model_path=os.path.abspath(model_path))
 
     print(f"✓ Successfully initialized: {model}")
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
     print("Creating agents...")
-    # Scenario 3-2: Raw Materials - buyer_max_price: $4,500 ($0.45/unit × 10,000), seller_min_price: $3,200 ($0.32/unit × 10,000)
-    buyer_max_price = 4500.0  # Maximum acceptable purchase price for buyer (confidential)
-    seller_min_price = 3200.0  # Minimum acceptable selling price for seller (confidential)
+    # Scenario 4: Kids Headphones - buyer_max_price: $14 (wants discount), seller_min_price: $10 (cost basis)
+    buyer_max_price = 14.0  # Maximum acceptable purchase price for buyer (confidential)
+    seller_min_price = 10.0  # Minimum acceptable selling price for seller (confidential)
     
     buyer = BuyerAgent(model=model, buyer_max_price=buyer_max_price)
     seller = SellerAgent(model=model, seller_min_price=seller_min_price)
@@ -119,14 +108,14 @@ def main(model_name=None):
         buyer_agent=buyer,
         seller_agent=seller,
         max_rounds=max_rounds,
-        initial_seller_price=5000.0,  # Initial price offered by seller ($0.50/unit × 10,000)
+        initial_seller_price=14.99,  # Initial price offered by seller (list price $14.99)
         buyer_max_price=buyer_max_price,  # Buyer bottom price (confidential)
         seller_min_price=seller_min_price,  # Seller bottom price (confidential)
         environment_info={
-            "buyer_company": "Electronics manufacturer",
-            "annual_volume_potential": "200,000 units",
-            "current_supplier_issues": "Quality inconsistency",
-            "market_condition": "Stable supply"
+            "platform": "Amazon",
+            "market_type": "B2C",
+            "listing_age": "2 days",
+            "availability_status": "In Stock."
         },
         price_tolerance=price_tolerance,
         reward_weights=reward_weights,  # Reward weights configuration
@@ -149,10 +138,11 @@ def main(model_name=None):
     # )
     
     # Create user profile (text description of personal preferences)
-    user_profile = "Procurement specialist at electronics manufacturer. Looking for reliable long-term supplier with consistent quality. Interested in payment terms flexibility and volume discounts for future orders."
+    user_profile = "Parent looking for affordable kids headphones for school and travel. Values volume control for child safety, durability, and good value. Prefers Bluetooth and wired options for flexibility."
     print(f"User Profile: {user_profile}")
     
-    user_requirement = "Need reliable supply of ceramic capacitors for our manufacturing line. Initial order 10,000 units, ongoing monthly demand."
+    # Get user requirement
+    user_requirement = "I'm looking for kids wireless headphones with volume control, Bluetooth and 3.5mm jack, for school and travel. Prefer foldable design with good battery life and built-in microphone."
     print(f"Using default requirement: {user_requirement}")
     
     # Reset environment
@@ -160,17 +150,24 @@ def main(model_name=None):
     print("Starting new negotiation...")
     print("="*60)
     
+    # Product image for VLM: URL from sampled_products.jsonl
+    product_image_url = "https://m.media-amazon.com/images/I/41B+OC0qnOL.jpg"  # Kids Wireless Headphones
+    
     observation, info = env.reset(
         user_requirement=user_requirement,
         product_info={
-            "name": "Ceramic Capacitors (10μF, 0805 package)",
-            "unit_price_list": 0.50,
-            "moq_tiers": {"1000": 0.50, "5000": 0.45, "10000": 0.40, "50000": 0.35},
-            "lead_time": "2-4 weeks",
-            "payment_terms_available": ["Net 30", "Net 60", "Net 90"],
-            "quality_certification": ["ISO 9001", "AEC-Q200"],
-            "defect_rate_guarantee": "< 0.1%",
-            "supply_capacity": "500,000 units/month"
+            "name": "Kids Wireless Headphones, Adjustable Headband, Stereo Sound, 3.5mm Jack, Kids Bluetooth Headphones, Volume Control, Foldable, Build-in Microphone, Over-Ear Headphones for Kids for School Home, Travel",
+            "condition": "New",
+            "brand": "Brand: NVRADCHUA",
+            "original_price": 14.99,
+            "availability_status": "In Stock.",
+            "product_category": "Electronics › Headphones › Over-Ear Headphones",
+            "average_rating": 4.0,
+            "total_reviews": 2,
+            "seller_name": "Manyutech",
+            "asin": "B09KQNH5C6",
+            "full_description": "WIRELESS & WIRED KIDS HEADPHONES: Built with 5.0 Bluetooth chip for fast and stable connection, also with 3.5mm jack. Compatible with smartphones, laptops, tablets, computers, TVs. Cute cat headphones designed with cartoon pattern, comfortable and soft ear cushions to protect child's ears. Excellent sound quality and adjustable headband, stretchable and foldable design for travel and storage. Long battery life (up to 7 hours) and built-in microphone for calls, video chats, or online lessons. Perfect for kids headphones for school and outdoor use.",
+            "image_url": product_image_url,  # For VLM: product image (URL or path)
         },
         user_profile=user_profile,  # Pass user profile
     )
@@ -181,9 +178,9 @@ def main(model_name=None):
     
     # Initialize results dictionary
     results = {
-        "task": "Task11_s8_raw_materials_procurement_negotiation",
-        "category": "Business Procurement",
-        "scenario": "Electronic components supply contract",
+        "task": "Task7_s4_headphones_negotiation",
+        "category": "Electronics",
+        "scenario": "Kids Wireless Headphones transaction",
         "timestamp": datetime.now().isoformat(),
         "user_requirement": user_requirement,
         "user_profile": user_profile,
@@ -331,14 +328,14 @@ def main(model_name=None):
                 "buyer_max_price": buyer_max_price,
                 "seller_min_price": seller_min_price,
                 "product_info": {
-                    "name": "Ceramic Capacitors (10μF, 0805 package)",
-                    "unit_price_list": 0.50,
-                    "moq_tiers": {"1000": 0.50, "5000": 0.45, "10000": 0.40, "50000": 0.35},
-                    "lead_time": "2-4 weeks",
-                    "payment_terms_available": ["Net 30", "Net 60", "Net 90"],
-                    "quality_certification": ["ISO 9001", "AEC-Q200"],
-                    "defect_rate_guarantee": "< 0.1%",
-                    "supply_capacity": "500,000 units/month"
+                    "name": "Kids Wireless Headphones, Adjustable Headband, Stereo Sound, 3.5mm Jack, Kids Bluetooth Headphones, Volume Control, Foldable, Build-in Microphone, Over-Ear Headphones for Kids for School Home, Travel",
+                    "condition": "New",
+                    "brand": "Brand: NVRADCHUA",
+                    "original_price": 14.99,
+                    "product_category": "Electronics › Headphones › Over-Ear Headphones",
+                    "average_rating": 4.0,
+                    "total_reviews": 2,
+                    "asin": "B09KQNH5C6"
                 },
                 "model": get_model_name(model),
             })
@@ -375,11 +372,11 @@ def main(model_name=None):
             json.dump(results, f, indent=2, ensure_ascii=False)
         
         # Save output text (we'll create a simple output file with key information)
-        output_file = run_dir / "Task11_s8_output.txt"
+        output_file = run_dir / "Task7_s4_headphones_output.txt"
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write("="*80 + "\n")
-            f.write("Task11 Scenario 8: Raw Materials Procurement Negotiation Results\n")
-            f.write("Category: Business Procurement\n")
+            f.write("Task7 Scenario 4: Kids Headphones Negotiation Results\n")
+            f.write("Category: Electronics\n")
             f.write("="*80 + "\n\n")
             f.write(f"Timestamp: {results['timestamp']}\n")
             f.write(f"Model: {results['model']}\n")
@@ -429,12 +426,12 @@ def main(model_name=None):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Task4 Scenario 8: Raw Materials Procurement Negotiation")
+    parser = argparse.ArgumentParser(description="Task7 Scenario 4: Kids Headphones Negotiation (NVRADCHUA)")
     parser.add_argument(
         "--model",
         type=str,
         default=None,
-        help="Model name to use (e.g., 'gemini-3-pro-all', 'gpt-5.2', 'claude-sonnet-4-5-20250929'). If not provided, uses default model."
+        help="VLM model name (e.g., 'gpt-4o', 'gpt-4o-mini', 'gpt-4-vision-preview'). Default: gpt-4o-mini"
     )
     args = parser.parse_args()
     main(model_name=args.model)

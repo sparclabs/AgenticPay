@@ -1,8 +1,8 @@
-"""Task4 Scenario 2: Used Car Negotiation
+"""Task5 Scenario 2: Toothpaste (ARM & HAMMER) Negotiation
 
 Category 1: Daily Life Consumption
-Scenario: Used Honda Accord transaction between private seller and buyer.
-Tests agent's ability to handle multi-factor risk assessment and information mining.
+Scenario: ARM & HAMMER Peroxicare Toothpaste transaction between seller and buyer on Amazon.
+Tests agent's ability to handle information asymmetry and product pricing negotiation.
 """
 
 import os
@@ -25,6 +25,7 @@ from agenticpay import make, Task1BasicPriceNegotiation  # Use registration syst
 from agenticpay.agents.buyer_agent import BuyerAgent
 from agenticpay.agents.seller_agent import SellerAgent
 from agenticpay.models.custom_llm import CustomLLM
+from agenticpay.models.openai_vlm import OpenAIVLM
 from agenticpay.models.qwen3_vl import Qwen3VL
 from agenticpay.models.vllm_lm import VLLMLLM
 from agenticpay.models.sglang_vlm import SGLangVLM
@@ -78,36 +79,24 @@ def main(model_name=None):
         print("You can set it with: export OPENAI_API_KEY='your-key-here'")
         return
     
-    # Use provided model name or default
-    if model_name is None:
-        model_name = "gemini-3-pro-all"  # Default model
-    
-    model = CustomLLM(api_key=api_key, model=model_name) # claude-sonnet-4-5-20250929, gpt-5.2, gemini-3-pro-all, gpt-3.5-turbo, DeepSeek-R1
+    # Use OpenAIVLM (Vision Language Model) for toothpaste negotiation with product images
+    model_name = model_name or "gpt-4o-mini"  # gpt-4o, gpt-4o-mini, gpt-4-vision-preview, etc.
+    model = OpenAIVLM(model=model_name, api_key=api_key)
 
-    # Build absolute path to model directory
-    # model_path = os.path.join(project_root, "models", "download_models", "Qwen3-8B-Instruct")
-    # model_path = os.path.abspath(model_path)
+    # Alternative: CustomLLM for text-only models
+    # model = CustomLLM(api_key=api_key, model=model_name)
 
-    # vLLM LLM Model
-    # model = VLLMLLM(
-    #     model_path=model_path,
-    #     trust_remote_code=True,
-    #     gpu_memory_utilization=0.9,
-    #     tensor_parallel_size=4, # 4 GPUs
-    # )
-
-    # SGLang VLM Model
-    # model = SGLangVLM(
-    #     model_path=model_path,
-    # )
+    # Alternative: SGLang VLM (local)
+    # model_path = os.path.join(project_root, "models", "download_models", "Qwen3-VL-8B-Instruct")
+    # model = SGLangVLM(model_path=os.path.abspath(model_path))
 
     print(f"✓ Successfully initialized: {model}")
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
     print("Creating agents...")
-    # Scenario 1-2: Used Car - buyer_max_price: $18,000 (95% of KBB value), seller_min_price: $14,000 (loan payoff + minimum)
-    buyer_max_price = 18000.0  # Maximum acceptable purchase price for buyer (confidential)
-    seller_min_price = 14000.0  # Minimum acceptable selling price for seller (confidential)
+    # Scenario 2: ARM & HAMMER Toothpaste 6-pack - buyer_max_price: $18 (wants discount), seller_min_price: $12 (cost basis)
+    buyer_max_price = 18.0  # Maximum acceptable purchase price for buyer (confidential)
+    seller_min_price = 12.0  # Minimum acceptable selling price for seller (confidential)
     
     buyer = BuyerAgent(model=model, buyer_max_price=buyer_max_price)
     seller = SellerAgent(model=model, seller_min_price=seller_min_price)
@@ -119,13 +108,14 @@ def main(model_name=None):
         buyer_agent=buyer,
         seller_agent=seller,
         max_rounds=max_rounds,
-        initial_seller_price=17000.0,  # Initial price offered by seller
+        initial_seller_price=16.0,  # Initial price offered by seller (6-pack list price ~$16)
         buyer_max_price=buyer_max_price,  # Buyer bottom price (confidential)
         seller_min_price=seller_min_price,  # Seller bottom price (confidential)
         environment_info={
-            "platform": "Craigslist",
-            "market_type": "C2C",
-            "season": "Spring (good selling season)"
+            "platform": "Amazon",
+            "market_type": "B2C",
+            "listing_age": "5 days",
+            "availability_status": "In Stock"
         },
         price_tolerance=price_tolerance,
         reward_weights=reward_weights,  # Reward weights configuration
@@ -148,7 +138,7 @@ def main(model_name=None):
     # )
     
     # Create user profile (text description of personal preferences)
-    user_profile = "Practical buyer looking for a reliable family car. Concerned about maintenance history, accident records, and hidden mechanical issues. Prefers to thoroughly inspect vehicle before purchase."
+    user_profile = "Health-conscious user who cares about oral hygiene. Prefers fluoride toothpaste with good reviews. Values quality and value for money when buying household products."
     print(f"User Profile: {user_profile}")
     
     # Get user requirement
@@ -159,7 +149,7 @@ def main(model_name=None):
     #     print("No requirement entered, using default requirement...")
     #     user_requirement = "I need a high-quality winter jacket for cold weather"
 
-    user_requirement = "Looking for a reliable mid-size sedan, 2019 or newer, under 50k miles, budget around $18,000."
+    user_requirement = "I'm looking for ARM & HAMMER Peroxicare Toothpaste in Clean Mint flavor, preferably a 6-pack for family use, with good reviews for gum health and cavity protection."
     print(f"Using default requirement: {user_requirement}")
     
     # Reset environment
@@ -167,17 +157,25 @@ def main(model_name=None):
     print("Starting new negotiation...")
     print("="*60)
     
+    # Product image for VLM: URL from sampled_products.jsonl
+    product_image_url = "https://m.media-amazon.com/images/I/41-M-nTTsGL.jpg"  # ARM & HAMMER Toothpaste
+    
     observation, info = env.reset(
         user_requirement=user_requirement,
         product_info={
-            "name": "2020 Honda Accord EX-L",
-            "mileage": 45000,
-            "condition": "Excellent",
-            "accidents_reported": 0,
-            "service_records": "Available",
-            "kelley_blue_book_value": 19500,
-            "features": ["Leather seats", "Sunroof", "Apple CarPlay"],
-            "reason_for_selling": "Upgrading to SUV"
+            "name": "ARM & HAMMER Peroxicare Toothpaste – Clean Mint- Fluoride Toothpaste , 6 Ounce (Pack of 6)",
+            "condition": "New",
+            "brand": "Visit the Arm & Hammer Store",
+            "size": "6 Ounce (Pack of 6)",
+            "original_price": 16.0,
+            "availability_status": "In Stock",
+            "product_category": "Beauty & Personal Care › Oral Care › Toothpaste",
+            "average_rating": 4.8,
+            "total_reviews": 538,
+            "seller_name": "",
+            "asin": "B001E77OCU",
+            "full_description": "Arm & Hammer PeroxiCare Deep Clean Toothpaste is the ultimate deep cleaning formula that cleans and whitens safely, gently and effectively. The fluoride cavity protection and enamel strengthening formula removes more plaque in hard to reach places than a non-baking soda toothpaste. You get a deep clean that penetrates in between teeth and along the gum line to remove plaque and stains. It also includes a tartar control agent that helps keep tartar from forming. All that combined with the gentle power of Arm & Hammer Baking Soda to safely whiten gives you something to smile about. It's a low abrasion formula, so the enamel won't be damaged. The baking soda also neutralizes acids that weaken and erode enamel. Your teeth will look whiter and you'll know they're getting a deep clean. This formula includes peroxide, which gently targets tough set-in stains with extra whitening power. Plus, the Clean Mint flavor leaves your breath fresh. Includes one 6 oz. tube of Arm & Hammer PeroxiCare Deep Clean Toothpaste. For stronger, healthier teeth and gums*, choose Arm & Hammer Baking Soda toothpastes.",
+            "image_url": product_image_url,  # For VLM: product image (URL or path)
         },
         user_profile=user_profile,  # Pass user profile
     )
@@ -188,9 +186,9 @@ def main(model_name=None):
     
     # Initialize results dictionary
     results = {
-        "task": "Task5_s2_used_car_negotiation",
+        "task": "Task5_s2_toothpaste_negotiation",
         "category": "Daily Life Consumption",
-        "scenario": "Used Honda Accord transaction",
+        "scenario": "ARM & HAMMER Peroxicare Toothpaste transaction",
         "timestamp": datetime.now().isoformat(),
         "user_requirement": user_requirement,
         "user_profile": user_profile,
@@ -338,14 +336,15 @@ def main(model_name=None):
                 "buyer_max_price": buyer_max_price,
                 "seller_min_price": seller_min_price,
                 "product_info": {
-                    "name": "2020 Honda Accord EX-L",
-                    "mileage": 45000,
-                    "condition": "Excellent",
-                    "accidents_reported": 0,
-                    "service_records": "Available",
-                    "kelley_blue_book_value": 19500,
-                    "features": ["Leather seats", "Sunroof", "Apple CarPlay"],
-                    "reason_for_selling": "Upgrading to SUV"
+                    "name": "ARM & HAMMER Peroxicare Toothpaste – Clean Mint- Fluoride Toothpaste , 6 Ounce (Pack of 6)",
+                    "condition": "New",
+                    "brand": "Visit the Arm & Hammer Store",
+                    "size": "6 Ounce (Pack of 6)",
+                    "original_price": 16.0,
+                    "product_category": "Beauty & Personal Care › Oral Care › Toothpaste",
+                    "average_rating": 4.8,
+                    "total_reviews": 538,
+                    "asin": "B001E77OCU"
                 },
                 "model": get_model_name(model),
             })
@@ -382,10 +381,10 @@ def main(model_name=None):
             json.dump(results, f, indent=2, ensure_ascii=False)
         
         # Save output text (we'll create a simple output file with key information)
-        output_file = run_dir / "Task5_s2_output.txt"
+        output_file = run_dir / "Task5_s2_toothpaste_output.txt"
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write("="*80 + "\n")
-            f.write("Task5 Scenario 2: Used Car Negotiation Results\n")
+            f.write("Task5 Scenario 2: Toothpaste (ARM & HAMMER) Negotiation Results\n")
             f.write("Category: Daily Life Consumption\n")
             f.write("="*80 + "\n\n")
             f.write(f"Timestamp: {results['timestamp']}\n")
@@ -436,12 +435,12 @@ def main(model_name=None):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Task4 Scenario 2: Used Car Negotiation (Honda Accord)")
+    parser = argparse.ArgumentParser(description="Task5 Scenario 2: Toothpaste Negotiation (ARM & HAMMER Peroxicare)")
     parser.add_argument(
         "--model",
         type=str,
         default=None,
-        help="Model name to use (e.g., 'gemini-3-pro-all', 'gpt-5.2', 'claude-sonnet-4-5-20250929'). If not provided, uses default model."
+        help="VLM model name (e.g., 'gpt-4o', 'gpt-4o-mini', 'gpt-4-vision-preview'). Default: gpt-4o-mini"
     )
     args = parser.parse_args()
     main(model_name=args.model)

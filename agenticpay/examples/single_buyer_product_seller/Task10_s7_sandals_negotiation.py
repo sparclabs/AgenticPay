@@ -1,8 +1,8 @@
-"""Task4 Scenario 5: Commercial Photography Negotiation
+"""Task10 Scenario 7: Men's Sandals (N/C) Negotiation
 
-Category 2: Professional Services
-Scenario: Product photography service for e-commerce seller.
-Tests agent's ability to handle subjective value and creative services pricing.
+Category 4: Clothing & Fashion
+Scenario: N/C Mens Flip Flops Thong Sandals transaction between seller and buyer on Amazon.
+Tests agent's ability to handle information asymmetry and product pricing negotiation.
 """
 
 import os
@@ -25,6 +25,7 @@ from agenticpay import make, Task1BasicPriceNegotiation  # Use registration syst
 from agenticpay.agents.buyer_agent import BuyerAgent
 from agenticpay.agents.seller_agent import SellerAgent
 from agenticpay.models.custom_llm import CustomLLM
+from agenticpay.models.openai_vlm import OpenAIVLM
 from agenticpay.models.qwen3_vl import Qwen3VL
 from agenticpay.models.vllm_lm import VLLMLLM
 from agenticpay.models.sglang_vlm import SGLangVLM
@@ -78,36 +79,24 @@ def main(model_name=None):
         print("You can set it with: export OPENAI_API_KEY='your-key-here'")
         return
     
-    # Use provided model name or default
-    if model_name is None:
-        model_name = "gemini-3-pro-all"  # Default model
-    
-    model = CustomLLM(api_key=api_key, model=model_name) # claude-sonnet-4-5-20250929, gpt-5.2, gemini-3-pro-all, gpt-3.5-turbo, DeepSeek-R1
+    # Use OpenAIVLM (Vision Language Model) for sandals negotiation with product images
+    model_name = model_name or "gpt-4o-mini"  # gpt-4o, gpt-4o-mini, gpt-4-vision-preview, etc.
+    model = OpenAIVLM(model=model_name, api_key=api_key)
 
-    # Build absolute path to model directory
-    # model_path = os.path.join(project_root, "models", "download_models", "Qwen3-8B-Instruct")
-    # model_path = os.path.abspath(model_path)
+    # Alternative: CustomLLM for text-only models
+    # model = CustomLLM(api_key=api_key, model=model_name)
 
-    # vLLM LLM Model
-    # model = VLLMLLM(
-    #     model_path=model_path,
-    #     trust_remote_code=True,
-    #     gpu_memory_utilization=0.9,
-    #     tensor_parallel_size=4, # 4 GPUs
-    # )
-
-    # SGLang VLM Model
-    # model = SGLangVLM(
-    #     model_path=model_path,
-    # )
+    # Alternative: SGLang VLM (local)
+    # model_path = os.path.join(project_root, "models", "download_models", "Qwen3-VL-8B-Instruct")
+    # model = SGLangVLM(model_path=os.path.abspath(model_path))
 
     print(f"✓ Successfully initialized: {model}")
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
     print("Creating agents...")
-    # Scenario 2-2: Commercial Photography - buyer_max_price: $2,000, seller_min_price: $800
-    buyer_max_price = 2000.0  # Maximum acceptable purchase price for buyer (confidential)
-    seller_min_price = 800.0  # Minimum acceptable selling price for seller (confidential)
+    # Scenario 7: Men's Flip Flops - buyer_max_price: $17 (wants discount), seller_min_price: $12 (cost basis)
+    buyer_max_price = 17.0  # Maximum acceptable purchase price for buyer (confidential)
+    seller_min_price = 12.0  # Minimum acceptable selling price for seller (confidential)
     
     buyer = BuyerAgent(model=model, buyer_max_price=buyer_max_price)
     seller = SellerAgent(model=model, seller_min_price=seller_min_price)
@@ -119,14 +108,14 @@ def main(model_name=None):
         buyer_agent=buyer,
         seller_agent=seller,
         max_rounds=max_rounds,
-        initial_seller_price=1600.0,  # Initial price offered by seller
+        initial_seller_price=17.99,  # Initial price offered by seller (list price $17.99)
         buyer_max_price=buyer_max_price,  # Buyer bottom price (confidential)
         seller_min_price=seller_min_price,  # Seller bottom price (confidential)
         environment_info={
-            "purpose": "E-commerce listing",
             "platform": "Amazon",
-            "deadline": "2 weeks",
-            "style_reference": "Apple product photography"
+            "market_type": "B2C",
+            "listing_age": "2 days",
+            "availability_status": "In stock. Usually ships within 3 to 4 days."
         },
         price_tolerance=price_tolerance,
         reward_weights=reward_weights,  # Reward weights configuration
@@ -149,10 +138,10 @@ def main(model_name=None):
     # )
     
     # Create user profile (text description of personal preferences)
-    user_profile = "E-commerce seller looking for professional product photography. Values portfolio quality and quick turnaround. Concerned about usage rights and additional editing costs."
+    user_profile = "Man looking for comfortable summer footwear. Values arch support, antiskid comfort, and durability. Prefers cloth upper to avoid blisters. Uses for beach, pool, and casual wear."
     print(f"User Profile: {user_profile}")
     
-    user_requirement = "Need professional product photos for my Amazon listing. 10 products, white background, lifestyle shots preferred."
+    user_requirement = "I'm looking for men's flip flops, size 44, black color. Prefer cloth upper for comfort, arch support, and antiskid sole. For beach and pool use."
     print(f"Using default requirement: {user_requirement}")
     
     # Reset environment
@@ -160,15 +149,26 @@ def main(model_name=None):
     print("Starting new negotiation...")
     print("="*60)
     
+    # Product image for VLM: URL from sampled_products.jsonl
+    product_image_url = "https://m.media-amazon.com/images/I/61vR1ZJ9u3S.jpg"  # N/C Men's Flip Flops
+    
     observation, info = env.reset(
         user_requirement=user_requirement,
         product_info={
-            "name": "Product Photography Package",
-            "photographer_portfolio": "15 years experience, worked with Fortune 500",
-            "base_package": {"products": 10, "shots_per_product": 3, "edited_images": 15, "delivery_days": 7},
-            "usage_rights": "Commercial, 1-year exclusive",
-            "rush_fee": "+50% for 3-day delivery",
-            "additional_editing": "$15 per image"
+            "name": "N/C Mens Flip Flops Thong Sandals Yoga Foam Slippers 44 R011 Black",
+            "condition": "New",
+            "brand": "Brand: N/C",
+            "size": "44",
+            "color": "R011 Black",
+            "original_price": 17.99,
+            "availability_status": "In stock. Usually ships within 3 to 4 days.",
+            "product_category": "Clothing, Shoes & Jewelry › Men › Shoes › Sandals",
+            "average_rating": 4.0,
+            "total_reviews": 0,
+            "seller_name": "changqia'w",
+            "asin": "B0989VY7D8",
+            "full_description": "Men's flip flops: the skin contact part is made of cloth so you can walk without friction or sharpness. Even if used for a long time, it will not cause blisters. Antiskid comfort with good spiral antiskid pattern at the bottom. Arch support provides good walking stability and keeps your feet comfortable. Upper material: mesh. Sole material: PVC. Waterproof and suitable for all seasons. Perfect for beach, pool, and casual wear. Sizes: 39-45.",
+            "image_url": product_image_url,  # For VLM: product image (URL or path)
         },
         user_profile=user_profile,  # Pass user profile
     )
@@ -179,9 +179,9 @@ def main(model_name=None):
     
     # Initialize results dictionary
     results = {
-        "task": "Task8_s5_commercial_photography_negotiation",
-        "category": "Professional Services",
-        "scenario": "Product photography service",
+        "task": "Task10_s7_sandals_negotiation",
+        "category": "Clothing & Fashion",
+        "scenario": "N/C Mens Flip Flops Thong Sandals transaction",
         "timestamp": datetime.now().isoformat(),
         "user_requirement": user_requirement,
         "user_profile": user_profile,
@@ -329,12 +329,14 @@ def main(model_name=None):
                 "buyer_max_price": buyer_max_price,
                 "seller_min_price": seller_min_price,
                 "product_info": {
-                    "name": "Product Photography Package",
-                    "photographer_portfolio": "15 years experience, worked with Fortune 500",
-                    "base_package": {"products": 10, "shots_per_product": 3, "edited_images": 15, "delivery_days": 7},
-                    "usage_rights": "Commercial, 1-year exclusive",
-                    "rush_fee": "+50% for 3-day delivery",
-                    "additional_editing": "$15 per image"
+                    "name": "N/C Mens Flip Flops Thong Sandals Yoga Foam Slippers 44 R011 Black",
+                    "condition": "New",
+                    "brand": "Brand: N/C",
+                    "original_price": 17.99,
+                    "product_category": "Clothing, Shoes & Jewelry › Men › Shoes › Sandals",
+                    "average_rating": 4.0,
+                    "total_reviews": 0,
+                    "asin": "B0989VY7D8"
                 },
                 "model": get_model_name(model),
             })
@@ -371,11 +373,11 @@ def main(model_name=None):
             json.dump(results, f, indent=2, ensure_ascii=False)
         
         # Save output text (we'll create a simple output file with key information)
-        output_file = run_dir / "Task8_s5_output.txt"
+        output_file = run_dir / "Task10_s7_sandals_output.txt"
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write("="*80 + "\n")
-            f.write("Task8 Scenario 5: Commercial Photography Negotiation Results\n")
-            f.write("Category: Professional Services\n")
+            f.write("Task10 Scenario 7: Men's Sandals (N/C) Negotiation Results\n")
+            f.write("Category: Clothing & Fashion\n")
             f.write("="*80 + "\n\n")
             f.write(f"Timestamp: {results['timestamp']}\n")
             f.write(f"Model: {results['model']}\n")
@@ -425,12 +427,12 @@ def main(model_name=None):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Task4 Scenario 5: Commercial Photography Negotiation")
+    parser = argparse.ArgumentParser(description="Task10 Scenario 7: Men's Sandals Negotiation (N/C Flip Flops)")
     parser.add_argument(
         "--model",
         type=str,
         default=None,
-        help="Model name to use (e.g., 'gemini-3-pro-all', 'gpt-5.2', 'claude-sonnet-4-5-20250929'). If not provided, uses default model."
+        help="VLM model name (e.g., 'gpt-4o', 'gpt-4o-mini', 'gpt-4-vision-preview'). Default: gpt-4o-mini"
     )
     args = parser.parse_args()
     main(model_name=args.model)

@@ -1,8 +1,8 @@
-"""Task4 Scenario 6: Home Renovation Negotiation
+"""Task8 Scenario 5: Wall Lantern (Sea Gull Lighting) Negotiation
 
-Category 2: Professional Services
-Scenario: Full home renovation contract between homeowner and contractor.
-Tests agent's ability to handle complex service contracts and scope control.
+Category 3: Home & Garden
+Scenario: Sea Gull Lighting Wynfield Outdoor Wall Lantern transaction between seller and buyer on Amazon.
+Tests agent's ability to handle information asymmetry and product pricing negotiation.
 """
 
 import os
@@ -25,6 +25,7 @@ from agenticpay import make, Task1BasicPriceNegotiation  # Use registration syst
 from agenticpay.agents.buyer_agent import BuyerAgent
 from agenticpay.agents.seller_agent import SellerAgent
 from agenticpay.models.custom_llm import CustomLLM
+from agenticpay.models.openai_vlm import OpenAIVLM
 from agenticpay.models.qwen3_vl import Qwen3VL
 from agenticpay.models.vllm_lm import VLLMLLM
 from agenticpay.models.sglang_vlm import SGLangVLM
@@ -78,36 +79,24 @@ def main(model_name=None):
         print("You can set it with: export OPENAI_API_KEY='your-key-here'")
         return
     
-    # Use provided model name or default
-    if model_name is None:
-        model_name = "gemini-3-pro-all"  # Default model
-    
-    model = CustomLLM(api_key=api_key, model=model_name) # claude-sonnet-4-5-20250929, gpt-5.2, gemini-3-pro-all, gpt-3.5-turbo, DeepSeek-R1
+    # Use OpenAIVLM (Vision Language Model) for wall lantern negotiation with product images
+    model_name = model_name or "gpt-4o-mini"  # gpt-4o, gpt-4o-mini, gpt-4-vision-preview, etc.
+    model = OpenAIVLM(model=model_name, api_key=api_key)
 
-    # Build absolute path to model directory
-    # model_path = os.path.join(project_root, "models", "download_models", "Qwen3-8B-Instruct")
-    # model_path = os.path.abspath(model_path)
+    # Alternative: CustomLLM for text-only models
+    # model = CustomLLM(api_key=api_key, model=model_name)
 
-    # vLLM LLM Model
-    # model = VLLMLLM(
-    #     model_path=model_path,
-    #     trust_remote_code=True,
-    #     gpu_memory_utilization=0.9,
-    #     tensor_parallel_size=4, # 4 GPUs
-    # )
-
-    # SGLang VLM Model
-    # model = SGLangVLM(
-    #     model_path=model_path,
-    # )
+    # Alternative: SGLang VLM (local)
+    # model_path = os.path.join(project_root, "models", "download_models", "Qwen3-VL-8B-Instruct")
+    # model = SGLangVLM(model_path=os.path.abspath(model_path))
 
     print(f"✓ Successfully initialized: {model}")
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
     print("Creating agents...")
-    # Scenario 2-3: Home Renovation - buyer_max_price: $35,000, seller_min_price: $22,000
-    buyer_max_price = 35000.0  # Maximum acceptable purchase price for buyer (confidential)
-    seller_min_price = 22000.0  # Minimum acceptable selling price for seller (confidential)
+    # Scenario 5: Sea Gull Wall Lantern - buyer_max_price: $58 (wants discount), seller_min_price: $45 (cost basis)
+    buyer_max_price = 58.0  # Maximum acceptable purchase price for buyer (confidential)
+    seller_min_price = 45.0  # Minimum acceptable selling price for seller (confidential)
     
     buyer = BuyerAgent(model=model, buyer_max_price=buyer_max_price)
     seller = SellerAgent(model=model, seller_min_price=seller_min_price)
@@ -119,14 +108,14 @@ def main(model_name=None):
         buyer_agent=buyer,
         seller_agent=seller,
         max_rounds=max_rounds,
-        initial_seller_price=32000.0,  # Initial price offered by seller
+        initial_seller_price=61.17,  # Initial price offered by seller (list price $61.17)
         buyer_max_price=buyer_max_price,  # Buyer bottom price (confidential)
         seller_min_price=seller_min_price,  # Seller bottom price (confidential)
         environment_info={
-            "property_type": "Single family home",
-            "property_age": "25 years",
-            "contractor_reviews": "4.5/5 (89 reviews)",
-            "peak_season": True
+            "platform": "Amazon",
+            "market_type": "B2C",
+            "listing_age": "4 days",
+            "availability_status": "Only 7 left in stock - order soon."
         },
         price_tolerance=price_tolerance,
         reward_weights=reward_weights,  # Reward weights configuration
@@ -149,10 +138,10 @@ def main(model_name=None):
     # )
     
     # Create user profile (text description of personal preferences)
-    user_profile = "Homeowner planning major renovation. Budget-conscious but wants quality work. Very concerned about hidden costs, change orders, and timeline delays. Prefers fixed-price contracts with clear scope."
+    user_profile = "Homeowner looking to enhance outdoor lighting. Values quality fixtures, UL listing for wet locations, and dimmable options. Prefers traditional style that complements classical home designs."
     print(f"User Profile: {user_profile}")
     
-    user_requirement = "Complete renovation of a 1500 sq ft home. Need quality work within a reasonable budget. Very concerned about hidden costs."
+    user_requirement = "I'm looking for a Sea Gull Lighting Wynfield outdoor wall lantern. Prefer clear beveled glass, black finish, one-light for porch or patio. Need UL listed for wet locations and dimmable."
     print(f"Using default requirement: {user_requirement}")
     
     # Reset environment
@@ -160,17 +149,26 @@ def main(model_name=None):
     print("Starting new negotiation...")
     print("="*60)
     
+    # Product image for VLM: URL from sampled_products.jsonl
+    product_image_url = "https://m.media-amazon.com/images/I/51c3GuGWaSL.jpg"  # Sea Gull Wall Lantern
+    
     observation, info = env.reset(
         user_requirement=user_requirement,
         product_info={
-            "name": "Full Home Renovation Package",
-            "scope": ["Kitchen remodel (cabinets, countertops, appliances)", "2 bathroom updates", "Flooring (1200 sq ft)", "Interior painting (whole house)"],
-            "square_footage": 1500,
-            "timeline": "8-10 weeks",
-            "materials_grade": "Mid-range",
-            "warranty": "1 year workmanship",
-            "change_order_policy": "Written approval required, +15% markup",
-            "payment_schedule": "30% deposit, 40% midpoint, 30% completion"
+            "name": "Sea Gull Lighting 85200-12 Wynfield One-Light Outdoor Wall Lantern with Clear Beveled Glass Panels, Black Finish",
+            "condition": "New",
+            "brand": "Visit the Sea Gull Lighting Store",
+            "model": "85200-12",
+            "original_price": 61.17,
+            "availability_quantity": 7,
+            "availability_status": "Only 7 left in stock - order soon.",
+            "product_category": "Tools & Home Improvement › Lighting & Ceiling Fans › Outdoor Lighting › Porch & Patio Lights › Wall Lights",
+            "average_rating": 4.4,
+            "total_reviews": 11,
+            "seller_name": "Amazon.com",
+            "asin": "B003HBR86S",
+            "full_description": "The Sea Gull Lighting Wynfield one light outdoor wall fixture in black enhances the beauty of your property, makes your home safer and more secure, and increases the number of pleasurable hours you spend outdoors. The Wynfield collection by Sea Gull Lighting complements classical home designs with its soft curves and colonial accents. A Black Powdercoat finish over a durable cast aluminum body adds dependable quality to an enduring style. Either Frosted glass or Clear Beveled glass give the fixtures distinct appeal. The one-light fixtures with Clear Beveled glass can easily convert to LED by purchasing LED replacement lamps sold separately. Requires 1 A19 medium light bulb, 100-watt max (sold separately). This fixture is dimmable with a dimmable bulb (not included). UL listed for wet locations.",
+            "image_url": product_image_url,  # For VLM: product image (URL or path)
         },
         user_profile=user_profile,  # Pass user profile
     )
@@ -181,9 +179,9 @@ def main(model_name=None):
     
     # Initialize results dictionary
     results = {
-        "task": "Task9_s6_home_renovation_negotiation",
-        "category": "Professional Services",
-        "scenario": "Full home renovation contract",
+        "task": "Task8_s5_wall_lantern_negotiation",
+        "category": "Home & Garden",
+        "scenario": "Sea Gull Lighting Wynfield Wall Lantern transaction",
         "timestamp": datetime.now().isoformat(),
         "user_requirement": user_requirement,
         "user_profile": user_profile,
@@ -331,14 +329,15 @@ def main(model_name=None):
                 "buyer_max_price": buyer_max_price,
                 "seller_min_price": seller_min_price,
                 "product_info": {
-                    "name": "Full Home Renovation Package",
-                    "scope": ["Kitchen remodel (cabinets, countertops, appliances)", "2 bathroom updates", "Flooring (1200 sq ft)", "Interior painting (whole house)"],
-                    "square_footage": 1500,
-                    "timeline": "8-10 weeks",
-                    "materials_grade": "Mid-range",
-                    "warranty": "1 year workmanship",
-                    "change_order_policy": "Written approval required, +15% markup",
-                    "payment_schedule": "30% deposit, 40% midpoint, 30% completion"
+                    "name": "Sea Gull Lighting 85200-12 Wynfield One-Light Outdoor Wall Lantern with Clear Beveled Glass Panels, Black Finish",
+                    "condition": "New",
+                    "brand": "Visit the Sea Gull Lighting Store",
+                    "model": "85200-12",
+                    "original_price": 61.17,
+                    "product_category": "Tools & Home Improvement › Lighting & Ceiling Fans › Outdoor Lighting › Porch & Patio Lights › Wall Lights",
+                    "average_rating": 4.4,
+                    "total_reviews": 11,
+                    "asin": "B003HBR86S"
                 },
                 "model": get_model_name(model),
             })
@@ -375,11 +374,11 @@ def main(model_name=None):
             json.dump(results, f, indent=2, ensure_ascii=False)
         
         # Save output text (we'll create a simple output file with key information)
-        output_file = run_dir / "Task9_s6_output.txt"
+        output_file = run_dir / "Task8_s5_wall_lantern_output.txt"
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write("="*80 + "\n")
-            f.write("Task9 Scenario 6: Home Renovation Negotiation Results\n")
-            f.write("Category: Professional Services\n")
+            f.write("Task8 Scenario 5: Wall Lantern (Sea Gull Lighting) Negotiation Results\n")
+            f.write("Category: Home & Garden\n")
             f.write("="*80 + "\n\n")
             f.write(f"Timestamp: {results['timestamp']}\n")
             f.write(f"Model: {results['model']}\n")
@@ -429,12 +428,12 @@ def main(model_name=None):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Task4 Scenario 6: Home Renovation Negotiation")
+    parser = argparse.ArgumentParser(description="Task8 Scenario 5: Wall Lantern Negotiation (Sea Gull Lighting Wynfield)")
     parser.add_argument(
         "--model",
         type=str,
         default=None,
-        help="Model name to use (e.g., 'gemini-3-pro-all', 'gpt-5.2', 'claude-sonnet-4-5-20250929'). If not provided, uses default model."
+        help="VLM model name (e.g., 'gpt-4o', 'gpt-4o-mini', 'gpt-4-vision-preview'). Default: gpt-4o-mini"
     )
     args = parser.parse_args()
     main(model_name=args.model)

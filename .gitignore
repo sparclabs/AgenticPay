@@ -58,3 +58,5 @@ agenticpay/models/download_models/
 agenticpay/examples/config.py
 
 agenticpay/results/
+
+agenticpay/data/

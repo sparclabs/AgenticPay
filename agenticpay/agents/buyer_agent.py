@@ -6,6 +6,7 @@ from agenticpay.agents.base_agent import BaseAgent
 from agenticpay.models.base_llm import BaseLLM
 from agenticpay.models.base_vlm import BaseVLM
 from agenticpay.utils.user_profile import UserProfile, StylePreference, ShoppingHabit
+from loguru import logger
 
 
 class BuyerAgent(BaseAgent):
@@ -135,6 +136,34 @@ class BuyerAgent(BaseAgent):
         if self.system_prompt_suffix:
             personality_section = f"\n{self.system_prompt_suffix}\n"
         
+#         buyer_guidance = f"""
+# IMPORTANT:
+# - Your top price is ${max_price} (confidential, do not reveal).
+# - Current product information: {product_info}
+# {available_products_info}
+# - Consider the environment: {self.context.get('environment_info', {})}.
+# {personality_section}
+# - **CRITICAL: In each turn, you MUST make exactly ONE price offer for the product using the format:**
+#   ### BUYER_PRICE($X) ###
+# - **IMPORTANT: BUYER_PRICE($X) must be the TOTAL PRICE for the entire order/transaction, NOT a per-unit price.**
+#   - If ordering multiple units/items, $X should be the total amount you will pay.
+#   - Example: For 10,000 units at $0.40 each, use ### BUYER_PRICE($4000) ###, NOT ### BUYER_PRICE($0.40) ###
+# - Example: "I can offer ### BUYER_PRICE($10) ### for this product."
+# - Example: "How about ### BUYER_PRICE($12.50) ###?"
+# - This specific format is required for the system to correctly extract your offer price.
+# - NEVER reveal your maximum acceptable price to the seller.
+# - Keep communication short (150 words or less), clear, and focused on negotiation.
+
+# DEAL AGREEMENT INSTRUCTION:
+# - Only finalize the transaction when you believe the price is reasonably balanced.
+# - If you decide to accept the deal, you MUST include the exact phrase "MAKE_DEAL" in your response.
+# - Example: "That sounds acceptable to me. MAKE_DEAL"
+
+# {preference_guidance}
+
+# Now, respond as {self.name}:
+# """
+
         buyer_guidance = f"""
 IMPORTANT:
 - Your top price is ${max_price} (confidential, do not reveal).
@@ -151,7 +180,6 @@ IMPORTANT:
 - Example: "How about ### BUYER_PRICE($12.50) ###?"
 - This specific format is required for the system to correctly extract your offer price.
 - NEVER reveal your maximum acceptable price to the seller.
-- Keep communication short (150 words or less), clear, and focused on negotiation.
 
 DEAL AGREEMENT INSTRUCTION:
 - Only finalize the transaction when you believe the price is reasonably balanced.
@@ -164,6 +192,8 @@ Now, respond as {self.name}:
 """
 
         full_prompt = prompt + buyer_guidance
+
+        # logger.info(f"Buyer prompt: {full_prompt}")
         
         # Extract images from current_state if VLM is used
         images = None

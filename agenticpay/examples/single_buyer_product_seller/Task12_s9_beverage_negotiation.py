@@ -1,8 +1,8 @@
-"""Task4 Scenario 4: Website Development Negotiation
+"""Task12 Scenario 9: Beverage (Belvoir Elderflower Rose) Negotiation
 
-Category 2: Professional Services
-Scenario: E-commerce website development project on Upwork.
-Tests agent's ability to handle scope definition and prevent scope creep.
+Category: Grocery
+Scenario: Belvoir Sparkling Elderflower Rose organic beverage transaction between seller and buyer on Amazon.
+Tests agent's ability to handle information asymmetry and product pricing negotiation.
 """
 
 import os
@@ -25,6 +25,7 @@ from agenticpay import make, Task1BasicPriceNegotiation  # Use registration syst
 from agenticpay.agents.buyer_agent import BuyerAgent
 from agenticpay.agents.seller_agent import SellerAgent
 from agenticpay.models.custom_llm import CustomLLM
+from agenticpay.models.openai_vlm import OpenAIVLM
 from agenticpay.models.qwen3_vl import Qwen3VL
 from agenticpay.models.vllm_lm import VLLMLLM
 from agenticpay.models.sglang_vlm import SGLangVLM
@@ -78,11 +79,9 @@ def main(model_name=None):
         print("You can set it with: export OPENAI_API_KEY='your-key-here'")
         return
     
-    # Use provided model name or default
-    if model_name is None:
-        model_name = "gemini-3-pro-all"  # Default model
-    
-    model = CustomLLM(api_key=api_key, model=model_name) # claude-sonnet-4-5-20250929, gpt-5.2, gemini-3-pro-all, gpt-3.5-turbo, DeepSeek-R1
+    # Use OpenAIVLM (Vision Language Model) for product negotiation with product images
+    model_name = model_name or "gpt-4o-mini"  # gpt-4o, gpt-4o-mini, gpt-4-vision-preview, etc.
+    model = OpenAIVLM(model=model_name, api_key=api_key)
 
     # Build absolute path to model directory
     # model_path = os.path.join(project_root, "models", "download_models", "Qwen3-8B-Instruct")
@@ -105,9 +104,9 @@ def main(model_name=None):
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
     print("Creating agents...")
-    # Scenario 2-1: Website Development - buyer_max_price: $5,000, seller_min_price: $2,500 (time cost)
-    buyer_max_price = 5000.0  # Maximum acceptable purchase price for buyer (confidential)
-    seller_min_price = 2500.0  # Minimum acceptable selling price for seller (confidential)
+    # Scenario: Belvoir Elderflower Rose beverage (24 per case) - buyer_max_price: $35, seller_min_price: $24
+    buyer_max_price = 35.0  # Maximum acceptable purchase price for buyer (confidential)
+    seller_min_price = 24.0  # Minimum acceptable selling price for seller (confidential)
     
     buyer = BuyerAgent(model=model, buyer_max_price=buyer_max_price)
     seller = SellerAgent(model=model, seller_min_price=seller_min_price)
@@ -119,14 +118,13 @@ def main(model_name=None):
         buyer_agent=buyer,
         seller_agent=seller,
         max_rounds=max_rounds,
-        initial_seller_price=4200.0,  # Initial price offered by seller
+        initial_seller_price=32.0,  # Initial price offered by seller (24 bottles per case)
         buyer_max_price=buyer_max_price,  # Buyer bottom price (confidential)
         seller_min_price=seller_min_price,  # Seller bottom price (confidential)
         environment_info={
-            "platform": "Upwork",
-            "freelancer_rating": 4.9,
-            "freelancer_jobs_completed": 127,
-            "market_rate_range": "$3,000-$8,000"
+            "platform": "Amazon",
+            "market_type": "B2C",
+            "availability_status": "In Stock"
         },
         price_tolerance=price_tolerance,
         reward_weights=reward_weights,  # Reward weights configuration
@@ -149,11 +147,10 @@ def main(model_name=None):
     # )
     
     # Create user profile (text description of personal preferences)
-    user_profile = "Small business owner with limited technical knowledge. Wants a professional website but concerned about hidden costs and project scope expanding. Values clear communication and fixed deliverables."
+    user_profile = "Health-conscious consumer who prefers organic beverages. Likes elderflower and floral flavors. Often buys in bulk for gatherings and prefers products with good reviews."
     print(f"User Profile: {user_profile}")
     
-    # Get user requirement
-    user_requirement = "I need a professional e-commerce website for my boutique clothing store. Must be mobile-friendly and easy to update."
+    user_requirement = "I'm looking for Belvoir Sparkling Elderflower Rose organic beverage. Interested in a case (24 bottles) for a party. Prefer organic and natural ingredients."
     print(f"Using default requirement: {user_requirement}")
     
     # Reset environment
@@ -161,15 +158,24 @@ def main(model_name=None):
     print("Starting new negotiation...")
     print("="*60)
     
+    # Product image for VLM: URL from sampled_products.jsonl
+    product_image_url = "https://m.media-amazon.com/images/I/31CRDrGsGkL.jpg"
+
     observation, info = env.reset(
         user_requirement=user_requirement,
         product_info={
-            "name": "Custom E-commerce Website Development",
-            "base_scope": ["5 pages", "Product catalog (up to 50 products)", "Shopping cart", "Payment integration (Stripe/PayPal)"],
-            "optional_addons": {"Blog section": 300, "Multi-language support": 500, "Mobile app sync": 1200, "Advanced SEO package": 400},
-            "estimated_timeline": "4-6 weeks",
-            "revision_rounds": 3,
-            "tech_stack": "React + Node.js + PostgreSQL"
+            "name": "Belvoir, Beverage Sparkling Elderflower Rose organic, 8.4 Fl Oz",
+            "condition": "New",
+            "brand": "Belvoir",
+            "size": "8.4 Fl Oz, 24 per case",
+            "original_price": 32.0,
+            "availability_status": "In Stock",
+            "product_category": "Grocery › Beverages",
+            "average_rating": 4.9,
+            "total_reviews": 13,
+            "asin": "B0121IVA5W",
+            "full_description": "New Belvoir Elderflower and Rose Lemonade Presse Beverage, 8.4 Fluid Ounce -- 24 per case. Organic sparkling beverage with elderflower and rose flavors.",
+            "image_url": product_image_url,
         },
         user_profile=user_profile,  # Pass user profile
     )
@@ -180,9 +186,9 @@ def main(model_name=None):
     
     # Initialize results dictionary
     results = {
-        "task": "Task7_s4_website_development_negotiation",
-        "category": "Professional Services",
-        "scenario": "E-commerce website development",
+        "task": "Task12_s9_beverage_negotiation",
+        "category": "Grocery",
+        "scenario": "Belvoir Elderflower Rose beverage transaction",
         "timestamp": datetime.now().isoformat(),
         "user_requirement": user_requirement,
         "user_profile": user_profile,
@@ -330,12 +336,14 @@ def main(model_name=None):
                 "buyer_max_price": buyer_max_price,
                 "seller_min_price": seller_min_price,
                 "product_info": {
-                    "name": "Custom E-commerce Website Development",
-                    "base_scope": ["5 pages", "Product catalog (up to 50 products)", "Shopping cart", "Payment integration (Stripe/PayPal)"],
-                    "optional_addons": {"Blog section": 300, "Multi-language support": 500, "Mobile app sync": 1200, "Advanced SEO package": 400},
-                    "estimated_timeline": "4-6 weeks",
-                    "revision_rounds": 3,
-                    "tech_stack": "React + Node.js + PostgreSQL"
+                    "name": "Belvoir, Beverage Sparkling Elderflower Rose organic, 8.4 Fl Oz",
+                    "brand": "Belvoir",
+                    "size": "8.4 Fl Oz, 24 per case",
+                    "original_price": 32.0,
+                    "product_category": "Grocery › Beverages",
+                    "average_rating": 4.9,
+                    "total_reviews": 13,
+                    "asin": "B0121IVA5W"
                 },
                 "model": get_model_name(model),
             })
@@ -372,11 +380,11 @@ def main(model_name=None):
             json.dump(results, f, indent=2, ensure_ascii=False)
         
         # Save output text (we'll create a simple output file with key information)
-        output_file = run_dir / "Task7_s4_output.txt"
+        output_file = run_dir / "Task12_s9_beverage_output.txt"
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write("="*80 + "\n")
-            f.write("Task7 Scenario 4: Website Development Negotiation Results\n")
-            f.write("Category: Professional Services\n")
+            f.write("Task12 Scenario 9: Beverage (Belvoir Elderflower Rose) Negotiation Results\n")
+            f.write("Category: Grocery\n")
             f.write("="*80 + "\n\n")
             f.write(f"Timestamp: {results['timestamp']}\n")
             f.write(f"Model: {results['model']}\n")
@@ -426,7 +434,7 @@ def main(model_name=None):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Task4 Scenario 4: Website Development Negotiation (E-commerce)")
+    parser = argparse.ArgumentParser(description="Task12 Scenario 9: Beverage Negotiation (Belvoir Elderflower Rose)")
     parser.add_argument(
         "--model",
         type=str,

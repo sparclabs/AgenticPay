@@ -1,8 +1,8 @@
-"""Task4 Scenario 1: Used Smartphone Negotiation
+"""Task6 Scenario 3: Riflescope (Crimson Trace) Negotiation
 
-Category 1: Daily Life Consumption
-Scenario: Used iPhone 14 Pro transaction between individual seller and buyer on eBay.
-Tests agent's ability to handle information asymmetry and risk pricing.
+Category 2: Sports & Outdoors
+Scenario: Crimson Trace Brushline Pro Riflescope transaction between seller and buyer on Amazon.
+Tests agent's ability to handle information asymmetry and product pricing negotiation.
 """
 
 import os
@@ -25,6 +25,7 @@ from agenticpay import make, Task1BasicPriceNegotiation  # Use registration syst
 from agenticpay.agents.buyer_agent import BuyerAgent
 from agenticpay.agents.seller_agent import SellerAgent
 from agenticpay.models.custom_llm import CustomLLM
+from agenticpay.models.openai_vlm import OpenAIVLM
 from agenticpay.models.qwen3_vl import Qwen3VL
 from agenticpay.models.vllm_lm import VLLMLLM
 from agenticpay.models.sglang_vlm import SGLangVLM
@@ -78,36 +79,24 @@ def main(model_name=None):
         print("You can set it with: export OPENAI_API_KEY='your-key-here'")
         return
     
-    # Use provided model name or default
-    if model_name is None:
-        model_name = "gemini-3-pro-all"  # Default model
-    
-    model = CustomLLM(api_key=api_key, model=model_name) # claude-sonnet-4-5-20250929, gpt-5.2, gemini-3-pro-all, gpt-3.5-turbo, DeepSeek-R1
+    # Use OpenAIVLM (Vision Language Model) for riflescope negotiation with product images
+    model_name = model_name or "gpt-4o-mini"  # gpt-4o, gpt-4o-mini, gpt-4-vision-preview, etc.
+    model = OpenAIVLM(model=model_name, api_key=api_key)
 
-    # Build absolute path to model directory
-    # model_path = os.path.join(project_root, "models", "download_models", "Qwen3-8B-Instruct")
-    # model_path = os.path.abspath(model_path)
+    # Alternative: CustomLLM for text-only models
+    # model = CustomLLM(api_key=api_key, model=model_name)
 
-    # vLLM LLM Model
-    # model = VLLMLLM(
-    #     model_path=model_path,
-    #     trust_remote_code=True,
-    #     gpu_memory_utilization=0.9,
-    #     tensor_parallel_size=4, # 4 GPUs
-    # )
-
-    # SGLang VLM Model
-    # model = SGLangVLM(
-    #     model_path=model_path,
-    # )
+    # Alternative: SGLang VLM (local)
+    # model_path = os.path.join(project_root, "models", "download_models", "Qwen3-VL-8B-Instruct")
+    # model = SGLangVLM(model_path=os.path.abspath(model_path))
 
     print(f"✓ Successfully initialized: {model}")
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
     print("Creating agents...")
-    # Scenario 1-1: Used Smartphone - buyer_max_price: $560 (70% of refurb price), seller_min_price: $350 (platform buyback price)
-    buyer_max_price = 560.0  # Maximum acceptable purchase price for buyer (confidential)
-    seller_min_price = 350.0  # Minimum acceptable selling price for seller (confidential)
+    # Scenario 3: Crimson Trace Riflescope - buyer_max_price: $210 (wants discount), seller_min_price: $180 (cost basis)
+    buyer_max_price = 210.0  # Maximum acceptable purchase price for buyer (confidential)
+    seller_min_price = 180.0  # Minimum acceptable selling price for seller (confidential)
     
     buyer = BuyerAgent(model=model, buyer_max_price=buyer_max_price)
     seller = SellerAgent(model=model, seller_min_price=seller_min_price)
@@ -119,13 +108,14 @@ def main(model_name=None):
         buyer_agent=buyer,
         seller_agent=seller,
         max_rounds=max_rounds,
-        initial_seller_price=520.0,  # Initial price offered by seller
+        initial_seller_price=218.79,  # Initial price offered by seller (list price $218.79)
         buyer_max_price=buyer_max_price,  # Buyer bottom price (confidential)
         seller_min_price=seller_min_price,  # Seller bottom price (confidential)
         environment_info={
-            "platform": "eBay",
-            "market_type": "C2C",
-            "listing_age": "3 days"
+            "platform": "Amazon",
+            "market_type": "B2C",
+            "listing_age": "3 days",
+            "availability_status": "Only 14 left in stock (more on the way)."
         },
         price_tolerance=price_tolerance,
         reward_weights=reward_weights,  # Reward weights configuration
@@ -148,7 +138,7 @@ def main(model_name=None):
     # )
     
     # Create user profile (text description of personal preferences)
-    user_profile = "Tech-savvy user who researches prices carefully before buying. Concerned about device condition and battery health. Prefers to buy from individuals with good track records and complete accessories."
+    user_profile = "Outdoor enthusiast and hunter interested in quality optics. Values durability, accuracy, and warranty. Prefers to buy from reputable sellers with good reviews."
     print(f"User Profile: {user_profile}")
     
     # Get user requirement
@@ -159,7 +149,7 @@ def main(model_name=None):
     #     print("No requirement entered, using default requirement...")
     #     user_requirement = "I need a high-quality winter jacket for cold weather"
 
-    user_requirement = "I'm looking for a used iPhone 14 Pro in good condition, preferably with original accessories."
+    user_requirement = "I'm looking for a Crimson Trace Brushline Pro Riflescope, 2.5-10x42mm Plex style, for hunting. Prefer waterproof, shockproof construction with good reviews."
     print(f"Using default requirement: {user_requirement}")
     
     # Reset environment
@@ -167,16 +157,27 @@ def main(model_name=None):
     print("Starting new negotiation...")
     print("="*60)
     
+    # Product image for VLM: URL from sampled_products.jsonl
+    product_image_url = "https://m.media-amazon.com/images/I/31j7DdlfrOL.jpg"  # Crimson Trace Riflescope
+    
     observation, info = env.reset(
         user_requirement=user_requirement,
         product_info={
-            "name": "iPhone 14 Pro 128GB",
-            "condition": "Used - Good",
-            "battery_health": "87%",
-            "purchase_date": "2023-03",
-            "original_price": 999.0,
-            "accessories": ["Original box", "Charger"],
-            "issues_disclosed": "Minor scratches on back"
+            "name": "Crimson Trace Brushline Pro Riflescope with Lightweight Solid Construction, Scope Caps and Lens Cloth for Hunting, Shooting and Outdoor",
+            "condition": "New",
+            "brand": "Visit the Crimson Trace Store",
+            "model": "Brushline Pro Riflescope 2.5-10x42mm CT Plex Reticle",
+            "style": "2.5-10x42mm Plex",
+            "original_price": 218.79,
+            "availability_quantity": 14,
+            "availability_status": "Only 14 left in stock (more on the way).",
+            "product_category": "Sports & Outdoors › Hunting & Fishing › Shooting › Optics › Gun Scopes › Rifle Scopes",
+            "average_rating": 4.3,
+            "total_reviews": 28,
+            "seller_name": "Amazon.com",
+            "asin": "B08GS6B87J",
+            "full_description": "SPECS: 2.5-10 magnification with a 42mm lens diameter, aerospace grade 1\" tube and weighs 16.6 oz - FOV Range: 40.3 ft Min - 10.1 ft Max. ACCURACY: Features a second focal plane, non-illuminated, CT Plex reticle with a 4\" eye relief, 1/4\" click value and quick spring-loaded zero reset capped turrets. EASE OF USE: Windage (right side), elevation (top) knobs are capped and can be easily unscrewed and adjusted when sighting in at the range by turning with your fingers (no tool required). DURABLE: Constructed of lightweight anodized aluminum with multi-coated lenses and is waterproof, shockproof and nitrogen purged to prevent fogging. INCLUDES: Lens cloth and scope caps.",
+            "image_url": product_image_url,  # For VLM: product image (URL or path)
         },
         user_profile=user_profile,  # Pass user profile
     )
@@ -187,9 +188,9 @@ def main(model_name=None):
     
     # Initialize results dictionary
     results = {
-        "task": "Task4_s1_used_smartphone_negotiation",
-        "category": "Daily Life Consumption",
-        "scenario": "Used iPhone 14 Pro transaction",
+        "task": "Task6_s3_riflescope_negotiation",
+        "category": "Sports & Outdoors",
+        "scenario": "Crimson Trace Brushline Pro Riflescope transaction",
         "timestamp": datetime.now().isoformat(),
         "user_requirement": user_requirement,
         "user_profile": user_profile,
@@ -337,13 +338,15 @@ def main(model_name=None):
                 "buyer_max_price": buyer_max_price,
                 "seller_min_price": seller_min_price,
                 "product_info": {
-                    "name": "iPhone 14 Pro 128GB",
-                    "condition": "Used - Good",
-                    "battery_health": "87%",
-                    "purchase_date": "2023-03",
-                    "original_price": 999.0,
-                    "accessories": ["Original box", "Charger"],
-                    "issues_disclosed": "Minor scratches on back"
+                    "name": "Crimson Trace Brushline Pro Riflescope with Lightweight Solid Construction, Scope Caps and Lens Cloth for Hunting, Shooting and Outdoor",
+                    "condition": "New",
+                    "brand": "Visit the Crimson Trace Store",
+                    "model": "Brushline Pro Riflescope 2.5-10x42mm CT Plex Reticle",
+                    "original_price": 218.79,
+                    "product_category": "Sports & Outdoors › Hunting & Fishing › Shooting › Optics › Gun Scopes › Rifle Scopes",
+                    "average_rating": 4.3,
+                    "total_reviews": 28,
+                    "asin": "B08GS6B87J"
                 },
                 "model": get_model_name(model),
             })
@@ -380,11 +383,11 @@ def main(model_name=None):
             json.dump(results, f, indent=2, ensure_ascii=False)
         
         # Save output text (we'll create a simple output file with key information)
-        output_file = run_dir / "Task4_s1_output.txt"
+        output_file = run_dir / "Task6_s3_riflescope_output.txt"
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write("="*80 + "\n")
-            f.write("Task4 Scenario 1: Used Smartphone Negotiation Results\n")
-            f.write("Category: Daily Life Consumption\n")
+            f.write("Task6 Scenario 3: Riflescope (Crimson Trace) Negotiation Results\n")
+            f.write("Category: Sports & Outdoors\n")
             f.write("="*80 + "\n\n")
             f.write(f"Timestamp: {results['timestamp']}\n")
             f.write(f"Model: {results['model']}\n")
@@ -434,12 +437,12 @@ def main(model_name=None):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Task4 Scenario 1: Used Smartphone Negotiation (iPhone 14 Pro)")
+    parser = argparse.ArgumentParser(description="Task6 Scenario 3: Riflescope Negotiation (Crimson Trace Brushline Pro)")
     parser.add_argument(
         "--model",
         type=str,
         default=None,
-        help="Model name to use (e.g., 'gemini-3-pro-all', 'gpt-5.2', 'claude-sonnet-4-5-20250929'). If not provided, uses default model."
+        help="VLM model name (e.g., 'gpt-4o', 'gpt-4o-mini', 'gpt-4-vision-preview'). Default: gpt-4o-mini"
     )
     args = parser.parse_args()
     main(model_name=args.model)

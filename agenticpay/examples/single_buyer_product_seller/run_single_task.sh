@@ -5,8 +5,8 @@
 # ============================================
 # You can set these variables directly in the script,
 # or pass them via command line arguments (--task and --model)
-TASK_NAME="Task4_s1"          # Options: Task1, Task2, Task3, Task4_s1
-MODEL_NAME="gpt-5.2"  # Model name, or leave empty for default
+TASK_NAME="Task13_s10"          # Options: Task1, Task2, Task3, Task4_s1, Task5_s2, Task6_s3, Task7_s4, Task8_s5, Task9_s6, Task10_s7, Task11_s8, Task12_s9, Task13_s10
+MODEL_NAME="gpt-5.4"  # Model name, or leave empty for default
 
 # ============================================
 # Change to script directory
@@ -67,13 +67,13 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         -h|--help)
-            echo "Usage: $0 [--task <Task1|Task2|Task3|Task4_s1>] [--model <model_name>]"
+            echo "Usage: $0 [--task <Task1|Task2|Task3|Task4_s1|Task5_s2|Task6_s3|Task7_s4|Task8_s5|Task9_s6|Task10_s7|Task11_s8|Task12_s9|Task13_s10>] [--model <model_name>]"
             echo ""
             echo "You can set TASK_NAME and MODEL_NAME directly in the script,"
             echo "or pass them via command line arguments."
             echo ""
             echo "Options:"
-            echo "  --task <Task1|Task2|Task3|Task4_s1>   Override task name (optional)"
+            echo "  --task <Task1|Task2|Task3|Task4_s1|Task5_s2|Task6_s3|Task7_s4|Task8_s5|Task9_s6|Task10_s7|Task11_s8|Task12_s9|Task13_s10>   Override task name (optional)"
             echo "  --model <model_name>                   Override model name (optional)"
             echo "  -h, --help                             Show this help message"
             echo ""
@@ -81,12 +81,21 @@ while [[ $# -gt 0 ]]; do
             echo "  Task1    - Basic Price Negotiation (Winter Jacket)"
             echo "  Task2    - Close Price Negotiation"
             echo "  Task3    - Close to Market Price Negotiation"
-            echo "  Task4_s1 - Used Smartphone Negotiation (iPhone 14 Pro)"
+            echo "  Task4_s1 - Beauty Product Negotiation (Maybelline Eyeshadow)"
+            echo "  Task5_s2 - Toothpaste Negotiation (ARM & HAMMER Peroxicare)"
+            echo "  Task6_s3 - Riflescope Negotiation (Crimson Trace Brushline Pro)"
+            echo "  Task7_s4 - Kids Headphones Negotiation (NVRADCHUA)"
+            echo "  Task8_s5 - Wall Lantern Negotiation (Sea Gull Lighting)"
+            echo "  Task9_s6 - Bookshelf Negotiation (Kcelarec 4-Tier)"
+            echo "  Task10_s7 - Men's Sandals Negotiation (N/C Flip Flops)"
+            echo "  Task11_s8 - Women's Jeans Negotiation (myhehthw)"
+            echo "  Task12_s9 - Beverage Negotiation (Belvoir Elderflower Rose)"
+            echo "  Task13_s10 - Food Color Negotiation (AmeriColor AmeriMist)"
             echo ""
             echo "Examples:"
             echo "  $0                                    # Uses TASK_NAME and MODEL_NAME from script"
             echo "  $0 --task Task2                      # Override task, use MODEL_NAME from script"
-            echo "  $0 --task Task4_s1 --model gpt-5.2  # Run new smartphone scenario"
+            echo "  $0 --task Task4_s1 --model gpt-5.2  # Run beauty product scenario"
             exit 0
             ;;
         *)
@@ -120,12 +129,48 @@ case "$TASK_NAME" in
         TASK_DISPLAY="Task3"
         ;;
     Task4_s1|task4_s1)
-        TASK_SCRIPT="Task4_s1_basic_price_negotiation.py"
+        TASK_SCRIPT="Task4_s1_beauty_product_negotiation.py"
         TASK_DISPLAY="Task4_s1"
+        ;;
+    Task5_s2|task5_s2)
+        TASK_SCRIPT="Task5_s2_toothpaste_negotiation.py"
+        TASK_DISPLAY="Task5_s2"
+        ;;
+    Task6_s3|task6_s3)
+        TASK_SCRIPT="Task6_s3_riflescope_negotiation.py"
+        TASK_DISPLAY="Task6_s3"
+        ;;
+    Task7_s4|task7_s4)
+        TASK_SCRIPT="Task7_s4_headphones_negotiation.py"
+        TASK_DISPLAY="Task7_s4"
+        ;;
+    Task8_s5|task8_s5)
+        TASK_SCRIPT="Task8_s5_wall_lantern_negotiation.py"
+        TASK_DISPLAY="Task8_s5"
+        ;;
+    Task9_s6|task9_s6)
+        TASK_SCRIPT="Task9_s6_bookshelf_negotiation.py"
+        TASK_DISPLAY="Task9_s6"
+        ;;
+    Task10_s7|task10_s7)
+        TASK_SCRIPT="Task10_s7_sandals_negotiation.py"
+        TASK_DISPLAY="Task10_s7"
+        ;;
+    Task11_s8|task11_s8)
+        TASK_SCRIPT="Task11_s8_jeans_negotiation.py"
+        TASK_DISPLAY="Task11_s8"
+        ;;
+    Task12_s9|task12_s9)
+        TASK_SCRIPT="Task12_s9_beverage_negotiation.py"
+        TASK_DISPLAY="Task12_s9"
+        ;;
+    Task13_s10|task13_s10)
+        TASK_SCRIPT="Task13_s10_food_color_negotiation.py"
+        TASK_DISPLAY="Task13_s10"
         ;;
     *)
         echo "Error: Invalid task name: $TASK_NAME"
-        echo "Valid task names: Task1, Task2, Task3, Task4_s1"
+        echo "Valid task names: Task1, Task2, Task3, Task4_s1, Task5_s2, Task6_s3, Task7_s4, Task8_s5, Task9_s6, Task10_s7, Task11_s8, Task12_s9, Task13_s10"
         exit 1
         ;;
 esac

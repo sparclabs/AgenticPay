@@ -1,8 +1,8 @@
-"""Task4 Scenario 7: SaaS Software Procurement Negotiation
+"""Task4 Scenario 1: Beauty Product Negotiation
 
-Category 3: Business Procurement
-Scenario: Enterprise SaaS subscription with volume discounts.
-Tests agent's ability to optimize multi-dimensional pricing (seats, tiers, contract terms).
+Category 1: Daily Life Consumption
+Scenario: Maybelline Expert Wear Eyeshadow Singles transaction between seller and buyer on Amazon.
+Tests agent's ability to handle information asymmetry and product pricing negotiation.
 """
 
 import os
@@ -25,6 +25,7 @@ from agenticpay import make, Task1BasicPriceNegotiation  # Use registration syst
 from agenticpay.agents.buyer_agent import BuyerAgent
 from agenticpay.agents.seller_agent import SellerAgent
 from agenticpay.models.custom_llm import CustomLLM
+from agenticpay.models.openai_vlm import OpenAIVLM
 from agenticpay.models.qwen3_vl import Qwen3VL
 from agenticpay.models.vllm_lm import VLLMLLM
 from agenticpay.models.sglang_vlm import SGLangVLM
@@ -78,36 +79,24 @@ def main(model_name=None):
         print("You can set it with: export OPENAI_API_KEY='your-key-here'")
         return
     
-    # Use provided model name or default
-    if model_name is None:
-        model_name = "gemini-3-pro-all"  # Default model
-    
-    model = CustomLLM(api_key=api_key, model=model_name) # claude-sonnet-4-5-20250929, gpt-5.2, gemini-3-pro-all, gpt-3.5-turbo, DeepSeek-R1
+    # Use OpenAIVLM (Vision Language Model) for beauty product negotiation with product images
+    model_name = model_name or "gpt-4o-mini"  # gpt-4o, gpt-4o-mini, gpt-4-vision-preview, etc.
+    model = OpenAIVLM(model=model_name, api_key=api_key)
 
-    # Build absolute path to model directory
-    # model_path = os.path.join(project_root, "models", "download_models", "Qwen3-8B-Instruct")
-    # model_path = os.path.abspath(model_path)
+    # Alternative: CustomLLM for text-only models
+    # model = CustomLLM(api_key=api_key, model=model_name)
 
-    # vLLM LLM Model
-    # model = VLLMLLM(
-    #     model_path=model_path,
-    #     trust_remote_code=True,
-    #     gpu_memory_utilization=0.9,
-    #     tensor_parallel_size=4, # 4 GPUs
-    # )
-
-    # SGLang VLM Model
-    # model = SGLangVLM(
-    #     model_path=model_path,
-    # )
+    # Alternative: SGLang VLM (local)
+    # model_path = os.path.join(project_root, "models", "download_models", "Qwen3-VL-8B-Instruct")
+    # model = SGLangVLM(model_path=os.path.abspath(model_path))
 
     print(f"✓ Successfully initialized: {model}")
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
     print("Creating agents...")
-    # Scenario 3-1: SaaS Software - buyer_max_price: $9,000/year (50 seats × $15/month), seller_min_price: $4,800/year (50 seats × $8/month)
-    buyer_max_price = 9000.0  # Maximum acceptable purchase price for buyer (confidential)
-    seller_min_price = 4800.0  # Minimum acceptable selling price for seller (confidential)
+    # Scenario 1-1: Maybelline Eyeshadow - buyer_max_price: $6.50 (wants discount), seller_min_price: $5.00 (cost basis)
+    buyer_max_price = 6.50  # Maximum acceptable purchase price for buyer (confidential)
+    seller_min_price = 5.00  # Minimum acceptable selling price for seller (confidential)
     
     buyer = BuyerAgent(model=model, buyer_max_price=buyer_max_price)
     seller = SellerAgent(model=model, seller_min_price=seller_min_price)
@@ -119,14 +108,14 @@ def main(model_name=None):
         buyer_agent=buyer,
         seller_agent=seller,
         max_rounds=max_rounds,
-        initial_seller_price=12000.0,  # Initial price offered by seller (50 seats × $20/month)
+        initial_seller_price=7.50,  # Initial price offered by seller (list price $7.98)
         buyer_max_price=buyer_max_price,  # Buyer bottom price (confidential)
         seller_min_price=seller_min_price,  # Seller bottom price (confidential)
         environment_info={
-            "company_size": "50 employees",
-            "industry": "Software development",
-            "current_solution": "Spreadsheets and email",
-            "decision_timeline": "30 days"
+            "platform": "Amazon",
+            "market_type": "B2C",
+            "listing_age": "3 days",
+            "availability_status": "Only 5 left in stock - order soon."
         },
         price_tolerance=price_tolerance,
         reward_weights=reward_weights,  # Reward weights configuration
@@ -149,10 +138,18 @@ def main(model_name=None):
     # )
     
     # Create user profile (text description of personal preferences)
-    user_profile = "IT procurement manager at mid-size company. Budget-conscious, evaluating multiple vendors. Interested in volume discounts, multi-year contracts, and comprehensive support. Needs to justify ROI to management."
+    user_profile = "Beauty-conscious user who researches product reviews before buying. Cares about brand quality and value for money. Prefers to buy from sellers with good ratings and reasonable prices."
     print(f"User Profile: {user_profile}")
     
-    user_requirement = "Need a project management tool for our 50-person team. Looking for annual subscription with good support."
+    # Get user requirement
+    # print("\n" + "="*60)
+    # print("Please enter the product requirement you want to purchase:")
+    # user_requirement = input("> ").strip()
+    # if not user_requirement:
+    #     print("No requirement entered, using default requirement...")
+    #     user_requirement = "I need a high-quality winter jacket for cold weather"
+
+    user_requirement = "I'm looking for Maybelline Expert Wear Eyeshadow in Turquoise Glass Perfect Pastels shade, preferably new with good reviews."
     print(f"Using default requirement: {user_requirement}")
     
     # Reset environment
@@ -160,16 +157,28 @@ def main(model_name=None):
     print("Starting new negotiation...")
     print("="*60)
     
+    # Product image for VLM: URL or local path (OpenAIVLM supports both)
+    product_image_url = "https://m.media-amazon.com/images/I/41IiEBGouZL.jpg"  # Eyeshadow/makeup image
+    # Or use local: product_image_url = os.path.join(project_root, "agenticpay", "assets", "maybelline_eyeshadow.png")
+
     observation, info = env.reset(
         user_requirement=user_requirement,
         product_info={
-            "name": "ProjectFlow Pro - Annual License",
-            "description": "Enterprise project management and collaboration platform",
-            "base_price_per_seat": 20.0,
-            "volume_discounts": {"10-29": 0.10, "30-49": 0.15, "50-99": 0.20, "100+": 0.30},
-            "support_tiers": {"Basic": 0, "Priority": 500, "Dedicated": 2000},
-            "contract_terms": {"1-year": 0, "2-year": 0.05, "3-year": 0.10},
-            "features": ["Unlimited projects", "Advanced analytics", "API access", "SSO"]
+            "name": "Maybelline New York Expert Wear Eyeshadow Singles, 130s Turquoise Glass Perfect Pastels, 0.09 Ounce",
+            "condition": "New",
+            "brand": "Maybelline New York",
+            "shade": "130s Turquoise Glass Perfect Pastels",
+            "size": "0.09 Ounce",
+            "original_price": 7.98,
+            "availability_quantity": 5,
+            "availability_status": "Only 5 left in stock - order soon.",
+            "product_category": "Beauty & Personal Care › Makeup › Eyes › Eyeshadow",
+            "average_rating": 4.2,
+            "total_reviews": 54,
+            "seller_name": "Mommy Dezarn's Miscellaneous",
+            "asin": "B0046VILG4",
+            "full_description": "Easy to use. Lots to choose. All-day crease-proof wear. Rich, velvety textures. Glides on effortlessly with superior smoothness.",
+            "image_url": product_image_url,  # For VLM: product image (URL or path)
         },
         user_profile=user_profile,  # Pass user profile
     )
@@ -180,9 +189,9 @@ def main(model_name=None):
     
     # Initialize results dictionary
     results = {
-        "task": "Task10_s7_saas_procurement_negotiation",
-        "category": "Business Procurement",
-        "scenario": "Enterprise SaaS subscription",
+        "task": "Task4_s1_beauty_product_negotiation",
+        "category": "Daily Life Consumption",
+        "scenario": "Maybelline Expert Wear Eyeshadow transaction",
         "timestamp": datetime.now().isoformat(),
         "user_requirement": user_requirement,
         "user_profile": user_profile,
@@ -330,13 +339,19 @@ def main(model_name=None):
                 "buyer_max_price": buyer_max_price,
                 "seller_min_price": seller_min_price,
                 "product_info": {
-                    "name": "ProjectFlow Pro - Annual License",
-                    "description": "Enterprise project management and collaboration platform",
-                    "base_price_per_seat": 20.0,
-                    "volume_discounts": {"10-29": 0.10, "30-49": 0.15, "50-99": 0.20, "100+": 0.30},
-                    "support_tiers": {"Basic": 0, "Priority": 500, "Dedicated": 2000},
-                    "contract_terms": {"1-year": 0, "2-year": 0.05, "3-year": 0.10},
-                    "features": ["Unlimited projects", "Advanced analytics", "API access", "SSO"]
+                    "name": "Maybelline New York Expert Wear Eyeshadow Singles, 130s Turquoise Glass Perfect Pastels, 0.09 Ounce",
+                    "condition": "New",
+                    "brand": "Maybelline New York",
+                    "shade": "130s Turquoise Glass Perfect Pastels",
+                    "size": "0.09 Ounce",
+                    "original_price": 7.98,
+                    "availability_quantity": 5,
+                    "availability_status": "Only 5 left in stock - order soon.",
+                    "product_category": "Beauty & Personal Care › Makeup › Eyes › Eyeshadow",
+                    "average_rating": 4.2,
+                    "total_reviews": 54,
+                    "seller_name": "Mommy Dezarn's Miscellaneous",
+                    "asin": "B0046VILG4"
                 },
                 "model": get_model_name(model),
             })
@@ -373,11 +388,11 @@ def main(model_name=None):
             json.dump(results, f, indent=2, ensure_ascii=False)
         
         # Save output text (we'll create a simple output file with key information)
-        output_file = run_dir / "Task10_s7_output.txt"
+        output_file = run_dir / "Task4_s1_beauty_product_output.txt"
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write("="*80 + "\n")
-            f.write("Task10 Scenario 7: SaaS Software Procurement Negotiation Results\n")
-            f.write("Category: Business Procurement\n")
+            f.write("Task4 Scenario 1: Beauty Product (Maybelline Eyeshadow) Negotiation Results\n")
+            f.write("Category: Daily Life Consumption\n")
             f.write("="*80 + "\n\n")
             f.write(f"Timestamp: {results['timestamp']}\n")
             f.write(f"Model: {results['model']}\n")
@@ -427,12 +442,12 @@ def main(model_name=None):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Task4 Scenario 7: SaaS Software Procurement Negotiation")
+    parser = argparse.ArgumentParser(description="Task4 Scenario 1: Beauty Product Negotiation (Maybelline Expert Wear Eyeshadow)")
     parser.add_argument(
         "--model",
         type=str,
         default=None,
-        help="Model name to use (e.g., 'gemini-3-pro-all', 'gpt-5.2', 'claude-sonnet-4-5-20250929'). If not provided, uses default model."
+        help="VLM model name (e.g., 'gpt-4o', 'gpt-4o-mini', 'gpt-4-vision-preview'). Default: gpt-4o"
     )
     args = parser.parse_args()
     main(model_name=args.model)
