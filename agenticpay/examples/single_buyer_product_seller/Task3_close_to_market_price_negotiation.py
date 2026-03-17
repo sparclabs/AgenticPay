@@ -25,6 +25,7 @@ from agenticpay import make, Task3CloseToMarketPriceNegotiation  # Use registrat
 from agenticpay.agents.buyer_agent import BuyerAgent
 from agenticpay.agents.seller_agent import SellerAgent
 from agenticpay.models.custom_llm import CustomLLM
+from agenticpay.models.openai_vlm import OpenAIVLM
 from agenticpay.models.qwen3_vl import Qwen3VL
 from agenticpay.models.vllm_lm import VLLMLLM
 from agenticpay.models.sglang_vlm import SGLangVLM
@@ -77,11 +78,9 @@ def main(model_name=None):
         print("You can set it with: export OPENAI_API_KEY='your-key-here'")
         return
     
-    # Use provided model name or default
-    if model_name is None:
-        model_name = "qwen3-8b"  # Default model
-    
-    model = CustomLLM(api_key=api_key, model=model_name) # claude-sonnet-4-5-20250929, gpt-5.2, gemini-3-pro-all, gpt-3.5-turbo, DeepSeek-R1
+    # Use OpenAIVLM (Vision Language Model) - same pattern as Task1_basic_price_negotiation_api
+    model_name = model_name or "gpt-4o-mini"  # gpt-4o, gpt-4o-mini, gpt-4-vision-preview, etc.
+    model = OpenAIVLM(model=model_name, api_key=api_key)
 
     # Build absolute path to model directory
     # model_path = os.path.join(project_root, "models", "download_models", "Qwen3-8B-Instruct")

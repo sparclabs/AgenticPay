@@ -20,6 +20,10 @@ from agenticpay.envs.multi_buyer_multi_seller.Task1_parallel_two_buyer_two_selle
 from agenticpay.agents.buyer_agent import BuyerAgent
 from agenticpay.agents.seller_agent import SellerAgent
 from agenticpay.models.custom_llm import CustomLLM
+from agenticpay.models.openai_vlm import OpenAIVLM
+from agenticpay.models.qwen3_vl import Qwen3VL
+from agenticpay.models.vllm_lm import VLLMLLM
+from agenticpay.models.sglang_vlm import SGLangVLM
 
 # Import configuration parameters
 examples_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -82,11 +86,22 @@ def main(model_name=None):
         print("You can set it with: export OPENAI_API_KEY='your-key-here'")
         return
     
-    # Use provided model name or default
-    if model_name is None:
-        model_name = "gpt-5.2"  # Default model
-    
-    model = CustomLLM(api_key=api_key, model=model_name)  # claude-sonnet-4-5-20250929, gpt-5.2, gemini-3-pro-all, gpt-3.5-turbo, DeepSeek-R1
+    # Use OpenAIVLM (Vision Language Model) - same pattern as Task1_basic_price_negotiation_api
+    model_name = model_name or "gpt-4o-mini"  # gpt-4o, gpt-4o-mini, gpt-4-vision-preview, etc.
+    model = OpenAIVLM(model=model_name, api_key=api_key)
+
+    # vLLM LLM Model
+    # model = VLLMLLM(
+    #     model_path=model_path,
+    #     trust_remote_code=True,
+    #     gpu_memory_utilization=0.9,
+    #     tensor_parallel_size=4, # 4 GPUs
+    # )
+
+    # SGLang VLM Model
+    # model = SGLangVLM(
+    #     model_path=model_path,
+    # )
     
     print(f"✓ Successfully initialized: {model}")
     

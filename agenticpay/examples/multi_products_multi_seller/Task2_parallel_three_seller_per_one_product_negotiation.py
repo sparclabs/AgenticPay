@@ -20,6 +20,7 @@ from agenticpay.envs.multi_products_multi_seller.Task2_parallel_three_seller_per
 from agenticpay.agents.buyer_agent import BuyerAgent
 from agenticpay.agents.seller_agent import SellerAgent
 from agenticpay.models.custom_llm import CustomLLM
+from agenticpay.models.openai_vlm import OpenAIVLM
 
 # Import configuration parameters
 examples_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -75,18 +76,16 @@ def main(model_name=None):
     
     print("Initializing model...")
     
-    # Check API key
+    # Check API key (from config or env)
     api_key = OPENAI_API_KEY or os.getenv("OPENAI_API_KEY")
     if not api_key:
         print("Warning: OPENAI_API_KEY not set. Please set it to use OpenAI models.")
         print("You can set it with: export OPENAI_API_KEY='your-key-here'")
         return
     
-    # Use provided model name or default
-    if model_name is None:
-        model_name = "gpt-5.2"  # Default model
-    
-    model = CustomLLM(api_key=api_key, model=model_name)  # claude-sonnet-4-5-20250929, gpt-5.2, gemini-3-pro-all, gpt-3.5-turbo, DeepSeek-R1
+    # Use OpenAIVLM (Vision Language Model) - same pattern as Task1_basic_price_negotiation_api
+    model_name = model_name or "gpt-4o-mini"  # gpt-4o, gpt-4o-mini, gpt-4-vision-preview, etc.
+    model = OpenAIVLM(model=model_name, api_key=api_key)
     
     print(f"✓ Successfully initialized: {model}")
     
