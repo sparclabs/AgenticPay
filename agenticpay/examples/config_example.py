@@ -22,3 +22,12 @@ seller_reward_aggregation = "average"  # Seller reward aggregation method
 max_rounds = 20  # Maximum negotiation rounds
 price_tolerance = 0.0  # Price tolerance (used to determine if prices match)
 
+# Model configuration
+# model_mode: "local" (local deployment) or "cloud" (cloud API)
+MODEL_MODE = "local"
+# MODEL_PATH: For local mode, use local model path; for cloud mode, use online model name (e.g. "gpt-4", "qwen-turbo")
+MODEL_PATH = "/path/to/local/model"
+
+# OpenAI API key and URL
+OPENAI_API_KEY = ""
+OPENAI_URL = ""

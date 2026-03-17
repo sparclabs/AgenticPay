@@ -5,7 +5,7 @@
 # ============================================
 # You can set these variables directly in the script,
 # or pass them via command line arguments (--task and --model)
-TASK_NAME="Task13_s10"          # Options: Task1, Task2, Task3, Task4_s1, Task5_s2, Task6_s3, Task7_s4, Task8_s5, Task9_s6, Task10_s7, Task11_s8, Task12_s9, Task13_s10
+TASK_NAME="Task1"          # Options: Task1, Task2, Task3, Task4_s1, Task5_s2, Task6_s3, Task7_s4, Task8_s5, Task9_s6, Task10_s7, Task11_s8, Task12_s9, Task13_s10
 MODEL_NAME="gpt-5.4"  # Model name, or leave empty for default
 
 # ============================================
