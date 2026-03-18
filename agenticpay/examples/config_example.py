@@ -29,5 +29,5 @@ MODEL_MODE = "local"
 MODEL_PATH = "/path/to/local/model"
 
 # OpenAI API key and URL
-OPENAI_API_KEY = ""
-OPENAI_URL = ""
+OPENAI_API_KEY = "your-api-key-here"
+OPENAI_URL = "your-url-here"
