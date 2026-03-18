@@ -298,7 +298,7 @@ def main(model_name=None):
     # Save results to file
     try:
         # Create results directory structure
-        results_dir = Path(project_root) / "results" / "only_multi_products"
+        results_dir = Path(project_root) / "agenticpay" / "results" / "only_multi_products"
         results_dir.mkdir(parents=True, exist_ok=True)
         
         # Get model name for directory (sanitize for filesystem)
