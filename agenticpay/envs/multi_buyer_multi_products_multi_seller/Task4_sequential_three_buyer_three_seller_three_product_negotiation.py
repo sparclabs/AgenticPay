@@ -528,6 +528,9 @@ class Task4SequentialThreeBuyerThreeSellerThreeProductNegotiation(BaseEnv):
                     if price_diff <= self.price_tolerance:
                         deal_price = (state.buyer_price + state.seller_price) / 2
                         deals.append((buyer_id, seller_id, deal_price))
+                    elif state.seller_price <= state.buyer_price:
+                        deal_price = state.seller_price
+                        deals.append((buyer_id, seller_id, deal_price))
         
         # Select the best deal
         if deals:

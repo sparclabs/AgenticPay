@@ -497,6 +497,9 @@ class Task2ParallelThreeBuyerThreeSellerNegotiation(BaseEnv):
                 if price_diff <= self.price_tolerance:
                     deal_price = (state.buyer_price + state.seller_price) / 2
                     deals.append((buyer_id, seller_id, deal_price))
+                elif state.seller_price <= state.buyer_price:
+                    deal_price = state.seller_price
+                    deals.append((buyer_id, seller_id, deal_price))
         
         # Select the best deal: prioritize buyer's preference (lower price) and seller's preference (higher price)
         # If multiple deals exist, choose the one with the best price for both parties

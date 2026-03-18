@@ -13,8 +13,8 @@ import argparse
 from pathlib import Path
 from datetime import datetime
 
-# Add project path
-project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Add project path (4 levels up from script to reach repo root AgenticPayGym)
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 sys.path.insert(0, project_root)
 
 from agenticpay.envs.only_multi_buyer.Task3_sequential_two_buyer_negotiation import Task3SequentialTwoBuyerNegotiation
@@ -27,7 +27,7 @@ import re
 examples_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, examples_dir)
 try:
-    from config import reward_weights, buyer_reward_aggregation, seller_reward_aggregation, max_rounds, price_tolerance, OPENAI_API_KEY
+    from config import reward_weights, buyer_reward_aggregation, seller_reward_aggregation, max_rounds, price_tolerance
 except ImportError:
     # Default values if config not available
     reward_weights = {"buyer_savings": 1.0, "seller_profit": 1.0, "time_cost": 0.1}
@@ -35,7 +35,6 @@ except ImportError:
     seller_reward_aggregation = "average"
     max_rounds = 20
     price_tolerance = 0.0
-    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 
 def get_model_name(model):
@@ -130,7 +129,7 @@ def main(model_name=None):
     print("Initializing model...")
     
     # Check API key
-    api_key = OPENAI_API_KEY or os.getenv("OPENAI_API_KEY")
+    api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         print("Warning: OPENAI_API_KEY not set. Please set it to use OpenAI models.")
         print("You can set it with: export OPENAI_API_KEY='your-key-here'")

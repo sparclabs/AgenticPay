@@ -253,7 +253,11 @@ class Task1MultiProductNegotiation(BaseEnv):
         if self._check_agreement():
             terminated = True
             self.negotiation_info.status = NegotiationStatus.AGREED
-            agreed_price = (self.current_product_state.buyer_price + self.current_product_state.seller_price) / 2
+            # When seller's offer <= buyer's offer: deal at seller's price; otherwise use midpoint
+            if self.current_product_state.seller_price <= self.current_product_state.buyer_price:
+                agreed_price = self.current_product_state.seller_price
+            else:
+                agreed_price = (self.current_product_state.buyer_price + self.current_product_state.seller_price) / 2
             self.current_product_state.update(agreed_price=agreed_price)
             self.negotiation_info.current_price = agreed_price
             # Increment current_round to reflect that this round is completed
@@ -493,6 +497,8 @@ class Task1MultiProductNegotiation(BaseEnv):
         
         price_diff = abs(self.current_product_state.buyer_price - self.current_product_state.seller_price)
         
+        if self.current_product_state.seller_price <= self.current_product_state.buyer_price:
+            return f"Seller's offer (${self.current_product_state.seller_price:.2f}) <= buyer's offer (${self.current_product_state.buyer_price:.2f}), deal at seller's price"
         if price_diff <= self.price_tolerance:
             return f"Price difference (${price_diff:.2f}) is within tolerance (${self.price_tolerance:.2f})"
         else:
@@ -602,7 +608,9 @@ class Task1MultiProductNegotiation(BaseEnv):
     def _check_agreement(self) -> bool:
         """Check if agreement is reached
         
-        When the prices of both buyer and seller are within the tolerance range, an agreement is considered reached.
+        Agreement is reached when:
+        1. The prices of both buyer and seller are within the tolerance range, or
+        2. Seller's offer is less than or equal to buyer's offer (seller_price <= buyer_price).
         
         Returns:
             Whether agreement is reached
@@ -611,7 +619,11 @@ class Task1MultiProductNegotiation(BaseEnv):
             return False
         
         price_diff = abs(self.current_product_state.buyer_price - self.current_product_state.seller_price)
-        return price_diff <= self.price_tolerance
+        if price_diff <= self.price_tolerance:
+            return True
+        if self.current_product_state.seller_price <= self.current_product_state.buyer_price:
+            return True
+        return False
     
     def _calculate_reward(self) -> float:
         """Calculate reward

@@ -320,7 +320,7 @@ class Task2ParallelThreeBuyerTwoProductNegotiation(BaseEnv):
                 self.state_buyer3.update(seller_price=seller_price_buyer3)
         
         # After processing all actions, check if buyers can make deals
-        # Deal is made when price_tolerance condition is satisfied (no need for explicit MAKE_DEAL)
+        # Deal can be reached when: (1) price difference <= tolerance, or (2) seller's offer <= buyer's offer
         # Check if buyer1 can make deal
         can_make_deal_buyer1 = False
         if (buyer1_action is not None and 
@@ -328,6 +328,8 @@ class Task2ParallelThreeBuyerTwoProductNegotiation(BaseEnv):
             self.state_buyer1.seller_price is not None):
             price_diff = abs(self.state_buyer1.buyer_price - self.state_buyer1.seller_price)
             if price_diff <= self.price_tolerance:
+                can_make_deal_buyer1 = True
+            elif self.state_buyer1.seller_price <= self.state_buyer1.buyer_price:
                 can_make_deal_buyer1 = True
         
         # Check if buyer2 can make deal
@@ -338,6 +340,8 @@ class Task2ParallelThreeBuyerTwoProductNegotiation(BaseEnv):
             price_diff = abs(self.state_buyer2.buyer_price - self.state_buyer2.seller_price)
             if price_diff <= self.price_tolerance:
                 can_make_deal_buyer2 = True
+            elif self.state_buyer2.seller_price <= self.state_buyer2.buyer_price:
+                can_make_deal_buyer2 = True
         
         # Check if buyer3 can make deal
         can_make_deal_buyer3 = False
@@ -346,6 +350,8 @@ class Task2ParallelThreeBuyerTwoProductNegotiation(BaseEnv):
             self.state_buyer3.seller_price is not None):
             price_diff = abs(self.state_buyer3.buyer_price - self.state_buyer3.seller_price)
             if price_diff <= self.price_tolerance:
+                can_make_deal_buyer3 = True
+            elif self.state_buyer3.seller_price <= self.state_buyer3.buyer_price:
                 can_make_deal_buyer3 = True
         
         if can_make_deal_buyer1 or can_make_deal_buyer2 or can_make_deal_buyer3:
@@ -369,13 +375,22 @@ class Task2ParallelThreeBuyerTwoProductNegotiation(BaseEnv):
                 selected_buyer_id, _ = available_prices[0]
                 self.selected_buyer = selected_buyer_id
                 
-                # Calculate final deal price based on selected buyer
+                # Calculate final deal price: when seller's offer <= buyer's offer use seller's price, else use midpoint
                 if selected_buyer_id == 1:
-                    self.final_deal_price = (self.state_buyer1.buyer_price + self.state_buyer1.seller_price) / 2
+                    if self.state_buyer1.seller_price <= self.state_buyer1.buyer_price:
+                        self.final_deal_price = self.state_buyer1.seller_price
+                    else:
+                        self.final_deal_price = (self.state_buyer1.buyer_price + self.state_buyer1.seller_price) / 2
                 elif selected_buyer_id == 2:
-                    self.final_deal_price = (self.state_buyer2.buyer_price + self.state_buyer2.seller_price) / 2
+                    if self.state_buyer2.seller_price <= self.state_buyer2.buyer_price:
+                        self.final_deal_price = self.state_buyer2.seller_price
+                    else:
+                        self.final_deal_price = (self.state_buyer2.buyer_price + self.state_buyer2.seller_price) / 2
                 elif selected_buyer_id == 3:
-                    self.final_deal_price = (self.state_buyer3.buyer_price + self.state_buyer3.seller_price) / 2
+                    if self.state_buyer3.seller_price <= self.state_buyer3.buyer_price:
+                        self.final_deal_price = self.state_buyer3.seller_price
+                    else:
+                        self.final_deal_price = (self.state_buyer3.buyer_price + self.state_buyer3.seller_price) / 2
         
         # Check if deal is made (seller chose a buyer)
         terminated = False
@@ -775,36 +790,51 @@ class Task2ParallelThreeBuyerTwoProductNegotiation(BaseEnv):
         return False
     
     def _get_effective_price_buyer1(self) -> Optional[float]:
-        """Get effective price for buyer1 (agreed price if available, otherwise buyer price)
+        """Get effective price for buyer1 (deal price when deal is reachable, otherwise buyer price)
+        
+        When seller's offer <= buyer's offer: effective price = seller_price.
+        When within tolerance: effective price = (buyer_price + seller_price) / 2.
         
         Returns:
             Effective price for buyer1
         """
         if self.state_buyer1.buyer_price is not None and self.state_buyer1.seller_price is not None:
+            if self.state_buyer1.seller_price <= self.state_buyer1.buyer_price:
+                return self.state_buyer1.seller_price
             price_diff = abs(self.state_buyer1.buyer_price - self.state_buyer1.seller_price)
             if price_diff <= self.price_tolerance:
                 return (self.state_buyer1.buyer_price + self.state_buyer1.seller_price) / 2
         return self.state_buyer1.buyer_price
     
     def _get_effective_price_buyer2(self) -> Optional[float]:
-        """Get effective price for buyer2 (agreed price if available, otherwise buyer price)
+        """Get effective price for buyer2 (deal price when deal is reachable, otherwise buyer price)
+        
+        When seller's offer <= buyer's offer: effective price = seller_price.
+        When within tolerance: effective price = (buyer_price + seller_price) / 2.
         
         Returns:
             Effective price for buyer2
         """
         if self.state_buyer2.buyer_price is not None and self.state_buyer2.seller_price is not None:
+            if self.state_buyer2.seller_price <= self.state_buyer2.buyer_price:
+                return self.state_buyer2.seller_price
             price_diff = abs(self.state_buyer2.buyer_price - self.state_buyer2.seller_price)
             if price_diff <= self.price_tolerance:
                 return (self.state_buyer2.buyer_price + self.state_buyer2.seller_price) / 2
         return self.state_buyer2.buyer_price
     
     def _get_effective_price_buyer3(self) -> Optional[float]:
-        """Get effective price for buyer3 (agreed price if available, otherwise buyer price)
+        """Get effective price for buyer3 (deal price when deal is reachable, otherwise buyer price)
+        
+        When seller's offer <= buyer's offer: effective price = seller_price.
+        When within tolerance: effective price = (buyer_price + seller_price) / 2.
         
         Returns:
             Effective price for buyer3
         """
         if self.state_buyer3.buyer_price is not None and self.state_buyer3.seller_price is not None:
+            if self.state_buyer3.seller_price <= self.state_buyer3.buyer_price:
+                return self.state_buyer3.seller_price
             price_diff = abs(self.state_buyer3.buyer_price - self.state_buyer3.seller_price)
             if price_diff <= self.price_tolerance:
                 return (self.state_buyer3.buyer_price + self.state_buyer3.seller_price) / 2

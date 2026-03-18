@@ -306,34 +306,40 @@ class Task4SequentialThreeSellerPerOneProductNegotiation(BaseEnv):
                     self.state_seller3.update(seller_price=seller_price)
         
         # Check if deal can be made with the selected seller
-        # Deal is made when price_tolerance condition is satisfied (no need for explicit MAKE_DEAL)
+        # Deal is made when: (1) price difference <= tolerance, or (2) seller's offer <= buyer's offer
         if selected_seller == 1:
             if (buyer_action is not None and 
                 self.state_seller1.buyer_price is not None and 
                 self.state_seller1.seller_price is not None):
                 price_diff = abs(self.state_seller1.buyer_price - self.state_seller1.seller_price)
-                # Make deal if prices are within tolerance
                 if price_diff <= self.price_tolerance:
                     self.final_selected_seller = 1
                     self.final_deal_price = (self.state_seller1.buyer_price + self.state_seller1.seller_price) / 2
+                elif self.state_seller1.seller_price <= self.state_seller1.buyer_price:
+                    self.final_selected_seller = 1
+                    self.final_deal_price = self.state_seller1.seller_price
         elif selected_seller == 2:
             if (buyer_action is not None and 
                 self.state_seller2.buyer_price is not None and 
                 self.state_seller2.seller_price is not None):
                 price_diff = abs(self.state_seller2.buyer_price - self.state_seller2.seller_price)
-                # Make deal if prices are within tolerance
                 if price_diff <= self.price_tolerance:
                     self.final_selected_seller = 2
                     self.final_deal_price = (self.state_seller2.buyer_price + self.state_seller2.seller_price) / 2
+                elif self.state_seller2.seller_price <= self.state_seller2.buyer_price:
+                    self.final_selected_seller = 2
+                    self.final_deal_price = self.state_seller2.seller_price
         else:  # selected_seller == 3
             if (buyer_action is not None and 
                 self.state_seller3.buyer_price is not None and 
                 self.state_seller3.seller_price is not None):
                 price_diff = abs(self.state_seller3.buyer_price - self.state_seller3.seller_price)
-                # Make deal if prices are within tolerance
                 if price_diff <= self.price_tolerance:
                     self.final_selected_seller = 3
                     self.final_deal_price = (self.state_seller3.buyer_price + self.state_seller3.seller_price) / 2
+                elif self.state_seller3.seller_price <= self.state_seller3.buyer_price:
+                    self.final_selected_seller = 3
+                    self.final_deal_price = self.state_seller3.seller_price
         
         # Check if deal is made
         terminated = False

@@ -49,7 +49,7 @@ save_run_history() {
 # If the list is empty, each script will use its default model
 # Example:
 # MODELS=("gpt-5.2" "gemini-3-pro-all" "claude-sonnet-4-5-20250929")
-MODELS=("llama-3.1-8b")
+MODELS=("gpt-5.2")
 
 
 # ============================================
@@ -60,7 +60,7 @@ MODELS=("llama-3.1-8b")
 # Format: Just specify task numbers (e.g., "Task1", "Task4", "Task5")
 # Example:
 # TASKS=("Task1" "Task4" "Task5")
-TASKS=("Task1" "Task2" "Task3" "Task4")
+TASKS=("Task3")
 
 # ============================================
 # Execute Tasks

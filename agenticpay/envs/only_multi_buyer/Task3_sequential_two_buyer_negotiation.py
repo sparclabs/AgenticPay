@@ -255,25 +255,29 @@ class Task3SequentialTwoBuyerNegotiation(BaseEnv):
                     self.state_buyer2.update(seller_price=seller_price)
         
         # Check if deal can be made with the selected buyer
-        # Deal is made when price_tolerance condition is satisfied (no need for explicit MAKE_DEAL)
+        # Deal is made when: (1) price difference <= tolerance, or (2) seller's offer <= buyer's offer
         if selected_buyer == 1:
             if (buyer_action is not None and 
                 self.state_buyer1.buyer_price is not None and 
                 self.state_buyer1.seller_price is not None):
                 price_diff = abs(self.state_buyer1.buyer_price - self.state_buyer1.seller_price)
-                # Make deal if prices are within tolerance
                 if price_diff <= self.price_tolerance:
                     self.final_selected_buyer = 1
                     self.final_deal_price = (self.state_buyer1.buyer_price + self.state_buyer1.seller_price) / 2
+                elif self.state_buyer1.seller_price <= self.state_buyer1.buyer_price:
+                    self.final_selected_buyer = 1
+                    self.final_deal_price = self.state_buyer1.seller_price
         else:  # selected_buyer == 2
             if (buyer_action is not None and 
                 self.state_buyer2.buyer_price is not None and 
                 self.state_buyer2.seller_price is not None):
                 price_diff = abs(self.state_buyer2.buyer_price - self.state_buyer2.seller_price)
-                # Make deal if prices are within tolerance
                 if price_diff <= self.price_tolerance:
                     self.final_selected_buyer = 2
                     self.final_deal_price = (self.state_buyer2.buyer_price + self.state_buyer2.seller_price) / 2
+                elif self.state_buyer2.seller_price <= self.state_buyer2.buyer_price:
+                    self.final_selected_buyer = 2
+                    self.final_deal_price = self.state_buyer2.seller_price
         
         # Check if deal is made
         terminated = False

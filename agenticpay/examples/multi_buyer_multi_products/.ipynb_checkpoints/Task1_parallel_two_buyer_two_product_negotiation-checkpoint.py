@@ -77,7 +77,7 @@ def main(model_name=None):
     print("Initializing model...")
     
     # Check API key
-    api_key = OPENAI_API_KEY or os.getenv("OPENAI_API_KEY")
+    api_key = os.getenv("OPENAI_API_KEY") or OPENAI_API_KEY
     if not api_key:
         print("Warning: OPENAI_API_KEY not set. Please set it to use OpenAI models.")
         print("You can set it with: export OPENAI_API_KEY='your-key-here'")

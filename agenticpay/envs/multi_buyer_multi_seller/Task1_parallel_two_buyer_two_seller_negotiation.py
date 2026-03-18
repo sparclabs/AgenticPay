@@ -338,7 +338,7 @@ class Task1ParallelTwoBuyerTwoSellerNegotiation(BaseEnv):
                 self.state_b2s2.update(seller_price=seller_price)
         
         # Check for deals: each buyer-seller pair can make a deal
-        # A deal is made when prices are within tolerance (no need for explicit MAKE_DEAL from both parties)
+        # Deal can be reached when: (1) price difference <= tolerance, or (2) seller's offer <= buyer's offer
         deals = []  # List of (buyer_id, seller_id, price) tuples
         
         # Check buyer1-seller1
@@ -349,6 +349,9 @@ class Task1ParallelTwoBuyerTwoSellerNegotiation(BaseEnv):
             if price_diff <= self.price_tolerance:
                 deal_price = (self.state_b1s1.buyer_price + self.state_b1s1.seller_price) / 2
                 deals.append((1, 1, deal_price))
+            elif self.state_b1s1.seller_price <= self.state_b1s1.buyer_price:
+                deal_price = self.state_b1s1.seller_price
+                deals.append((1, 1, deal_price))
         
         # Check buyer1-seller2
         if (buyer1_action_seller2 is not None and seller2_action_buyer1 is not None and
@@ -357,6 +360,9 @@ class Task1ParallelTwoBuyerTwoSellerNegotiation(BaseEnv):
             price_diff = abs(self.state_b1s2.buyer_price - self.state_b1s2.seller_price)
             if price_diff <= self.price_tolerance:
                 deal_price = (self.state_b1s2.buyer_price + self.state_b1s2.seller_price) / 2
+                deals.append((1, 2, deal_price))
+            elif self.state_b1s2.seller_price <= self.state_b1s2.buyer_price:
+                deal_price = self.state_b1s2.seller_price
                 deals.append((1, 2, deal_price))
         
         # Check buyer2-seller1
@@ -367,6 +373,9 @@ class Task1ParallelTwoBuyerTwoSellerNegotiation(BaseEnv):
             if price_diff <= self.price_tolerance:
                 deal_price = (self.state_b2s1.buyer_price + self.state_b2s1.seller_price) / 2
                 deals.append((2, 1, deal_price))
+            elif self.state_b2s1.seller_price <= self.state_b2s1.buyer_price:
+                deal_price = self.state_b2s1.seller_price
+                deals.append((2, 1, deal_price))
         
         # Check buyer2-seller2
         if (buyer2_action_seller2 is not None and seller2_action_buyer2 is not None and
@@ -375,6 +384,9 @@ class Task1ParallelTwoBuyerTwoSellerNegotiation(BaseEnv):
             price_diff = abs(self.state_b2s2.buyer_price - self.state_b2s2.seller_price)
             if price_diff <= self.price_tolerance:
                 deal_price = (self.state_b2s2.buyer_price + self.state_b2s2.seller_price) / 2
+                deals.append((2, 2, deal_price))
+            elif self.state_b2s2.seller_price <= self.state_b2s2.buyer_price:
+                deal_price = self.state_b2s2.seller_price
                 deals.append((2, 2, deal_price))
         
         # Select the best deal: prioritize buyer's preference (lower price) and seller's preference (higher price)

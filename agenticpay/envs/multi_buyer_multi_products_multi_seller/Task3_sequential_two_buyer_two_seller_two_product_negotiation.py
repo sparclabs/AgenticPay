@@ -354,7 +354,7 @@ class Task3SequentialTwoBuyerTwoSellerTwoProductNegotiation(BaseEnv):
                 self.state_b2s2.update(seller_price=seller_price)
         
         # Check if deal can be made with the selected sellers
-        # Buyer must explicitly express make deal intent AND price_tolerance condition must be satisfied
+        # Deal can be reached when: (1) price difference <= tolerance, or (2) seller's offer <= buyer's offer
         deals = []  # List of (buyer_id, seller_id, price) tuples
         
         # Check buyer1-seller1
@@ -366,6 +366,9 @@ class Task3SequentialTwoBuyerTwoSellerTwoProductNegotiation(BaseEnv):
             if price_diff <= self.price_tolerance:
                 deal_price = (self.state_b1s1.buyer_price + self.state_b1s1.seller_price) / 2
                 deals.append((1, 1, deal_price))
+            elif self.state_b1s1.seller_price <= self.state_b1s1.buyer_price:
+                deal_price = self.state_b1s1.seller_price
+                deals.append((1, 1, deal_price))
         
         # Check buyer1-seller2
         if (buyer1_selected_seller == 2 and
@@ -375,6 +378,9 @@ class Task3SequentialTwoBuyerTwoSellerTwoProductNegotiation(BaseEnv):
             price_diff = abs(self.state_b1s2.buyer_price - self.state_b1s2.seller_price)
             if price_diff <= self.price_tolerance:
                 deal_price = (self.state_b1s2.buyer_price + self.state_b1s2.seller_price) / 2
+                deals.append((1, 2, deal_price))
+            elif self.state_b1s2.seller_price <= self.state_b1s2.buyer_price:
+                deal_price = self.state_b1s2.seller_price
                 deals.append((1, 2, deal_price))
         
         # Check buyer2-seller1
@@ -386,6 +392,9 @@ class Task3SequentialTwoBuyerTwoSellerTwoProductNegotiation(BaseEnv):
             if price_diff <= self.price_tolerance:
                 deal_price = (self.state_b2s1.buyer_price + self.state_b2s1.seller_price) / 2
                 deals.append((2, 1, deal_price))
+            elif self.state_b2s1.seller_price <= self.state_b2s1.buyer_price:
+                deal_price = self.state_b2s1.seller_price
+                deals.append((2, 1, deal_price))
         
         # Check buyer2-seller2
         if (buyer2_selected_seller == 2 and
@@ -395,6 +404,9 @@ class Task3SequentialTwoBuyerTwoSellerTwoProductNegotiation(BaseEnv):
             price_diff = abs(self.state_b2s2.buyer_price - self.state_b2s2.seller_price)
             if price_diff <= self.price_tolerance:
                 deal_price = (self.state_b2s2.buyer_price + self.state_b2s2.seller_price) / 2
+                deals.append((2, 2, deal_price))
+            elif self.state_b2s2.seller_price <= self.state_b2s2.buyer_price:
+                deal_price = self.state_b2s2.seller_price
                 deals.append((2, 2, deal_price))
         
         # Select the best deal: prioritize buyer's preference (lower price) and seller's preference (higher price)
