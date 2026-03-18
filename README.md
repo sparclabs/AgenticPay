@@ -39,6 +39,7 @@
 - [Features](#features)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
+  * [Before Running Examples](#before-running-examples)
   * [Running the Example Script](#running-the-example-script)
   * [Basic Single-Product Negotiation](#basic-single-product-negotiation)
 - [Project Structure](#project-structure)
@@ -101,6 +102,14 @@ pip install -e .
 **Model Download**: Download models from Hugging Face and save them to the `agenticpay/models/download_models` directory for local model usage.
 
 ## Quick Start
+
+### Before Running Examples
+
+1. **Configure the project**: Rename `agenticpay/examples/config_example.py` to `config.py` before running any example scripts.
+2. **Different model invocation examples**: For the basic price negotiation task (Task1), we provide three example files demonstrating different ways to call LLMs:
+   - `Task1_basic_price_negotiation_api_example.py` — OpenAI/compatible API
+   - `Task1_basic_price_negotiation_sglang_example.py` — SGLang for local inference
+   - `Task1_basic_price_negotiation_vllm_example.py` — vLLM for local inference (multi-GPU)
 
 ### Running the Example Script
 
@@ -387,7 +396,9 @@ Supports multiple providers:
 Examples are organized by environment category:
 
 1. **Single Buyer + Product + Seller** (`examples/single_buyer_product_seller/`)
-   - `Task1_basic_price_negotiation.py` - Basic price negotiation
+   - `Task1_basic_price_negotiation_api_example.py` - Basic price negotiation via API (OpenAI/compatible)
+   - `Task1_basic_price_negotiation_sglang_example.py` - Basic price negotiation via SGLang
+   - `Task1_basic_price_negotiation_vllm_example.py` - Basic price negotiation via vLLM
    - `Task2_close_price_negotiation.py` - Close price negotiation
    - `Task3_close_to_market_price_negotiation.py` - Market price negotiation
    - `registration_example.py` - Registration system demonstration
