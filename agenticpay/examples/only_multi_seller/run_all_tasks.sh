@@ -60,7 +60,7 @@ MODELS=("gpt-5.2")
 # Format: Just specify task numbers (e.g., "Task1", "Task4", "Task5")
 # Example:
 # TASKS=("Task1" "Task4" "Task5")
-TASKS=("Task1")
+TASKS=("Task5")
 
 # ============================================
 # Execute Tasks
@@ -71,10 +71,10 @@ TASK_SCRIPTS["Task1"]="Task1_parallel_two_seller_negotiation"
 TASK_SCRIPTS["Task2"]="Task2_parallel_three_seller_negotiation"
 TASK_SCRIPTS["Task3"]="Task3_sequential_two_seller_negotiation"
 TASK_SCRIPTS["Task4"]="Task4_sequential_three_seller_negotiation"
-TASK_SCRIPTS["Task5"]="Task5_s1_used_smartphone_negotiation"
-TASK_SCRIPTS["Task6"]="Task6_s2_used_car_negotiation"
-TASK_SCRIPTS["Task7"]="Task7_s3_short_term_rental_negotiation"
-TASK_SCRIPTS["Task8"]="Task8_s4_website_development_negotiation"
+TASK_SCRIPTS["Task5"]="Task5_s1_beauty_product_negotiation"
+TASK_SCRIPTS["Task6"]="Task6_s2_beauty_product_negotiation"
+TASK_SCRIPTS["Task7"]="Task7_s3_epson_receipt_printer_negotiation"
+TASK_SCRIPTS["Task8"]="Task8_s4_headphones_speaker_negotiation"
 TASK_SCRIPTS["Task9"]="Task9_s5_commercial_photography_negotiation"
 TASK_SCRIPTS["Task10"]="Task10_s6_home_renovation_negotiation"
 TASK_SCRIPTS["Task11"]="Task11_s7_saas_procurement_negotiation"

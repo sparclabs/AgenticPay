@@ -1,9 +1,8 @@
-"""Task8 Scenario 4: Website Development Package - Sequential Two-Buyer Two-Seller Two-Product Negotiation
+"""Task7 Scenario 3: Riflescope & Epson Printer - Sequential Two-Buyer Two-Seller Negotiation
 
-Two buyers negotiating with two sellers for website development packages (core development + additional services).
+Two buyers negotiating with two sellers: Seller1 offers Crimson Trace Riflescope, Seller2 offers Epson thermal receipt printer.
 Each buyer chooses one seller per round to negotiate with.
-Prices represent total price for the development package (base website + add-ons).
-Category: Professional Services
+Category: Sports & Outdoors / Office Electronics
 """
 
 import os
@@ -18,7 +17,7 @@ from datetime import datetime
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 sys.path.insert(0, project_root)
 
-from agenticpay.envs.multi_buyer_multi_products_multi_seller.Task3_sequential_two_buyer_two_seller_two_product_negotiation import Task3SequentialTwoBuyerTwoSellerTwoProductNegotiation
+from agenticpay.envs.multi_buyer_multi_seller.Task3_sequential_two_buyer_two_seller_negotiation import Task3SequentialTwoBuyerTwoSellerNegotiation
 from agenticpay.agents.buyer_agent import BuyerAgent
 from agenticpay.agents.seller_agent import SellerAgent
 from agenticpay.models.custom_llm import CustomLLM
@@ -33,7 +32,7 @@ except ImportError:
     # Default values if config not available
     reward_weights = {"buyer_savings": 1.0, "seller_profit": 1.0, "time_cost": 0.1}
     max_rounds = 20
-    price_tolerance = 0
+    price_tolerance = 1.0
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 
@@ -124,7 +123,7 @@ def extract_seller_choice(buyer_response: str, observation: dict, buyer_id: int)
 
 
 def main(model_name=None):
-    """Main function: Demonstrates sequential multi-buyer multi-seller multi-product negotiation flow
+    """Main function: Demonstrates sequential multi-buyer multi-seller negotiation flow
     
     Args:
         model_name: Optional model name. If None, uses default model.
@@ -148,13 +147,11 @@ def main(model_name=None):
     print(f"✓ Successfully initialized: {model}")
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
-    # buyer_max_price and seller_min_price represent total expected cost for the development package (base + add-ons)
-    # Based on scenario 2-1: buyer_max_price=$5,000, seller_min_price=$2,500
     print("Creating agents...")
-    buyer1_max_price = 5000.0  # Maximum acceptable total development price for buyer1 (confidential, small business budget)
-    buyer2_max_price = 6000.0  # Maximum acceptable total development price for buyer2 (confidential, larger business with more features)
-    seller1_min_price = 2500.0  # Minimum acceptable total development price for seller1 (confidential, experienced developer)
-    seller2_min_price = 2200.0  # Minimum acceptable total development price for seller2 (confidential, newer developer)
+    buyer1_max_price = 250.0  # Maximum acceptable price for buyer1 (confidential) - Riflescope or Epson
+    buyer2_max_price = 280.0  # Maximum acceptable price for buyer2 (confidential) - Riflescope or Epson
+    seller1_min_price = 180.0  # Minimum acceptable price for seller1 - Crimson Trace Riflescope (confidential)
+    seller2_min_price = 250.0  # Minimum acceptable price for seller2 - Epson Printer (confidential)
     
     buyer1 = BuyerAgent(model=model, buyer_max_price=buyer1_max_price)
     buyer2 = BuyerAgent(model=model, buyer_max_price=buyer2_max_price)
@@ -162,108 +159,55 @@ def main(model_name=None):
     seller2 = SellerAgent(model=model, seller_min_price=seller2_min_price)
     
     # Create environment
-    print("Creating sequential multi-buyer multi-seller multi-product negotiation environment...")
-    env = Task3SequentialTwoBuyerTwoSellerTwoProductNegotiation(
+    print("Creating sequential multi-buyer multi-seller negotiation environment...")
+    env = Task3SequentialTwoBuyerTwoSellerNegotiation(
         buyer1_agent=buyer1,
         buyer2_agent=buyer2,
         seller1_agent=seller1,
         seller2_agent=seller2,
         max_rounds=max_rounds,
-        initial_seller1_price=4500.0,  # Initial total price offered by seller1 for the development package (experienced developer)
-        initial_seller2_price=3800.0,  # Initial total price offered by seller2 for the development package (newer developer, lower)
-        buyer1_max_price=buyer1_max_price,  # Buyer1 total max price (confidential, for development package)
-        buyer2_max_price=buyer2_max_price,  # Buyer2 total max price (confidential, for development package)
-        seller1_min_price=seller1_min_price,  # Seller1 total min price (confidential, for development package)
-        seller2_min_price=seller2_min_price,  # Seller2 total min price (confidential, for development package)
+        initial_seller1_price=218.79,  # Initial price for Crimson Trace Riflescope (list price)
+        initial_seller2_price=320.0,  # Initial price for Epson thermal receipt printer (list price)
+        buyer1_max_price=buyer1_max_price,  # Buyer1 bottom price (confidential)
+        buyer2_max_price=buyer2_max_price,  # Buyer2 bottom price (confidential)
+        seller1_min_price=seller1_min_price,  # Seller1 bottom price (confidential)
+        seller2_min_price=seller2_min_price,  # Seller2 bottom price (confidential)
         environment_info={
-            "platform": "Upwork",
-            "market_rate_range": "$3,000-$8,000",
-            "project_urgency": "Medium - 4-6 weeks timeline",
-            "scope_clarity": "Moderately defined with room for discussion",
+            "platform": "Amazon",
+            "market_type": "B2C",
+            "comparison_enabled": True,
         },
-        price_tolerance=price_tolerance,
+        price_tolerance=0,
         reward_weights=reward_weights,  # Reward weights configuration
     )
     
     # Create user profile (text description of personal preferences)
-    user_profile = "Two buyers competing for website development services. Buyer1 is a small boutique owner with clear basic needs. Buyer2 is a growing business needing more features and scalability. Both value quality work and clear communication."
+    user_profile = "Two renters competing for Miami apartments. Buyer1 is business traveler valuing amenities. Buyer2 is tourist seeking good value location."
     print(f"User Profile: {user_profile}")
     
-    # Define two products with their individual prices
-    # The product_info should contain a list of two products (core development + add-ons package)
-    # Based on scenario 2-1: Custom E-commerce Website Development
-    product_info = {
-        "products": [
-            {
-                "name": "Core E-commerce Website Development",
-                "brand": "Freelance Developer",
-                "price": 3500.0,  # Individual price of core development
-                "base_scope_seller1": [
-                    "5 pages (Home, Shop, Product, Cart, Checkout)",
-                    "Product catalog (up to 50 products)",
-                    "Shopping cart functionality",
-                    "Payment integration (Stripe/PayPal)",
-                    "Mobile-responsive design",
-                ],
-                "base_scope_seller2": [
-                    "4 pages (Home, Shop, Cart, Checkout)",
-                    "Product catalog (up to 30 products)",
-                    "Basic shopping cart",
-                    "Single payment gateway",
-                    "Mobile-friendly layout",
-                ],
-                "tech_stack_seller1": "React + Node.js + PostgreSQL",
-                "tech_stack_seller2": "WordPress + WooCommerce",
-                "estimated_timeline_seller1": "4-5 weeks",
-                "estimated_timeline_seller2": "5-6 weeks",
-                "revision_rounds": 3,
-                "developer_rating_seller1": "4.9/5 (127 jobs completed)",
-                "developer_rating_seller2": "4.6/5 (45 jobs completed)",
-            },
-            {
-                "name": "Optional Add-ons & Services Package",
-                "brand": "Additional Features",
-                "price": 1500.0,  # Individual price of add-ons
-                "available_addons_seller1": {
-                    "Blog section": 300,
-                    "Multi-language support": 500,
-                    "Advanced SEO package": 400,
-                    "Email marketing integration": 300,
-                    "Inventory management": 600,
-                },
-                "available_addons_seller2": {
-                    "Blog section": 250,
-                    "Basic SEO": 200,
-                    "Newsletter signup": 150,
-                },
-                "support_included_seller1": "3 months free support + training",
-                "support_included_seller2": "1 month free support",
-                "hosting_setup": "Included in both packages",
-            },
-        ]
-    }
-    
-    # Calculate total product price
-    total_product_price = sum(p["price"] for p in product_info["products"])
-    print(f"\nProducts (Development Package):")
-    for i, p in enumerate(product_info["products"], 1):
-        print(f"  {i}. {p['name']}: ${p['price']:.2f}")
-    print(f"  Total Package Price: ${total_product_price:.2f}")
-    
-    # Get user requirement (should describe purchasing the development package)
+    # Get user requirement
     # Use default requirement for automatic running
-    user_requirement = "I need a professional e-commerce website for my boutique clothing store. Must be mobile-friendly and easy to update. Looking for quality work within reasonable budget."
+    user_requirement = "Need 1BR apartment in Miami for 1 week in July. Prefer beach access."
     print(f"Using default requirement: {user_requirement}")
     
     # Reset environment
     print("\n" + "="*60)
-    print("Starting new sequential negotiation for website development packages...")
-    print("Two buyers competing with two sellers for E-commerce Development")
+    print("Starting new sequential negotiation with two buyers and two sellers...")
     print("="*60)
     
     observation, info = env.reset(
         user_requirement=user_requirement,
-        product_info=product_info,
+        product_info={
+            "name": "1BR Apartment Short-term Rental",
+            "location": "Miami Beach",
+            "duration": "1 week (7 nights)",
+            "unit_seller1": "Ocean view, 2min walk to beach, pool, gym",
+            "unit_seller2": "City view, 10min walk to beach, basic amenities",
+            "bedrooms": 1,
+            "bathrooms": 1,
+            "rating_seller1": "4.9/5 (superhost)",
+            "rating_seller2": "4.6/5",
+        },
         user_profile=user_profile,  # Pass user profile
     )
     
@@ -273,7 +217,7 @@ def main(model_name=None):
     
     # Initialize results dictionary
     results = {
-        "task": "Task8_s4_website_development_package_negotiation",
+        "task": "Task7_s3_short_term_rental_negotiation",
         "timestamp": datetime.now().isoformat(),
         "user_requirement": user_requirement,
         "user_profile": user_profile,
@@ -321,7 +265,7 @@ def main(model_name=None):
             conversation_history=combined_history_b1,
             current_state={
                 **observation,
-                "instruction": "You are negotiating with two sellers for two products. Each round, you need to choose ONE seller to negotiate with and provide your negotiation message. Please clearly indicate which seller (1 or 2) you want to negotiate with, for example: 'I want to negotiate with seller 1' or 'Let me talk to seller 2'. Prices represent total price for both products."
+                "instruction": "You are negotiating with two sellers. Each round, you need to choose ONE seller to negotiate with and provide your negotiation message. Please clearly indicate which seller (1 or 2) you want to negotiate with, for example: 'I want to negotiate with seller 1' or 'Let me talk to seller 2'."
             }
         )
         
@@ -330,7 +274,7 @@ def main(model_name=None):
             conversation_history=combined_history_b2,
             current_state={
                 **observation,
-                "instruction": "You are negotiating with two sellers for two products. Each round, you need to choose ONE seller to negotiate with and provide your negotiation message. Please clearly indicate which seller (1 or 2) you want to negotiate with, for example: 'I want to negotiate with seller 1' or 'Let me talk to seller 2'. Prices represent total price for both products."
+                "instruction": "You are negotiating with two sellers. Each round, you need to choose ONE seller to negotiate with and provide your negotiation message. Please clearly indicate which seller (1 or 2) you want to negotiate with, for example: 'I want to negotiate with seller 1' or 'Let me talk to seller 2'."
             }
         )
         
@@ -469,7 +413,7 @@ def main(model_name=None):
                     buyer_savings = env.buyer1_max_price - buyer_price
                     weighted_savings = buyer_savings * weights["buyer_savings"]
                     weighted_round_cost = round_cost * weights["time_cost"]
-                    print(f"  Buyer1 Step Reward = buyer_savings({buyer_savings:.2f} * {weights['buyer_savings']:.2f}) + round_cost({round_cost:.2f} * {weights['time_cost']:.2f}) = {info['step_buyer1_reward']:.2f} (buyer1_max={env.buyer1_max_price}, buyer_total_price={buyer_price:.2f}, round={info['round']})")
+                    print(f"  Buyer1 Step Reward = buyer_savings({buyer_savings:.2f} * {weights['buyer_savings']:.2f}) + round_cost({round_cost:.2f} * {weights['time_cost']:.2f}) = {info['step_buyer1_reward']:.2f} (buyer1_max={env.buyer1_max_price}, buyer_price={buyer_price:.2f}, round={info['round']})")
                 else:
                     weighted_round_cost = round_cost * weights["time_cost"]
                     print(f"  Buyer1 Step Reward = round_cost({round_cost:.2f} * {weights['time_cost']:.2f}) = {weighted_round_cost:.2f} (buyer_price not specified, round={info['round']})")
@@ -486,7 +430,7 @@ def main(model_name=None):
                     buyer_savings = env.buyer2_max_price - buyer_price
                     weighted_savings = buyer_savings * weights["buyer_savings"]
                     weighted_round_cost = round_cost * weights["time_cost"]
-                    print(f"  Buyer2 Step Reward = buyer_savings({buyer_savings:.2f} * {weights['buyer_savings']:.2f}) + round_cost({round_cost:.2f} * {weights['time_cost']:.2f}) = {info['step_buyer2_reward']:.2f} (buyer2_max={env.buyer2_max_price}, buyer_total_price={buyer_price:.2f}, round={info['round']})")
+                    print(f"  Buyer2 Step Reward = buyer_savings({buyer_savings:.2f} * {weights['buyer_savings']:.2f}) + round_cost({round_cost:.2f} * {weights['time_cost']:.2f}) = {info['step_buyer2_reward']:.2f} (buyer2_max={env.buyer2_max_price}, buyer_price={buyer_price:.2f}, round={info['round']})")
                 else:
                     weighted_round_cost = round_cost * weights["time_cost"]
                     print(f"  Buyer2 Step Reward = round_cost({round_cost:.2f} * {weights['time_cost']:.2f}) = {weighted_round_cost:.2f} (buyer_price not specified, round={info['round']})")
@@ -508,7 +452,7 @@ def main(model_name=None):
                     seller1_profit = seller1_price - env.seller1_min_price
                     weighted_seller1_profit = seller1_profit * weights["seller_profit"]
                     weighted_round_cost = round_cost * weights["time_cost"]
-                    print(f"  Seller1 Step Reward = seller_profit({seller1_profit:.2f} * {weights['seller_profit']:.2f}) + round_cost({round_cost:.2f} * {weights['time_cost']:.2f}) = {info['step_seller1_reward']:.2f} (seller1_total_price={seller1_price:.2f}, seller1_min={env.seller1_min_price}, round={info['round']})")
+                    print(f"  Seller1 Step Reward = seller_profit({seller1_profit:.2f} * {weights['seller_profit']:.2f}) + round_cost({round_cost:.2f} * {weights['time_cost']:.2f}) = {info['step_seller1_reward']:.2f} (seller1_price={seller1_price:.2f}, seller1_min={env.seller1_min_price}, round={info['round']})")
                 else:
                     weighted_round_cost = round_cost * weights["time_cost"]
                     print(f"  Seller1 Step Reward = round_cost({round_cost:.2f} * {weights['time_cost']:.2f}) = {weighted_round_cost:.2f} (seller1_price not specified, round={info['round']})")
@@ -530,29 +474,28 @@ def main(model_name=None):
                     seller2_profit = seller2_price - env.seller2_min_price
                     weighted_seller2_profit = seller2_profit * weights["seller_profit"]
                     weighted_round_cost = round_cost * weights["time_cost"]
-                    print(f"  Seller2 Step Reward = seller_profit({seller2_profit:.2f} * {weights['seller_profit']:.2f}) + round_cost({round_cost:.2f} * {weights['time_cost']:.2f}) = {info['step_seller2_reward']:.2f} (seller2_total_price={seller2_price:.2f}, seller2_min={env.seller2_min_price}, round={info['round']})")
+                    print(f"  Seller2 Step Reward = seller_profit({seller2_profit:.2f} * {weights['seller_profit']:.2f}) + round_cost({round_cost:.2f} * {weights['time_cost']:.2f}) = {info['step_seller2_reward']:.2f} (seller2_price={seller2_price:.2f}, seller2_min={env.seller2_min_price}, round={info['round']})")
                 else:
                     weighted_round_cost = round_cost * weights["time_cost"]
                     print(f"  Seller2 Step Reward = round_cost({round_cost:.2f} * {weights['time_cost']:.2f}) = {weighted_round_cost:.2f} (seller2_price not specified, round={info['round']})")
         
-        # If this is the final round (agreed or timeout), display score calculations after Step Rewards
         if done:
-            # Print score calculations after Step Rewards
-            env._print_global_score_details()
-            env._print_buyer_score_details()
-            env._print_seller_score_details()
-            
             print("\n" + "="*60)
             print("Negotiation Ended")
             print("="*60)
             print(f"Status: {info['status']}")
             if info.get('selected_buyer') and info.get('selected_seller'):
                 print(f"Selected Deal: Buyer {info['selected_buyer']} - Seller {info['selected_seller']}")
-                print(f"Final Deal Total Price: ${info.get('final_deal_price', 0):.2f}")
-            print(f"Buyer1-Seller1 Total Prices: Buyer=${info.get('b1s1_buyer_price', 0) or 0:.2f} | Seller=${info.get('b1s1_seller_price', 0) or 0:.2f}")
-            print(f"Buyer1-Seller2 Total Prices: Buyer=${info.get('b1s2_buyer_price', 0) or 0:.2f} | Seller=${info.get('b1s2_seller_price', 0) or 0:.2f}")
-            print(f"Buyer2-Seller1 Total Prices: Buyer=${info.get('b2s1_buyer_price', 0) or 0:.2f} | Seller=${info.get('b2s1_seller_price', 0) or 0:.2f}")
-            print(f"Buyer2-Seller2 Total Prices: Buyer=${info.get('b2s2_buyer_price', 0) or 0:.2f} | Seller=${info.get('b2s2_seller_price', 0) or 0:.2f}")
+                print(f"Final Deal Price: ${info.get('final_deal_price', 0):.2f}")
+            print(f"Buyer1-Seller1 Prices: Buyer=${info.get('b1s1_buyer_price', 0) or 0:.2f} | Seller=${info.get('b1s1_seller_price', 0) or 0:.2f}")
+            print(f"Buyer1-Seller2 Prices: Buyer=${info.get('b1s2_buyer_price', 0) or 0:.2f} | Seller=${info.get('b1s2_seller_price', 0) or 0:.2f}")
+            print(f"Buyer2-Seller1 Prices: Buyer=${info.get('b2s1_buyer_price', 0) or 0:.2f} | Seller=${info.get('b2s1_seller_price', 0) or 0:.2f}")
+            print(f"Buyer2-Seller2 Prices: Buyer=${info.get('b2s2_buyer_price', 0) or 0:.2f} | Seller=${info.get('b2s2_seller_price', 0) or 0:.2f}")
+            # Print score calculations after Step Rewards
+            env._print_global_score_details()
+            env._print_buyer_score_details()
+            env._print_seller_score_details()
+            
             # current_round has been incremented to reflect the completed round
             actual_rounds = info['round']
             print(f"Total Rounds: {actual_rounds}")
@@ -577,6 +520,7 @@ def main(model_name=None):
             
             # Collect results
             elapsed_time = time.time() - start_time
+            product_info = info.get('product_info', {})
             results.update({
                 "status": info.get('status', 'unknown'),
                 "success": terminated,
@@ -591,6 +535,7 @@ def main(model_name=None):
                 "b2s1_seller_price": info.get('b2s1_seller_price'),
                 "b2s2_buyer_price": info.get('b2s2_buyer_price'),
                 "b2s2_seller_price": info.get('b2s2_seller_price'),
+                # current_round has been incremented to reflect the completed round
                 "total_rounds": info.get('round', 0),
                 "total_reward": float(reward) if reward is not None else None,
                 "buyer1_reward": info.get('buyer1_reward'),
@@ -613,7 +558,7 @@ def main(model_name=None):
     
     # Close environment
     env.close()
-    print("\nWebsite development package negotiation completed!")
+    print("\nSequential multi-buyer multi-seller negotiation completed!")
     
     # Ensure elapsed_time is set even if negotiation didn't complete normally
     if "elapsed_time" not in results:
@@ -622,7 +567,7 @@ def main(model_name=None):
     # Save results to file
     try:
         # Create results directory structure
-        results_dir = Path(project_root) / "agenticpay" / "results" / "multi_buyer_multi_products_multi_seller"
+        results_dir = Path(project_root) / "agenticpay" / "results" / "multi_buyer_multi_seller"
         results_dir.mkdir(parents=True, exist_ok=True)
         
         # Get model name for directory (sanitize for filesystem)
@@ -642,11 +587,11 @@ def main(model_name=None):
             json.dump(results, f, indent=2, ensure_ascii=False)
         
         # Save output text
-        output_file = run_dir / "Task8_s4_output.txt"
+        output_file = run_dir / "Task7_s3_output.txt"
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write("="*80 + "\n")
-            f.write("Task8 Scenario 4: Website Development Package - Sequential Two-Buyer Two-Seller Two-Product Negotiation Results\n")
-            f.write("Category: Professional Services\n")
+            f.write("Task7 Scenario 3: Short-term Rental - Sequential Two-Buyer Two-Seller Negotiation Results\n")
+            f.write("Category: Daily Life Consumption\n")
             f.write("="*80 + "\n\n")
             f.write(f"Timestamp: {results['timestamp']}\n")
             f.write(f"Model: {results['model']}\n")
@@ -659,8 +604,15 @@ def main(model_name=None):
             f.write(f"Elapsed Time: {elapsed_time:.2f}s\n\n")
             if results.get('selected_buyer') and results.get('selected_seller'):
                 f.write(f"Selected Deal: Buyer {results['selected_buyer']} - Seller {results['selected_seller']}\n")
-                f.write(f"Final Deal Total Price: ${results.get('final_deal_price', 0):.2f}\n\n")
-            f.write("Final Prices (Total for Both Products):\n")
+                f.write(f"Final Deal Price: ${results.get('final_deal_price', 0):.2f}\n")
+                product_info = results.get('product_info', {})
+                if results['selected_seller'] == 1:
+                    p = product_info.get('product_seller1', {})
+                    f.write(f"Selected Product: {p.get('name', 'N/A')} by {p.get('brand', 'N/A')}\n\n")
+                elif results['selected_seller'] == 2:
+                    p = product_info.get('product_seller2', {})
+                    f.write(f"Selected Product: {p.get('name', 'N/A')} by {p.get('brand', 'N/A')}\n\n")
+            f.write("Final Prices:\n")
             f.write(f"  Buyer1-Seller1: Buyer=${results['b1s1_buyer_price']:.2f} | Seller=${results['b1s1_seller_price']:.2f}" if results.get('b1s1_buyer_price') is not None and results.get('b1s1_seller_price') is not None else "  Buyer1-Seller1: Not specified")
             f.write("\n")
             f.write(f"  Buyer1-Seller2: Buyer=${results['b1s2_buyer_price']:.2f} | Seller=${results['b1s2_seller_price']:.2f}" if results.get('b1s2_buyer_price') is not None and results.get('b1s2_seller_price') is not None else "  Buyer1-Seller2: Not specified")
@@ -671,11 +623,12 @@ def main(model_name=None):
             f.write("\n\n")
             product_info = results.get('product_info', {})
             f.write("Products:\n")
-            if 'products' in product_info:
-                for i, p in enumerate(product_info['products'], 1):
-                    f.write(f"  {i}. {p.get('name', 'N/A')} by {p.get('brand', 'N/A')} - ${p.get('price', 0):.2f}\n")
-                total_price = sum(p.get('price', 0) for p in product_info.get('products', []))
-                f.write(f"  Total Product Price: ${total_price:.2f}\n")
+            p1 = product_info.get('product_seller1', {})
+            price1 = p1.get('original_price', p1.get('price', 0)) or 0
+            f.write(f"  Seller1: {p1.get('name', 'N/A')} by {p1.get('brand', 'N/A')} (${price1:.2f})\n")
+            p2 = product_info.get('product_seller2', {})
+            price2 = p2.get('original_price', p2.get('price', 0)) or 0
+            f.write(f"  Seller2: {p2.get('name', 'N/A')} by {p2.get('brand', 'N/A')} (${price2:.2f})\n")
             f.write("\n")
             f.write("Rewards:\n")
             if results.get('total_reward') is not None:
@@ -712,7 +665,7 @@ def main(model_name=None):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Task8 Scenario 4: Website Development Package - Sequential Two-Buyer Two-Seller Two-Product Negotiation")
+    parser = argparse.ArgumentParser(description="Task7 Scenario 3: Short-term Rental - Sequential Two-Buyer Two-Seller Negotiation")
     parser.add_argument(
         "--model",
         type=str,
@@ -721,3 +674,4 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     main(model_name=args.model)
+

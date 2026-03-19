@@ -1,8 +1,8 @@
-"""Task7 Scenario 3: Short-term Rental - Sequential Two-Seller Per One Product Negotiation
+"""Task7 Scenario 3: Riflescope & Epson Printer - Sequential Two-Seller Per One Product Negotiation
 
-Buyer negotiating with two property owners offering different Miami beach apartments.
+Buyer negotiating with two sellers: Seller1 offers Crimson Trace Riflescope, Seller2 offers Epson thermal receipt printer.
 Buyer chooses one seller per round to negotiate with.
-Category: Daily Life Consumption
+Category: Sports & Outdoors / Office Electronics
 """
 
 import os
@@ -141,9 +141,9 @@ def main(model_name=None):
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
     print("Creating agents...")
-    buyer_max_price = 210.0  # Maximum acceptable rental price per night for buyer (confidential) - vacation budget
-    seller1_min_price = 150.0  # Minimum acceptable rental price per night for seller1 (confidential) - covers costs + minimum profit
-    seller2_min_price = 155.0  # Minimum acceptable rental price per night for seller2 (confidential, different from seller1)
+    buyer_max_price = 300.0  # Maximum acceptable price for buyer (confidential) - can afford either product
+    seller1_min_price = 180.0  # Minimum acceptable price for seller1 - Crimson Trace Riflescope (confidential)
+    seller2_min_price = 250.0  # Minimum acceptable price for seller2 - Epson Printer (confidential)
     
     buyer = BuyerAgent(model=model, buyer_max_price=buyer_max_price)
     seller1 = SellerAgent(model=model, seller_min_price=seller1_min_price)
@@ -156,14 +156,14 @@ def main(model_name=None):
         seller1_agent=seller1,
         seller2_agent=seller2,
         max_rounds=max_rounds,
-        initial_seller1_price=195.0,  # Initial price per night offered by seller1
-        initial_seller2_price=205.0,  # Initial price per night offered by seller2 (higher due to better amenities)
+        initial_seller1_price=218.79,  # Initial price for Crimson Trace Riflescope (list price)
+        initial_seller2_price=320.0,  # Initial price for Epson thermal receipt printer (list price)
         buyer_max_price=buyer_max_price,  # Buyer bottom price (confidential)
         seller1_min_price=seller1_min_price,  # Seller1 bottom price (confidential)
         seller2_min_price=seller2_min_price,  # Seller2 bottom price (confidential)
         environment_info={
-            "platform": "Airbnb",
-            "season": "Summer peak",
+            "platform": "Amazon",
+            "market_type": "B2C",
             "comparison_enabled": True,
         },
         price_tolerance=0,
@@ -171,44 +171,57 @@ def main(model_name=None):
     )
     
     # Create user profile (text description of personal preferences)
-    user_profile = "Family vacation planner looking for good value. Wants clean, well-located property with amenities. Flexible on exact dates but prefers peak season. Concerned about reviews and cancellation policy."
+    user_profile = "Outdoor enthusiast and small business owner. Values quality optics for hunting and reliable office equipment. Prefers to buy from reputable sellers with good reviews. Interested in either a riflescope or a thermal receipt printer."
     print(f"User Profile: {user_profile}")
     
     # Get user requirement
     # Use default requirement for automatic running
-    user_requirement = "Need vacation apartment for family of 4, 7 nights in July. Close to beach with kitchen."
+    user_requirement = "I'm looking for either a Crimson Trace Riflescope for hunting or an Epson thermal receipt printer for my small business. Prefer good value and reliable products."
     print(f"Using default requirement: {user_requirement}")
     
     # Reset environment with different products for each seller
+    # Product 1: Crimson Trace Riflescope (from Task6 example)
+    # Product 2: Epson thermal receipt printer (from sampled_products2.jsonl, 3rd sample)
     print("\n" + "="*60)
-    print("Starting new sequential negotiation with two sellers (each with different Miami beach apartments)...")
+    print("Starting new sequential negotiation with two sellers (Riflescope vs Epson Printer)...")
     print("="*60)
+    
+    riflescope_image_url = "https://m.media-amazon.com/images/I/31j7DdlfrOL.jpg"
+    epson_image_url = "https://m.media-amazon.com/images/I/51BzGMyEVfL.jpg"
     
     observation, info = env.reset(
         user_requirement=user_requirement,
         seller1_product_info={
-            "name": "Beachfront 2BR Apartment in Miami",
-            "location": "South Beach - 2 blocks from ocean",
-            "bedrooms": 2,
-            "max_guests": 4,
-            "amenities": ["Full kitchen", "WiFi", "Pool", "Parking", "Beach chairs"],
-            "rating": "4.8/5 (127 reviews)",
-            "standard_rate": 250.0,
-            "cancellation_policy": "Moderate - Free cancellation 5 days before",
-            "distance_to_beach": "2 blocks",
-            "listing_age": "3 years on platform",
+            "name": "Crimson Trace Brushline Pro Riflescope with Lightweight Solid Construction, Scope Caps and Lens Cloth for Hunting, Shooting and Outdoor",
+            "condition": "New",
+            "brand": "Visit the Crimson Trace Store",
+            "model": "Brushline Pro Riflescope 2.5-10x42mm CT Plex Reticle",
+            "style": "2.5-10x42mm Plex",
+            "original_price": 218.79,
+            "availability_quantity": 14,
+            "availability_status": "Only 14 left in stock (more on the way).",
+            "product_category": "Sports & Outdoors › Hunting & Fishing › Shooting › Optics › Gun Scopes › Rifle Scopes",
+            "average_rating": 4.3,
+            "total_reviews": 28,
+            "seller_name": "Amazon.com",
+            "asin": "B08GS6B87J",
+            "full_description": "SPECS: 2.5-10 magnification with a 42mm lens diameter, aerospace grade 1\" tube and weighs 16.6 oz - FOV Range: 40.3 ft Min - 10.1 ft Max. ACCURACY: Features a second focal plane, non-illuminated, CT Plex reticle with a 4\" eye relief, 1/4\" click value and quick spring-loaded zero reset capped turrets. EASE OF USE: Windage (right side), elevation (top) knobs are capped and can be easily unscrewed and adjusted when sighting in at the range by turning with your fingers (no tool required). DURABLE: Constructed of lightweight anodized aluminum with multi-coated lenses and is waterproof, shockproof and nitrogen purged to prevent fogging. INCLUDES: Lens cloth and scope caps.",
+            "image_url": riflescope_image_url,
         },
         seller2_product_info={
-            "name": "Luxury 2BR Condo in Miami",
-            "location": "South Beach - Oceanfront with balcony",
-            "bedrooms": 2,
-            "max_guests": 4,
-            "amenities": ["Full kitchen", "WiFi", "Pool", "Parking", "Beach chairs", "Gym", "Concierge"],
-            "rating": "4.9/5 (203 reviews)",
-            "standard_rate": 280.0,
-            "cancellation_policy": "Flexible - Free cancellation 24 hours before",
-            "distance_to_beach": "Beachfront",
-            "listing_age": "2 years on platform",
+            "name": "Epson C31CB10023 TM-T20 Readyprint Thermal Receipt Printer, Ethernet Interface, Without Cable, Dark Grey",
+            "condition": "New",
+            "brand": "Visit the Epson Store",
+            "model": "C31CB10023",
+            "original_price": 320.0,
+            "availability_status": "In stock. Usually ships within 3 to 4 days.",
+            "product_category": "Office Products › Office Electronics",
+            "average_rating": 4.1,
+            "total_reviews": 4,
+            "seller_name": "SourceLink Technologies",
+            "asin": "B00A0WG5KW",
+            "full_description": "For nearly 40 years, Epson has led the industry in developing innovative, reliable, high-performance products. From scanners to printers to 3D projectors, our award-winning technology brings your images to life. Epson Headquartered and established on the shore of Lake Suwa in Nagano, Japan.",
+            "image_url": epson_image_url,
         },
         user_profile=user_profile,  # Pass user profile
     )
@@ -219,7 +232,7 @@ def main(model_name=None):
     
     # Initialize results dictionary
     results = {
-        "task": "Task7_s3_short_term_rental_negotiation",
+        "task": "Task7_s3_riflescope_epson_negotiation",
         "timestamp": datetime.now().isoformat(),
         "user_requirement": user_requirement,
         "user_profile": user_profile,
@@ -252,7 +265,7 @@ def main(model_name=None):
             conversation_history=combined_history,
             current_state={
                 **observation,
-                "instruction": "You are negotiating with two sellers, each offering a different jacket model. Each round, you need to choose ONE seller to negotiate with and provide your negotiation message. Please clearly indicate which seller (1 or 2) you want to negotiate with, for example: 'I want to negotiate with seller 1' or 'Let me talk to seller 2'."
+                "instruction": "You are negotiating with two sellers: Seller 1 offers Crimson Trace Riflescope, Seller 2 offers Epson thermal receipt printer. Each round, you need to choose ONE seller to negotiate with and provide your negotiation message. Please clearly indicate which seller (1 or 2) you want to negotiate with, for example: 'I want to negotiate with seller 1' or 'Let me talk to seller 2'."
             }
         )
         
@@ -487,11 +500,11 @@ def main(model_name=None):
             json.dump(results, f, indent=2, ensure_ascii=False)
         
         # Save output text
-        output_file = run_dir / "Task7_s3_output.txt"
+        output_file = run_dir / "Task7_s3_riflescope_epson_output.txt"
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write("="*80 + "\n")
-            f.write("Task7 Scenario 3: Short-term Rental - Sequential Two-Seller Per One Product Negotiation Results\n")
-            f.write("Category: Daily Life Consumption\n")
+            f.write("Task7 Scenario 3: Riflescope & Epson - Sequential Two-Seller Per One Product Negotiation Results\n")
+            f.write("Category: Sports & Outdoors / Office Electronics\n")
             f.write("="*80 + "\n\n")
             f.write(f"Timestamp: {results['timestamp']}\n")
             f.write(f"Model: {results['model']}\n")
@@ -505,7 +518,7 @@ def main(model_name=None):
             if results.get('selected_seller'):
                 f.write(f"Final Selected Seller: Seller {results['selected_seller']}\n")
                 f.write(f"Final Deal Price: ${results.get('final_deal_price', 0):.2f}\n")
-                selected_product = results.get('seller1_product_info' if results['selected_seller'] == 1 else 'seller2_product_info', {})
+                selected_product = results.get('seller1_product_info', {}) if results['selected_seller'] == 1 else results.get('seller2_product_info', {})
                 f.write(f"Selected Product: {selected_product.get('name', 'N/A')} by {selected_product.get('brand', 'N/A')}\n\n")
             f.write("Final Prices:\n")
             f.write(f"  Seller1 - Seller Price: ${results['seller1_price']:.2f}" if results.get('seller1_price') is not None else "  Seller1 - Seller Price: Not specified")
@@ -518,9 +531,11 @@ def main(model_name=None):
             f.write("\n\n")
             f.write("Products:\n")
             seller1_product = results.get('seller1_product_info', {})
-            f.write(f"  Seller1 Product: {seller1_product.get('name', 'N/A')} by {seller1_product.get('brand', 'N/A')} (${seller1_product.get('price', 0):.2f})\n")
+            price1 = seller1_product.get('original_price', seller1_product.get('price', 0)) or 0
+            f.write(f"  Seller1 Product: {seller1_product.get('name', 'N/A')} by {seller1_product.get('brand', 'N/A')} (${price1:.2f})\n")
             seller2_product = results.get('seller2_product_info', {})
-            f.write(f"  Seller2 Product: {seller2_product.get('name', 'N/A')} by {seller2_product.get('brand', 'N/A')} (${seller2_product.get('price', 0):.2f})\n")
+            price2 = seller2_product.get('original_price', seller2_product.get('price', 0)) or 0
+            f.write(f"  Seller2 Product: {seller2_product.get('name', 'N/A')} by {seller2_product.get('brand', 'N/A')} (${price2:.2f})\n")
             f.write("\n")
             f.write("Rewards:\n")
             if results.get('total_reward') is not None:
@@ -555,7 +570,7 @@ def main(model_name=None):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Task7 Scenario 3: Short-term Rental - Sequential Two-Seller Per One Product Negotiation")
+    parser = argparse.ArgumentParser(description="Task7 Scenario 3: Riflescope & Epson - Sequential Two-Seller Per One Product Negotiation")
     parser.add_argument(
         "--model",
         type=str,

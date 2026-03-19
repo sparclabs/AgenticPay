@@ -1,8 +1,8 @@
-"""Task6 Scenario 2: Used Car Package - Sequential Two-Buyer Two-Product Negotiation
+"""Task6 Scenario 2: Beauty Product Bundle - Sequential Two-Buyer Two-Product Negotiation
 
-One seller negotiating with two buyers for used car package (vehicle + warranty/extras).
+One seller negotiating with two buyers for beauty product bundle (Toothpaste + Hair Brush).
 Seller chooses one buyer per round to negotiate with.
-Prices represent total price for the car package.
+Prices represent total price for the bundle.
 Category: Daily Life Consumption
 """
 
@@ -144,12 +144,11 @@ def main(model_name=None):
     print(f"✓ Successfully initialized: {model}")
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
-    # buyer_max_price and seller_min_price represent total expected cost for the car package
-    # Based on scenario 1-2: buyer_max_price=$18,000 (KBB value 95%), seller_min_price=$14,000 (loan balance + bottom)
+    # Product1: ARM & HAMMER Toothpaste $16, Product2: BFWood Hair Brush $6.48, Total: $22.48
     print("Creating agents...")
-    buyer1_max_price = 18000.0  # Maximum acceptable total purchase price for buyer1 (confidential, family budget)
-    buyer2_max_price = 19500.0  # Maximum acceptable total purchase price for buyer2 (confidential, higher budget)
-    seller_min_price = 14000.0  # Minimum acceptable total selling price for seller (confidential, good condition)
+    buyer1_max_price = 25.0  # Maximum acceptable total purchase price for buyer1 (confidential)
+    buyer2_max_price = 26.0  # Maximum acceptable total purchase price for buyer2 (confidential)
+    seller_min_price = 18.0  # Minimum acceptable total selling price for seller (confidential)
     
     buyer1 = BuyerAgent(model=model, buyer_max_price=buyer1_max_price)
     buyer2 = BuyerAgent(model=model, buyer_max_price=buyer2_max_price)
@@ -162,63 +161,68 @@ def main(model_name=None):
         buyer2_agent=buyer2,
         seller_agent=seller,
         max_rounds=max_rounds,
-        initial_seller_price=17500.0,  # Initial total price offered by seller for the car package
-        buyer1_max_price=buyer1_max_price,  # Buyer1 total max price (confidential, for car package)
-        buyer2_max_price=buyer2_max_price,  # Buyer2 total max price (confidential, for car package)
-        seller_min_price=seller_min_price,  # Seller total min price (confidential, for car package)
+        initial_seller_price=22.48,  # Initial total price (Toothpaste $16 + Hair Brush $6.48)
+        buyer1_max_price=buyer1_max_price,
+        buyer2_max_price=buyer2_max_price,
+        seller_min_price=seller_min_price,
         environment_info={
-            "platform": "Craigslist",
-            "market_type": "C2C",
-            "season": "Spring (good selling season)",
+            "platform": "Amazon",
+            "market_type": "B2C",
+            "availability_status": "In Stock",
         },
         price_tolerance=0,  # Set price_tolerance to 0
         reward_weights=reward_weights,  # Reward weights configuration
     )
     
     # Create user profile (text description of personal preferences)
-    user_profile = "Two buyers competing for used car. Buyer1 is a family looking for reliable transportation. Buyer2 is willing to pay more for better condition and warranty."
+    user_profile = "Two buyers interested in Beauty & Personal Care. Buyer1 seeks oral care and hair care. Buyer2 values quality and good reviews. Both prefer Amazon B2C."
     print(f"User Profile: {user_profile}")
     
-    # Define two products with their individual prices
-    # The product_info should contain a list of two products (vehicle + warranty/extras package)
+    # Define two products: Product1 from Task5_s2_toothpaste (example), Product2 from sampled_products2.jsonl line 2 (BFWood)
     product_info = {
         "products": [
             {
-                "name": "2020 Honda Accord EX-L",
-                "brand": "Honda",
-                "price": 16000.0,  # Individual price of the vehicle
-                "mileage": 45000,
-                "condition": "Excellent - No accidents, single owner",
-                "accidents_reported": 0,
-                "service_records": "Complete dealership service records",
-                "kelley_blue_book_value": 19500,
-                "features": ["Leather seats", "Sunroof", "Apple CarPlay", "Honda Sensing"],
+                "name": "ARM & HAMMER Peroxicare Toothpaste – Clean Mint- Fluoride Toothpaste , 6 Ounce (Pack of 6)",
+                "brand": "Visit the Arm & Hammer Store",
+                "price": 16.0,
+                "condition": "New",
+                "product_category": "Beauty & Personal Care › Oral Care › Toothpaste",
+                "average_rating": 4.8,
+                "total_reviews": 538,
+                "asin": "B001E77OCU",
+                "full_description": "Arm & Hammer PeroxiCare Deep Clean Toothpaste - fluoride cavity protection, enamel strengthening, baking soda formula.",
+                "image_url": "https://m.media-amazon.com/images/I/41-M-nTTsGL.jpg",
             },
             {
-                "name": "Extended Warranty & Accessories Package",
-                "brand": "Various",
-                "price": 1500.0,  # Individual price of warranty/extras
-                "warranty": ["6-month powertrain warranty", "New tires", "Recent brake service"],
-                "included": "Winter floor mats, cargo organizer, full tank of gas",
+                "name": "BFWood Wooden Paddle Hair Brush – Black Walnut Hairbrush for Massaging Scalp",
+                "brand": "Visit the BFWood Store",
+                "price": 6.48,
+                "condition": "New",
+                "product_category": "Beauty & Personal Care › Hair Care › Styling Tools & Appliances › Hair Brushes",
+                "average_rating": 4.5,
+                "total_reviews": 1652,
+                "asin": "B083TZ4JSR",
+                "full_description": "BFWood hair brush bristles are made of natural beech. The beech bristles massage your scalp. Suitable for all hair types. Black walnut handle with ergonomic design.",
+                "image_url": "https://m.media-amazon.com/images/I/51bE06+44SL.jpg",
             },
         ]
     }
     
     # Calculate total product price
     total_product_price = sum(p["price"] for p in product_info["products"])
-    print(f"\nProducts (Car Package):")
+    print(f"\nProducts (Beauty Bundle):")
     for i, p in enumerate(product_info["products"], 1):
         print(f"  {i}. {p['name']}: ${p['price']:.2f}")
-    print(f"  Total Package Price: ${total_product_price:.2f}")
+    print(f"  Total Bundle Price: ${total_product_price:.2f}")
     
     # Get user requirement
-    user_requirement = "Looking for reliable mid-size sedan, 2019 or newer, under 50k miles, with good service history. Budget around $18,000."
+    user_requirement = "Looking for ARM & HAMMER toothpaste and BFWood wooden hair brush. Budget around $25 for the bundle."
     print(f"Using default requirement: {user_requirement}")
     
     # Reset environment
     print("\n" + "="*60)
-    print("Starting new sequential negotiation for used car package...")
-    print("Seller choosing between two buyers for Honda Accord + Warranty")
+    print("Starting new sequential negotiation for beauty product bundle...")
+    print("Seller choosing between two buyers for Toothpaste + Hair Brush")
     print("="*60)
     
     observation, info = env.reset(
@@ -233,7 +237,7 @@ def main(model_name=None):
     
     # Initialize results dictionary
     results = {
-        "task": "Task6_s2_used_car_package_negotiation",
+        "task": "Task6_s2_beauty_product_bundle_negotiation",
         "timestamp": datetime.now().isoformat(),
         "user_requirement": user_requirement,
         "user_profile": user_profile,
@@ -266,7 +270,7 @@ def main(model_name=None):
             conversation_history=combined_history,
             current_state={
                 **observation,
-                "instruction": "You are negotiating with two buyers for two products. Each round, you need to choose ONE buyer to negotiate with. Please clearly indicate which buyer (1 or 2) you want to negotiate with, for example: 'I want to negotiate with buyer 1' or 'Let me talk to buyer 2'. Prices represent total price for both products."
+                "instruction": "You are negotiating with two buyers for a beauty bundle (ARM & HAMMER Toothpaste + BFWood Hair Brush). Each round, choose ONE buyer and provide your negotiation message. Clearly indicate which buyer (1 or 2) you want. Prices represent total bundle price."
             }
         )
         
@@ -454,7 +458,7 @@ def main(model_name=None):
     
     # Close environment
     env.close()
-    print("\nUsed car package negotiation completed!")
+    print("\nBeauty product bundle negotiation completed!")
     
     # Ensure elapsed_time is set even if negotiation didn't complete normally
     if "elapsed_time" not in results:
@@ -483,10 +487,10 @@ def main(model_name=None):
             json.dump(results, f, indent=2, ensure_ascii=False)
         
         # Save output text
-        output_file = run_dir / "Task6_s2_output.txt"
+        output_file = run_dir / "Task6_s2_beauty_product_bundle_output.txt"
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write("="*80 + "\n")
-            f.write("Task6 Scenario 2: Used Car Package - Sequential Two-Buyer Two-Product Negotiation Results\n")
+            f.write("Task6 Scenario 2: Beauty Product Bundle - Sequential Two-Buyer Two-Product Negotiation Results\n")
             f.write("Category: Daily Life Consumption\n")
             f.write("="*80 + "\n\n")
             f.write(f"Timestamp: {results['timestamp']}\n")
@@ -547,7 +551,7 @@ def main(model_name=None):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Task6 Scenario 2: Used Car Package - Sequential Two-Buyer Two-Product Negotiation")
+    parser = argparse.ArgumentParser(description="Task6 Scenario 2: Beauty Product Bundle - Sequential Two-Buyer Two-Product Negotiation")
     parser.add_argument(
         "--model",
         type=str,

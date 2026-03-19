@@ -1,8 +1,9 @@
-"""Task6 Scenario 2: Used Car Bundle - Two-Product Negotiation
+"""Task7 Scenario 3: Riflescope & Epson Printer Bundle - Two-Product Negotiation
 
-Buyer negotiates for used car with winter tire set bundle.
-Bundle purchase with total price negotiation.
-Category: Daily Life Consumption
+Buyer negotiates for Crimson Trace Riflescope + Epson TM-T20 thermal receipt printer bundle.
+Bundle purchase with total price negotiation on Amazon.
+Product sources: Task6 example (riflescope) + sampled_products2.jsonl 3rd sample (Epson)
+Category: Sports & Outdoors + Office Electronics
 """
 
 import os
@@ -104,9 +105,10 @@ def main(model_name=None):
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
     # buyer_max_price and seller_min_price represent total expected cost for both products
+    # Riflescope $218.79 + Epson $320 = $538.79 total
     print("Creating agents...")
-    buyer_max_price = 18800.0  # Maximum acceptable total purchase price for buyer (confidential) - Car $18,000 + Tires $800
-    seller_min_price = 14600.0  # Minimum acceptable total selling price for seller (confidential) - Car $14,000 + Tires $600
+    buyer_max_price = 520.0  # Maximum acceptable total purchase price for buyer (confidential)
+    seller_min_price = 480.0  # Minimum acceptable total selling price for seller (confidential)
     buyer = BuyerAgent(model=model, buyer_max_price=buyer_max_price)
     seller = SellerAgent(model=model, seller_min_price=seller_min_price)
     
@@ -117,45 +119,59 @@ def main(model_name=None):
         buyer_agent=buyer,
         seller_agent=seller,
         max_rounds=max_rounds,
-        initial_seller_price=18300.0,  # Initial total price offered by seller for both items
+        initial_seller_price=535.0,  # Initial total price offered by seller for both products (riflescope + printer)
         buyer_max_price=buyer_max_price,  # Buyer total max price (confidential, for both products)
         seller_min_price=seller_min_price,  # Seller total min price (confidential, for both products)
         environment_info={
-            "platform": "Craigslist",
-            "market_type": "C2C",
-            "season": "Spring (good selling season)",
+            "platform": "Amazon",
+            "market_type": "B2C",
         },
         price_tolerance=price_tolerance,
     )
     
     # Create user profile (text description of personal preferences)
-    user_profile = "Practical buyer looking for a reliable family car. Concerned about maintenance history, accident records, and hidden mechanical issues. Prefers to thoroughly inspect vehicle before purchase. Winter tires are important for safety."
+    user_profile = "Outdoor enthusiast and small business owner. Needs riflescope for hunting and thermal receipt printer for retail POS. Values quality brands (Crimson Trace, Epson) and prefers buying from reputable sellers."
     print(f"User Profile: {user_profile}")
     
-    # Define two products with their individual prices
-    # The product_info should contain a list of two products
+    # Define two products with individual prices (图文 format with image_url for VLM)
+    # Product 1: from Task6 example - Crimson Trace Riflescope
+    # Product 2: from sampled_products2.jsonl 3rd sample - Epson TM-T20
     product_info = {
         "products": [
             {
-                "name": "2020 Honda Accord EX-L",
-                "mileage": 45000,
-                "price": 17500.0,  # Individual price of first product
-                "condition": "Excellent",
-                "accidents_reported": 0,
-                "service_records": "Available",
-                "kelley_blue_book_value": 19500,
-                "features": ["Leather seats", "Sunroof", "Apple CarPlay"],
-                "reason_for_selling": "Upgrading to SUV",
+                "name": "Crimson Trace Brushline Pro Riflescope with Lightweight Solid Construction, Scope Caps and Lens Cloth for Hunting, Shooting and Outdoor",
+                "condition": "New",
+                "brand": "Visit the Crimson Trace Store",
+                "model": "Brushline Pro Riflescope 2.5-10x42mm CT Plex Reticle",
+                "style": "2.5-10x42mm Plex",
+                "price": 218.79,
+                "original_price": 218.79,
+                "availability_quantity": 14,
+                "availability_status": "Only 14 left in stock (more on the way).",
+                "product_category": "Sports & Outdoors › Hunting & Fishing › Shooting › Optics › Gun Scopes › Rifle Scopes",
+                "average_rating": 4.3,
+                "total_reviews": 28,
+                "seller_name": "Amazon.com",
+                "asin": "B08GS6B87J",
+                "full_description": "SPECS: 2.5-10 magnification with a 42mm lens diameter, aerospace grade 1\" tube and weighs 16.6 oz - FOV Range: 40.3 ft Min - 10.1 ft Max. ACCURACY: Features a second focal plane, non-illuminated, CT Plex reticle with a 4\" eye relief, 1/4\" click value and quick spring-loaded zero reset capped turrets. EASE OF USE: Windage (right side), elevation (top) knobs are capped and can be easily unscrewed and adjusted when sighting in at the range by turning with your fingers (no tool required). DURABLE: Constructed of lightweight anodized aluminum with multi-coated lenses and is waterproof, shockproof and nitrogen purged to prevent fogging. INCLUDES: Lens cloth and scope caps.",
+                "image_url": "https://m.media-amazon.com/images/I/31j7DdlfrOL.jpg",
             },
             {
-                "name": "Michelin X-Ice Winter Tire Set (4 tires + rims)",
-                "size": "235/45R18",
-                "price": 800.0,  # Individual price of second product
-                "condition": "Used - Good",
-                "tread_depth": "7/32 inch (70% remaining)",
-                "age": "2 seasons",
-                "includes": "Mounted on steel rims",
-                "original_price": 1200.0,
+                "name": "Epson C31CB10023 TM-T20 Readyprint Thermal Receipt Printer, Ethernet Interface, Without Cable, Dark Grey",
+                "condition": "New",
+                "brand": "Visit the Epson Store",
+                "model": "C31CB10023",
+                "style": "Ethernet Interface, Dark Grey",
+                "price": 320.0,
+                "original_price": 320.0,
+                "availability_status": "In stock. Usually ships within 3 to 4 days.",
+                "product_category": "Office Products › Office Electronics",
+                "average_rating": 4.1,
+                "total_reviews": 4,
+                "seller_name": "SourceLink Technologies",
+                "asin": "B00A0WG5KW",
+                "full_description": "For nearly 40 years, Epson has led the industry in developing innovative, reliable, high-performance products. From scanners to printers to 3D projectors, our award-winning technology brings your images to life. Epson Headquartered and established on the shore of Lake Suwa in Nagano, Japan. Ethernet interface. Dark gray color. Without Cable.",
+                "image_url": "https://m.media-amazon.com/images/I/51BzGMyEVfL.jpg",
             },
         ]
     }
@@ -169,7 +185,7 @@ def main(model_name=None):
     
     # Get user requirement (should describe purchasing two products)
     # Use default requirement for automatic running
-    user_requirement = "Looking for a reliable mid-size sedan, 2019 or newer, with winter tires included. Budget around $18,000 total."
+    user_requirement = "I need a Crimson Trace Brushline Pro riflescope for hunting and an Epson TM-T20 thermal receipt printer for my store. Looking for a bundle deal from a reputable seller."
     print(f"Using default requirement: {user_requirement}")
     
     # Reset environment
@@ -189,7 +205,7 @@ def main(model_name=None):
     
     # Initialize results dictionary
     results = {
-        "task": "Task6_s2_used_car_bundle_negotiation",
+        "task": "Task7_s3_riflescope_epson_bundle_negotiation",
         "timestamp": datetime.now().isoformat(),
         "user_requirement": user_requirement,
         "user_profile": user_profile,
@@ -321,11 +337,11 @@ def main(model_name=None):
             json.dump(results, f, indent=2, ensure_ascii=False)
         
         # Save output text
-        output_file = run_dir / "Task6_s2_output.txt"
+        output_file = run_dir / "Task7_s3_riflescope_epson_bundle_output.txt"
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write("="*80 + "\n")
-            f.write("Task6 Scenario 2: Used Car Bundle - Two-Product Negotiation Results\n")
-            f.write("Category: Daily Life Consumption\n")
+            f.write("Task7 Scenario 3: Riflescope & Epson Printer Bundle - Two-Product Negotiation Results\n")
+            f.write("Category: Sports & Outdoors + Office Electronics\n")
             f.write("="*80 + "\n\n")
             f.write(f"Timestamp: {results['timestamp']}\n")
             f.write(f"Model: {results['model']}\n")
@@ -371,7 +387,7 @@ def main(model_name=None):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Task6 Scenario 2: Used Car Bundle - Two-Product Negotiation")
+    parser = argparse.ArgumentParser(description="Task7 Scenario 3: Riflescope & Epson Printer Bundle - Two-Product Negotiation")
     parser.add_argument(
         "--model",
         type=str,

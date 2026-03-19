@@ -1,9 +1,8 @@
-"""Task5 Scenario 1: Used Smartphone Bundle - Sequential Two-Buyer Two-Product Negotiation
+"""Task5 Scenario 1: Beauty Product Bundle - Sequential Two-Buyer Two-Product Negotiation (图文)
 
-One seller negotiating with two buyers for used smartphone bundle (phone + accessories).
+One seller negotiating with two buyers for beauty product bundle (Maybelline Eyeshadow + NOU Oliban).
 Seller chooses one buyer per round to negotiate with.
-Prices represent total price for the bundle.
-Category: Daily Life Consumption
+Product info with images (图文). Category: Daily Life Consumption
 """
 
 import os
@@ -22,6 +21,7 @@ from agenticpay.envs.multi_buyer_multi_products.Task3_sequential_two_buyer_two_p
 from agenticpay.agents.buyer_agent import BuyerAgent
 from agenticpay.agents.seller_agent import SellerAgent
 from agenticpay.models.custom_llm import CustomLLM
+from agenticpay.models.openai_vlm import OpenAIVLM
 import re
 
 # Import configuration parameters
@@ -100,9 +100,9 @@ def extract_buyer_choice(seller_response: str, observation: dict) -> int:
     price_match = re.search(r'\$?(\d+\.?\d*)', seller_response)
     if price_match:
         mentioned_price = float(price_match.group(1))
-        if seller_price_buyer1 is not None and abs(mentioned_price - seller_price_buyer1) < 5:
+        if seller_price_buyer1 is not None and abs(mentioned_price - seller_price_buyer1) < 2:
             return 1
-        elif seller_price_buyer2 is not None and abs(mentioned_price - seller_price_buyer2) < 5:
+        elif seller_price_buyer2 is not None and abs(mentioned_price - seller_price_buyer2) < 2:
             return 2
     
     # Default: if no clear indication, check which buyer has been negotiated with more
@@ -135,21 +135,17 @@ def main(model_name=None):
         print("You can set it with: export OPENAI_API_KEY='your-key-here'")
         return
     
-    # Use provided model name or default
-    if model_name is None:
-        model_name = "gpt-5.2"  # Default model
-    
-    model = CustomLLM(api_key=api_key, model=model_name)  # claude-sonnet-4-5-20250929, gpt-5.2, gemini-3-pro-all, gpt-3.5-turbo, DeepSeek-R1
+    # Use OpenAIVLM (Vision Language Model) for beauty product bundle with product images (图文)
+    model_name = model_name or "gpt-4o-mini"  # gpt-4o, gpt-4o-mini
+    model = OpenAIVLM(model=model_name, api_key=api_key)
     
     print(f"✓ Successfully initialized: {model}")
     
-    # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
-    # buyer_max_price and seller_min_price represent total expected cost for the smartphone bundle
-    # Based on scenario 1-1: buyer_max_price=$560 (refurbished price 70%), seller_min_price=$350 (platform buyback price)
+    # Create Agents - Beauty bundle: Maybelline ($7.50) + NOU Oliban ($21.95) = ~$29.45 total
     print("Creating agents...")
-    buyer1_max_price = 560.0  # Maximum acceptable total purchase price for buyer1 (confidential, student budget)
-    buyer2_max_price = 620.0  # Maximum acceptable total purchase price for buyer2 (confidential, professional budget)
-    seller_min_price = 350.0  # Minimum acceptable total selling price for seller (confidential, good condition bundle)
+    buyer1_max_price = 24.0  # Maximum acceptable total for buyer1 (confidential)
+    buyer2_max_price = 28.0  # Maximum acceptable total for buyer2 (confidential)
+    seller_min_price = 20.0  # Minimum acceptable total for seller (confidential, for bundle)
     
     buyer1 = BuyerAgent(model=model, buyer_max_price=buyer1_max_price)
     buyer2 = BuyerAgent(model=model, buyer_max_price=buyer2_max_price)
@@ -162,43 +158,57 @@ def main(model_name=None):
         buyer2_agent=buyer2,
         seller_agent=seller,
         max_rounds=max_rounds,
-        initial_seller_price=520.0,  # Initial total price offered by seller for the bundle
+        initial_seller_price=26.0,  # Initial total price offered by seller for the bundle
         buyer1_max_price=buyer1_max_price,  # Buyer1 total max price (confidential, for bundle)
         buyer2_max_price=buyer2_max_price,  # Buyer2 total max price (confidential, for bundle)
         seller_min_price=seller_min_price,  # Seller total min price (confidential, for bundle)
         environment_info={
-            "platform": "eBay",
-            "market_type": "C2C",
+            "platform": "Amazon",
+            "market_type": "B2C",
             "listing_age": "3 days",
+            "availability_status": "In Stock.",
         },
         price_tolerance=0,  # Set price_tolerance to 0
         reward_weights=reward_weights,  # Reward weights configuration
     )
     
     # Create user profile (text description of personal preferences)
-    user_profile = "Two buyers competing for used smartphone bundle. Buyer1 is a student on tight budget. Buyer2 is a professional willing to pay more for better condition."
+    user_profile = "Two buyers competing for beauty product bundle. Buyer1 is on tight budget. Buyer2 is willing to pay more for quality. Both care about brand and reviews."
     print(f"User Profile: {user_profile}")
     
-    # Define two products with their individual prices
-    # The product_info should contain a list of two products (smartphone + accessories bundle)
+    # Product images for VLM (图文): from Task4 and sampled_products2.jsonl
+    product1_image_url = "https://m.media-amazon.com/images/I/41IiEBGouZL.jpg"  # Maybelline Eyeshadow
+    product2_image_url = "https://m.media-amazon.com/images/I/51gDhcURgKL.jpg"  # NOU Oliban Eau de Toilette
+
+    # Define two beauty products (Product 1: Task4 Maybelline, Product 2: sampled_products2 NOU Oliban)
     product_info = {
         "products": [
             {
-                "name": "iPhone 14 Pro 128GB",
-                "brand": "Apple",
-                "price": 450.0,  # Individual price of the smartphone
-                "condition": "Used - Excellent (9/10)",
-                "battery_health": "92%",
-                "purchase_date": "2023-03",
-                "original_price": 999.0,
-                "issues_disclosed": "Minimal wear, barely visible scratches",
+                "name": "Maybelline New York Expert Wear Eyeshadow Singles, 130s Turquoise Glass Perfect Pastels, 0.09 Ounce",
+                "condition": "New",
+                "price": 7.50,
+                "brand": "Maybelline New York",
+                "shade": "130s Turquoise Glass Perfect Pastels",
+                "size": "0.09 Ounce",
+                "original_price": 7.98,
+                "product_category": "Beauty & Personal Care › Makeup › Eyes › Eyeshadow",
+                "average_rating": 4.2,
+                "total_reviews": 54,
+                "full_description": "Easy to use. Lots to choose. All-day crease-proof wear. Rich, velvety textures. Glides on effortlessly with superior smoothness.",
+                "image_url": product1_image_url,
             },
             {
-                "name": "Original Accessories Bundle",
-                "brand": "Apple",
-                "price": 50.0,  # Individual price of accessories
-                "included": ["Original box", "MagSafe Charger", "Lightning Cable", "SIM tool"],
-                "condition": "Complete original set",
+                "name": "Oriental Eau de Toilette – Natural Eau de Toilette for Men Woody Eau de Toilette Infused with Essential Oils NOU Oliban Eau de Toilette for Men – 1.7 Fl Oz",
+                "condition": "New",
+                "price": 21.95,
+                "brand": "NOU",
+                "size": "1.7 Fl Oz (50ml)",
+                "original_price": 21.95,
+                "product_category": "Beauty & Personal Care › Fragrance",
+                "average_rating": 4,
+                "total_reviews": 6,
+                "full_description": "NOU OLIBAN ORIENTAL SCENT FOR MEN – this fragrance for men has been perfectly blended and infused with essential oils. Expertly crafted by French perfumers. Natural Eau de Toilette for men with woody fragrance notes: elemi, olibanum, patchouli, sandalwood, leather, vanilla.",
+                "image_url": product2_image_url,
             },
         ]
     }
@@ -211,14 +221,13 @@ def main(model_name=None):
     print(f"  Total Bundle Price: ${total_product_price:.2f}")
     
     # Get user requirement (should describe purchasing the bundle)
-    # Use default requirement for automatic running
-    user_requirement = "Looking for used iPhone 14 Pro in good condition with original accessories. Prefer complete bundle with box and charger."
+    user_requirement = "I'm looking for a beauty bundle: Maybelline Expert Wear Eyeshadow in Turquoise shade and NOU Oliban Eau de Toilette for men, preferably new with good reviews."
     print(f"Using default requirement: {user_requirement}")
     
     # Reset environment
     print("\n" + "="*60)
-    print("Starting new sequential negotiation for used smartphone bundle...")
-    print("Seller choosing between two buyers for iPhone 14 Pro + Accessories")
+    print("Starting new sequential negotiation for beauty product bundle...")
+    print("Seller choosing between two buyers for Maybelline Eyeshadow + NOU Oliban")
     print("="*60)
     
     observation, info = env.reset(
@@ -233,7 +242,7 @@ def main(model_name=None):
     
     # Initialize results dictionary
     results = {
-        "task": "Task5_s1_used_smartphone_bundle_negotiation",
+        "task": "Task5_s1_beauty_product_bundle_negotiation",
         "timestamp": datetime.now().isoformat(),
         "user_requirement": user_requirement,
         "user_profile": user_profile,
@@ -266,7 +275,7 @@ def main(model_name=None):
             conversation_history=combined_history,
             current_state={
                 **observation,
-                "instruction": "You are negotiating with two buyers for two products. Each round, you need to choose ONE buyer to negotiate with. Please clearly indicate which buyer (1 or 2) you want to negotiate with, for example: 'I want to negotiate with buyer 1' or 'Let me talk to buyer 2'. Prices represent total price for both products."
+                "instruction": "You are negotiating with two buyers for two beauty products (Maybelline Eyeshadow + NOU Oliban). Each round, choose ONE buyer to negotiate with. Clearly indicate which buyer (1 or 2) you want to negotiate with. Prices represent total price for both products."
             }
         )
         
@@ -454,7 +463,7 @@ def main(model_name=None):
     
     # Close environment
     env.close()
-    print("\nUsed smartphone bundle negotiation completed!")
+    print("\nBeauty product bundle negotiation completed!")
     
     # Ensure elapsed_time is set even if negotiation didn't complete normally
     if "elapsed_time" not in results:
@@ -483,10 +492,10 @@ def main(model_name=None):
             json.dump(results, f, indent=2, ensure_ascii=False)
         
         # Save output text
-        output_file = run_dir / "Task5_s1_output.txt"
+        output_file = run_dir / "Task5_s1_beauty_product_bundle_output.txt"
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write("="*80 + "\n")
-            f.write("Task5 Scenario 1: Used Smartphone Bundle - Sequential Two-Buyer Two-Product Negotiation Results\n")
+            f.write("Task5 Scenario 1: Beauty Product Bundle - Sequential Two-Buyer Two-Product Negotiation Results\n")
             f.write("Category: Daily Life Consumption\n")
             f.write("="*80 + "\n\n")
             f.write(f"Timestamp: {results['timestamp']}\n")
@@ -547,7 +556,7 @@ def main(model_name=None):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Task5 Scenario 1: Used Smartphone Bundle - Sequential Two-Buyer Two-Product Negotiation")
+    parser = argparse.ArgumentParser(description="Task5 Scenario 1: Beauty Product Bundle - Sequential Two-Buyer Two-Product Negotiation (图文)")
     parser.add_argument(
         "--model",
         type=str,

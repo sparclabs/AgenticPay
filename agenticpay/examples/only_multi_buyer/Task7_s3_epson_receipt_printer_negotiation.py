@@ -1,8 +1,9 @@
-"""Task8 Scenario 4: Website Development - Sequential Two-Buyer Negotiation
+"""Task7 Scenario 3: Epson Receipt Printer - Sequential Two-Buyer Negotiation
 
-One freelance developer negotiating with two potential clients for custom e-commerce website.
+One seller negotiating with two potential buyers for the same Epson TM-T20 thermal receipt printer on Amazon.
 Seller chooses which buyer to negotiate with each round.
-Category: Professional Services
+Product source: sampled_products2.jsonl (3rd sample - Epson C31CB10023 TM-T20)
+Category: Office Electronics
 """
 
 import os
@@ -144,10 +145,11 @@ def main(model_name=None):
     print(f"✓ Successfully initialized: {model}")
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
+    # Epson TM-T20 list price $320 - two buyers with different budgets
     print("Creating agents...")
-    buyer1_max_price = 5400.0  # Maximum acceptable price for buyer1 (confidential) - small business budget
-    buyer2_max_price = 5000.0  # Maximum acceptable price for buyer2 (confidential, different from buyer1)
-    seller_min_price = 2500.0  # Minimum acceptable price for seller (confidential) - covers time and costs
+    buyer1_max_price = 280.0  # Maximum acceptable price for buyer1 (confidential) - budget-conscious
+    buyer2_max_price = 300.0  # Maximum acceptable price for buyer2 (confidential, slightly higher budget)
+    seller_min_price = 250.0  # Minimum acceptable selling price for seller (confidential) - covers costs + margin
     
     buyer1 = BuyerAgent(model=model, buyer_max_price=buyer1_max_price)
     buyer2 = BuyerAgent(model=model, buyer_max_price=buyer2_max_price)
@@ -160,26 +162,26 @@ def main(model_name=None):
         buyer2_agent=buyer2,
         seller_agent=seller,
         max_rounds=max_rounds,
-        initial_seller_price=4200.0,  # Initial price offered by seller
+        initial_seller_price=320.0,  # Initial price offered by seller (list price)
         buyer1_max_price=buyer1_max_price,  # Buyer1 bottom price (confidential)
         buyer2_max_price=buyer2_max_price,  # Buyer2 bottom price (confidential)
         seller_min_price=seller_min_price,  # Seller bottom price (confidential)
         environment_info={
-            "platform": "Upwork",
-            "freelancer_rating": "4.9/5",
-            "market_rate_range": "$3,000-$8,000",
+            "platform": "Amazon",
+            "market_type": "B2C",
+            "availability_status": "In stock. Usually ships within 3 to 4 days.",
         },
         price_tolerance=price_tolerance,
         reward_weights=reward_weights,  # Reward weights configuration
     )
     
     # Create user profile (text description of personal preferences)
-    user_profile = "Small business owner with limited technical knowledge. Wants professional website but concerned about hidden costs and project scope expanding. Values clear communication and fixed deliverables."
+    user_profile = "Small business owners looking for receipt printer for POS. Value reliability and Epson brand. Prefer Ethernet interface."
     print(f"User Profile: {user_profile}")
     
     # Get user requirement
     # Use default requirement for automatic running
-    user_requirement = "I need a professional e-commerce website for my boutique clothing store. Must be mobile-friendly."
+    user_requirement = "Need Epson thermal receipt printer with Ethernet interface for store. Prefer TM-T20 model, dark grey."
     print(f"Using default requirement: {user_requirement}")
     
     # Reset environment
@@ -187,16 +189,26 @@ def main(model_name=None):
     print("Starting new sequential negotiation with two buyers...")
     print("="*60)
     
+    # Product image for VLM (图文): from sampled_products2.jsonl 3rd sample - Epson TM-T20
+    product_image_url = "https://m.media-amazon.com/images/I/51BzGMyEVfL.jpg"
+    
     observation, info = env.reset(
         user_requirement=user_requirement,
         product_info={
-            "name": "Custom E-commerce Website Development",
-            "base_scope": ["5 pages", "Product catalog (up to 50 products)", "Shopping cart", "Payment integration (Stripe/PayPal)"],
-            "estimated_timeline": "4-6 weeks",
-            "revision_rounds": 3,
-            "tech_stack": "React + Node.js + PostgreSQL",
-            "developer_experience": "8 years, specializes in e-commerce",
-            "portfolio": "15+ successful e-commerce projects",
+            "name": "Epson C31CB10023 TM-T20 Readyprint Thermal Receipt Printer, Ethernet Interface, Without Cable, Dark Grey",
+            "condition": "New",
+            "brand": "Visit the Epson Store",
+            "model": "C31CB10023",
+            "style": "Ethernet Interface, Dark Grey",
+            "original_price": 320.0,
+            "availability_status": "In stock. Usually ships within 3 to 4 days.",
+            "product_category": "Office Products › Office Electronics",
+            "average_rating": 4.1,
+            "total_reviews": 4,
+            "seller_name": "SourceLink Technologies",
+            "asin": "B00A0WG5KW",
+            "full_description": "For nearly 40 years, Epson has led the industry in developing innovative, reliable, high-performance products. From scanners to printers to 3D projectors, our award-winning technology brings your images to life. Epson Headquartered and established on the shore of Lake Suwa in Nagano, Japan. Ethernet interface. Dark gray color. Without Cable.",
+            "image_url": product_image_url,  # For VLM: product image (图文)
         },
         user_profile=user_profile,  # Pass user profile
     )
@@ -207,7 +219,7 @@ def main(model_name=None):
     
     # Initialize results dictionary
     results = {
-        "task": "Task8_s4_website_development_negotiation",
+        "task": "Task7_s3_epson_receipt_printer_negotiation",
         "timestamp": datetime.now().isoformat(),
         "user_requirement": user_requirement,
         "user_profile": user_profile,
@@ -486,13 +498,13 @@ def main(model_name=None):
                 "buyer2_max_price": buyer2_max_price,
                 "seller_min_price": seller_min_price,
                 "product_info": {
-                    "name": "Custom E-commerce Website Development",
-                    "base_scope": ["5 pages", "Product catalog (up to 50 products)", "Shopping cart", "Payment integration (Stripe/PayPal)"],
-                    "estimated_timeline": "4-6 weeks",
-                    "revision_rounds": 3,
-                    "tech_stack": "React + Node.js + PostgreSQL",
-                    "developer_experience": "8 years, specializes in e-commerce",
-                    "portfolio": "15+ successful e-commerce projects",
+                    "name": "Epson C31CB10023 TM-T20 Readyprint Thermal Receipt Printer, Ethernet Interface, Without Cable, Dark Grey",
+                    "original_price": 320.0,
+                    "product_category": "Office Products › Office Electronics",
+                    "average_rating": 4.1,
+                    "total_reviews": 4,
+                    "asin": "B00A0WG5KW",
+                    "brand": "Visit the Epson Store",
                 },
                 "model": get_model_name(model),
             })
@@ -529,11 +541,11 @@ def main(model_name=None):
             json.dump(results, f, indent=2, ensure_ascii=False)
         
         # Save output text
-        output_file = run_dir / "Task8_s4_output.txt"
+        output_file = run_dir / "Task7_s3_epson_receipt_printer_output.txt"
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write("="*80 + "\n")
-            f.write("Task8 Scenario 4: Website Development - Sequential Two-Buyer Negotiation Results\n")
-            f.write("Category: Professional Services\n")
+            f.write("Task7 Scenario 3: Epson Receipt Printer - Sequential Two-Buyer Negotiation Results\n")
+            f.write("Category: Office Electronics\n")
             f.write("="*80 + "\n\n")
             f.write(f"Timestamp: {results['timestamp']}\n")
             f.write(f"Model: {results['model']}\n")
@@ -589,7 +601,7 @@ def main(model_name=None):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Task8 Scenario 4: Website Development - Sequential Two-Buyer Negotiation")
+    parser = argparse.ArgumentParser(description="Task7 Scenario 3: Epson Receipt Printer - Sequential Two-Buyer Negotiation")
     parser.add_argument(
         "--model",
         type=str,

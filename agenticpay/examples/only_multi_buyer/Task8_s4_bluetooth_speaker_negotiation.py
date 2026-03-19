@@ -1,8 +1,9 @@
-"""Task5 Scenario 1: Used Smartphone - Sequential Two-Buyer Negotiation
+"""Task8 Scenario 4: Sony Bluetooth Speaker - Sequential Two-Buyer Negotiation
 
-One seller negotiating with two potential buyers for the same used iPhone 14 Pro.
+One seller negotiating with two potential buyers for Sony Extra Bass Portable Bluetooth Speaker on Amazon.
 Seller chooses which buyer to negotiate with each round.
-Category: Daily Life Consumption
+Category: Electronics
+Product from sampled_products2.jsonl (4th sample) with image (图文).
 """
 
 import os
@@ -96,13 +97,13 @@ def extract_buyer_choice(seller_response: str, observation: dict) -> int:
     seller_price_buyer1 = observation.get("seller_price_buyer1")
     seller_price_buyer2 = observation.get("seller_price_buyer2")
     
-    # If seller mentions a specific price, try to match it
+    # If seller mentions a specific price, try to match it (Sony speaker ~$108)
     price_match = re.search(r'\$?(\d+\.?\d*)', seller_response)
     if price_match:
         mentioned_price = float(price_match.group(1))
-        if seller_price_buyer1 is not None and abs(mentioned_price - seller_price_buyer1) < 5:
+        if seller_price_buyer1 is not None and abs(mentioned_price - seller_price_buyer1) < 15:
             return 1
-        elif seller_price_buyer2 is not None and abs(mentioned_price - seller_price_buyer2) < 5:
+        elif seller_price_buyer2 is not None and abs(mentioned_price - seller_price_buyer2) < 15:
             return 2
     
     # Default: if no clear indication, check which buyer has been negotiated with more
@@ -144,10 +145,11 @@ def main(model_name=None):
     print(f"✓ Successfully initialized: {model}")
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
+    # Scenario: Sony Extra Bass Portable Bluetooth Speaker (Renewed) - $108.49 list price
     print("Creating agents...")
-    buyer1_max_price = 560.0  # Maximum acceptable purchase price for buyer1 (confidential) - 70% of official refurb price
-    buyer2_max_price = 540.0  # Maximum acceptable purchase price for buyer2 (confidential, different from buyer1)
-    seller_min_price = 350.0  # Minimum acceptable selling price for seller (confidential) - platform buyback price
+    buyer1_max_price = 115.0  # Maximum acceptable price for buyer1 (confidential)
+    buyer2_max_price = 110.0  # Maximum acceptable price for buyer2 (confidential, slightly lower)
+    seller_min_price = 85.0  # Minimum acceptable selling price for seller (confidential)
     
     buyer1 = BuyerAgent(model=model, buyer_max_price=buyer1_max_price)
     buyer2 = BuyerAgent(model=model, buyer_max_price=buyer2_max_price)
@@ -160,26 +162,27 @@ def main(model_name=None):
         buyer2_agent=buyer2,
         seller_agent=seller,
         max_rounds=max_rounds,
-        initial_seller_price=520.0,  # Initial price offered by seller
+        initial_seller_price=108.49,  # Initial price offered by seller (list price from jsonl)
         buyer1_max_price=buyer1_max_price,  # Buyer1 bottom price (confidential)
         buyer2_max_price=buyer2_max_price,  # Buyer2 bottom price (confidential)
         seller_min_price=seller_min_price,  # Seller bottom price (confidential)
         environment_info={
-            "platform": "eBay",
-            "market_type": "C2C",
-            "listing_age": "3 days",
+            "platform": "Amazon",
+            "market_type": "B2C",
+            "listing_age": "2 days",
+            "availability_status": "Only 1 left in stock - order soon.",
         },
         price_tolerance=price_tolerance,
         reward_weights=reward_weights,  # Reward weights configuration
     )
     
     # Create user profile (text description of personal preferences)
-    user_profile = "Tech-savvy user who researches prices carefully before buying. Concerned about device condition and battery health. Prefers to buy from individuals with good track records and complete accessories."
+    user_profile = "Music enthusiast looking for portable Bluetooth speaker for outdoor use. Values battery life, waterproof design, and good bass. Prefers renewed/refurbished options for better value."
     print(f"User Profile: {user_profile}")
     
     # Get user requirement
     # Use default requirement for automatic running
-    user_requirement = "I'm looking for a used iPhone 14 Pro in good condition, preferably with original accessories."
+    user_requirement = "I'm looking for Sony Extra Bass Portable Bluetooth Speaker, IP67 waterproof, with 24 hours battery life. Prefer renewed condition for outdoor parties and travel."
     print(f"Using default requirement: {user_requirement}")
     
     # Reset environment
@@ -187,17 +190,24 @@ def main(model_name=None):
     print("Starting new sequential negotiation with two buyers...")
     print("="*60)
     
+    # Product image for VLM (图文): from sampled_products2.jsonl 4th sample
+    product_image_url = "https://m.media-amazon.com/images/I/41+lMIUpYbL.jpg"  # Sony SRS-XB33
+
     observation, info = env.reset(
         user_requirement=user_requirement,
         product_info={
-            "name": "iPhone 14 Pro 128GB",
-            "condition": "Used - Good",
-            "battery_health": "87%",
-            "purchase_date": "2023-03",
-            "original_price": 999.0,
-            "accessories": ["Original box", "Charger"],
-            "issues_disclosed": "Minor scratches on back",
-            "seller_rating": "98.5% positive (245 sales)",
+            "name": "Sony Extra Bass Portable Bluetooth Speaker Black - SRS-XB33/BC (Renewed)",
+            "condition": "Renewed",
+            "brand": "Visit the Amazon Renewed Store",
+            "original_price": 108.49,
+            "availability_status": "Only 1 left in stock - order soon.",
+            "product_category": "Electronics › Portable Audio & Video › Portable Speakers & Docks › Portable Bluetooth Speakers",
+            "average_rating": 4.5,
+            "total_reviews": 962,
+            "seller_name": "Planet Open Box",
+            "asin": "B08FZDJRQ7",
+            "full_description": "This pre-owned or refurbished product has been professionally inspected and tested to work and look like new. How a product becomes part of Amazon Renewed, your destination for pre-owned, refurbished products: A customer buys a new product and returns it or trades it in for a newer or different model. That product is inspected and tested to work and look like new by Amazon-qualified suppliers. Then, the product is sold as an Amazon Renewed product on Amazon. If not satisfied with the purchase, renewed products are eligible for replacement or refund under the Amazon Renewed Guarantee.",
+            "image_url": product_image_url,  # For VLM: product image (图文)
         },
         user_profile=user_profile,  # Pass user profile
     )
@@ -208,7 +218,7 @@ def main(model_name=None):
     
     # Initialize results dictionary
     results = {
-        "task": "Task5_s1_used_smartphone_negotiation",
+        "task": "Task8_s4_bluetooth_speaker_negotiation",
         "timestamp": datetime.now().isoformat(),
         "user_requirement": user_requirement,
         "user_profile": user_profile,
@@ -487,14 +497,14 @@ def main(model_name=None):
                 "buyer2_max_price": buyer2_max_price,
                 "seller_min_price": seller_min_price,
                 "product_info": {
-                    "name": "iPhone 14 Pro 128GB",
-                    "condition": "Used - Good",
-                    "battery_health": "87%",
-                    "purchase_date": "2023-03",
-                    "original_price": 999.0,
-                    "accessories": ["Original box", "Charger"],
-                    "issues_disclosed": "Minor scratches on back",
-                    "seller_rating": "98.5% positive (245 sales)",
+                    "name": "Sony Extra Bass Portable Bluetooth Speaker Black - SRS-XB33/BC (Renewed)",
+                    "condition": "Renewed",
+                    "brand": "Visit the Amazon Renewed Store",
+                    "original_price": 108.49,
+                    "product_category": "Electronics › Portable Audio & Video › Portable Speakers & Docks › Portable Bluetooth Speakers",
+                    "average_rating": 4.5,
+                    "total_reviews": 962,
+                    "asin": "B08FZDJRQ7"
                 },
                 "model": get_model_name(model),
             })
@@ -531,11 +541,11 @@ def main(model_name=None):
             json.dump(results, f, indent=2, ensure_ascii=False)
         
         # Save output text
-        output_file = run_dir / "Task5_s1_output.txt"
+        output_file = run_dir / "Task8_s4_bluetooth_speaker_output.txt"
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write("="*80 + "\n")
-            f.write("Task5 Scenario 1: Used Smartphone - Sequential Two-Buyer Negotiation Results\n")
-            f.write("Category: Daily Life Consumption\n")
+            f.write("Task8 Scenario 4: Sony Bluetooth Speaker - Sequential Two-Buyer Negotiation Results\n")
+            f.write("Category: Electronics\n")
             f.write("="*80 + "\n\n")
             f.write(f"Timestamp: {results['timestamp']}\n")
             f.write(f"Model: {results['model']}\n")
@@ -591,7 +601,7 @@ def main(model_name=None):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Task5 Scenario 1: Used Smartphone - Sequential Two-Buyer Negotiation")
+    parser = argparse.ArgumentParser(description="Task8 Scenario 4: Sony Bluetooth Speaker - Sequential Two-Buyer Negotiation")
     parser.add_argument(
         "--model",
         type=str,

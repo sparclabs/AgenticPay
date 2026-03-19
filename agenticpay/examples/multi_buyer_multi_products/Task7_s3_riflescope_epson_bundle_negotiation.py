@@ -1,8 +1,9 @@
-"""Task6 Scenario 2: Used Car - Sequential Two-Buyer Negotiation
+"""Task7 Scenario 3: Riflescope & Epson Printer Bundle - Sequential Two-Buyer Two-Product Negotiation
 
-One seller negotiating with two potential buyers for the same used car.
-Seller chooses which buyer to negotiate with each round.
-Category: Daily Life Consumption
+One seller negotiating with two buyers for product bundle (Crimson Trace Riflescope + Epson thermal receipt printer).
+Seller chooses one buyer per round to negotiate with.
+Prices represent total price for the bundle.
+Category: Sports & Outdoors / Office Electronics
 """
 
 import os
@@ -17,7 +18,7 @@ from datetime import datetime
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 sys.path.insert(0, project_root)
 
-from agenticpay.envs.only_multi_buyer.Task3_sequential_two_buyer_negotiation import Task3SequentialTwoBuyerNegotiation
+from agenticpay.envs.multi_buyer_multi_products.Task3_sequential_two_buyer_two_product_negotiation import Task3SequentialTwoBuyerTwoProductNegotiation
 from agenticpay.agents.buyer_agent import BuyerAgent
 from agenticpay.agents.seller_agent import SellerAgent
 from agenticpay.models.custom_llm import CustomLLM
@@ -27,14 +28,13 @@ import re
 examples_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, examples_dir)
 try:
-    from config import reward_weights, buyer_reward_aggregation, seller_reward_aggregation, max_rounds, price_tolerance
+    from config import reward_weights, max_rounds, price_tolerance, OPENAI_API_KEY
 except ImportError:
     # Default values if config not available
     reward_weights = {"buyer_savings": 1.0, "seller_profit": 1.0, "time_cost": 0.1}
-    buyer_reward_aggregation = "average"
-    seller_reward_aggregation = "average"
     max_rounds = 20
-    price_tolerance = 0.0
+    price_tolerance = 1.0
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 
 def get_model_name(model):
@@ -120,7 +120,7 @@ def extract_buyer_choice(seller_response: str, observation: dict) -> int:
 
 
 def main(model_name=None):
-    """Main function: Demonstrates sequential multi-buyer negotiation flow
+    """Main function: Demonstrates sequential multi-buyer multi-product negotiation flow
     
     Args:
         model_name: Optional model name. If None, uses default model.
@@ -129,7 +129,7 @@ def main(model_name=None):
     print("Initializing model...")
     
     # Check API key
-    api_key = os.getenv("OPENAI_API_KEY")
+    api_key = os.getenv("OPENAI_API_KEY") or OPENAI_API_KEY
     if not api_key:
         print("Warning: OPENAI_API_KEY not set. Please set it to use OpenAI models.")
         print("You can set it with: export OPENAI_API_KEY='your-key-here'")
@@ -144,61 +144,99 @@ def main(model_name=None):
     print(f"✓ Successfully initialized: {model}")
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
+    # buyer_max_price and seller_min_price represent total for Riflescope ($218.79) + Epson Printer ($320) = $538.79 bundle
     print("Creating agents...")
-    buyer1_max_price = 16500.0  # Maximum acceptable purchase price for buyer1 (confidential) - from market research
-    buyer2_max_price = 16000.0  # Maximum acceptable purchase price for buyer2 (confidential, different from buyer1)
-    seller_min_price = 13500.0  # Minimum acceptable selling price for seller (confidential) - dealer trade-in offer
+    buyer1_max_price = 530.0  # Maximum acceptable total for buyer1 (confidential, budget buyer)
+    buyer2_max_price = 560.0  # Maximum acceptable total for buyer2 (confidential, higher budget)
+    seller_min_price = 450.0  # Minimum acceptable total for seller (confidential)
     
     buyer1 = BuyerAgent(model=model, buyer_max_price=buyer1_max_price)
     buyer2 = BuyerAgent(model=model, buyer_max_price=buyer2_max_price)
     seller = SellerAgent(model=model, seller_min_price=seller_min_price)
     
     # Create environment
-    print("Creating sequential multi-buyer negotiation environment...")
-    env = Task3SequentialTwoBuyerNegotiation(
+    print("Creating sequential multi-buyer multi-product negotiation environment...")
+    env = Task3SequentialTwoBuyerTwoProductNegotiation(
         buyer1_agent=buyer1,
         buyer2_agent=buyer2,
         seller_agent=seller,
         max_rounds=max_rounds,
-        initial_seller_price=15800.0,  # Initial price offered by seller
-        buyer1_max_price=buyer1_max_price,  # Buyer1 bottom price (confidential)
-        buyer2_max_price=buyer2_max_price,  # Buyer2 bottom price (confidential)
-        seller_min_price=seller_min_price,  # Seller bottom price (confidential)
+        initial_seller_price=520.0,  # Initial total price offered by seller for Riflescope+Epson bundle
+        buyer1_max_price=buyer1_max_price,  # Buyer1 total max price (confidential, for rental bundle)
+        buyer2_max_price=buyer2_max_price,  # Buyer2 total max price (confidential, for rental bundle)
+        seller_min_price=seller_min_price,  # Seller total min price (confidential, for rental bundle)
         environment_info={
-            "platform": "Craigslist",
-            "market_type": "C2C",
-            "listing_age": "1 week",
+            "platform": "Amazon",
+            "market_type": "B2C",
+            "comparison_enabled": True,
         },
-        price_tolerance=price_tolerance,
+        price_tolerance=0,  # Set price_tolerance to 0
         reward_weights=reward_weights,  # Reward weights configuration
     )
     
     # Create user profile (text description of personal preferences)
-    user_profile = "Practical buyer who needs reliable transportation. Concerned about maintenance history and hidden issues. Wants fair price but willing to pay for well-maintained vehicle. Plans to keep car long-term."
+    user_profile = "Two buyers competing for product bundle. Buyer1 is budget buyer. Buyer2 has higher budget for quality optics and office equipment. Both value quality and reliable products."
     print(f"User Profile: {user_profile}")
     
+    # Define two products with their individual prices (from Task6 example + sampled_products2.jsonl 3rd sample)
+    # Product 1: Crimson Trace Riflescope (from Task6_s3_riflescope_negotiation.py)
+    # Product 2: Epson TM-T20 Receipt Printer (from sampled_products2.jsonl line 4)
+    product_info = {
+        "products": [
+            {
+                "name": "Crimson Trace Brushline Pro Riflescope with Lightweight Solid Construction, Scope Caps and Lens Cloth for Hunting, Shooting and Outdoor",
+                "brand": "Visit the Crimson Trace Store",
+                "price": 218.79,
+                "condition": "New",
+                "model": "Brushline Pro Riflescope 2.5-10x42mm CT Plex Reticle",
+                "style": "2.5-10x42mm Plex",
+                "availability_status": "Only 14 left in stock (more on the way).",
+                "product_category": "Sports & Outdoors › Hunting & Fishing › Shooting › Optics › Gun Scopes › Rifle Scopes",
+                "average_rating": 4.3,
+                "total_reviews": 28,
+                "seller_name": "Amazon.com",
+                "asin": "B08GS6B87J",
+                "full_description": "SPECS: 2.5-10 magnification with a 42mm lens diameter, aerospace grade 1\" tube and weighs 16.6 oz - FOV Range: 40.3 ft Min - 10.1 ft Max. ACCURACY: Features a second focal plane, non-illuminated, CT Plex reticle with a 4\" eye relief, 1/4\" click value and quick spring-loaded zero reset capped turrets. EASE OF USE: Windage (right side), elevation (top) knobs are capped and can be easily unscrewed and adjusted when sighting in at the range by turning with your fingers (no tool required). DURABLE: Constructed of lightweight anodized aluminum with multi-coated lenses and is waterproof, shockproof and nitrogen purged to prevent fogging. INCLUDES: Lens cloth and scope caps.",
+                "image_url": "https://m.media-amazon.com/images/I/31j7DdlfrOL.jpg",
+            },
+            {
+                "name": "Epson C31CB10023 TM-T20 Readyprint Thermal Receipt Printer, Ethernet Interface, Without Cable, Dark Grey",
+                "brand": "Visit the Epson Store",
+                "price": 320.0,
+                "condition": "New",
+                "model": "C31CB10023",
+                "availability_status": "In stock. Usually ships within 3 to 4 days.",
+                "product_category": "Office Products › Office Electronics",
+                "average_rating": 4.1,
+                "total_reviews": 4,
+                "seller_name": "SourceLink Technologies",
+                "asin": "B00A0WG5KW",
+                "full_description": "For nearly 40 years, Epson has led the industry in developing innovative, reliable, high-performance products. From scanners to printers to 3D projectors, our award-winning technology brings your images to life. Epson Headquartered and established on the shore of Lake Suwa in Nagano, Japan.",
+                "image_url": "https://m.media-amazon.com/images/I/51BzGMyEVfL.jpg",
+            },
+        ]
+    }
+    
+    # Calculate total product price
+    total_product_price = sum(p["price"] for p in product_info["products"])
+    print(f"\nProducts (Riflescope & Epson Bundle):")
+    for i, p in enumerate(product_info["products"], 1):
+        print(f"  {i}. {p['name']}: ${p['price']:.2f}")
+    print(f"  Total Bundle Price: ${total_product_price:.2f}")
+    
     # Get user requirement
-    # Use default requirement for automatic running
-    user_requirement = "Looking for reliable used sedan with full service history. Must be accident-free."
+    user_requirement = "I need a Crimson Trace Riflescope for hunting and an Epson thermal receipt printer for my small business. Looking for good value, reliable products with good reviews."
     print(f"Using default requirement: {user_requirement}")
     
     # Reset environment
     print("\n" + "="*60)
-    print("Starting new sequential negotiation with two buyers...")
+    print("Starting new sequential negotiation for Riflescope & Epson printer bundle...")
+    print("Seller choosing between two buyers for product bundle")
     print("="*60)
     
     observation, info = env.reset(
         user_requirement=user_requirement,
-        product_info={
-            "name": "2019 Honda Accord LX",
-            "mileage": "45,000 miles",
-            "condition": "Excellent",
-            "service_history": "Full Honda dealership records",
-            "accident_history": "Clean - no accidents",
-            "original_price": 24000.0,
-            "features": ["Backup camera", "Apple CarPlay", "Honda Sensing"],
-            "issues_disclosed": "Minor paint chip on front bumper (repaired)",
-        },
+        product_info=product_info,
         user_profile=user_profile,  # Pass user profile
     )
     
@@ -208,7 +246,7 @@ def main(model_name=None):
     
     # Initialize results dictionary
     results = {
-        "task": "Task6_s2_used_car_negotiation",
+        "task": "Task7_s3_riflescope_epson_bundle_negotiation",
         "timestamp": datetime.now().isoformat(),
         "user_requirement": user_requirement,
         "user_profile": user_profile,
@@ -218,141 +256,77 @@ def main(model_name=None):
     }
     
     while not done:
-        # Each round: buyers respond first (if first round), then seller chooses buyer and responds
-        # For sequential negotiation, we need to handle the flow:
-        # 1. First round: both buyers respond first, then seller chooses one and responds
-        # 2. Subsequent rounds: seller chooses buyer first, then buyer responds, then seller responds
+        # Each round: seller chooses one buyer to negotiate with, then buyer responds first, then seller responds
+        # Seller can see both buyers' information in the observation
+        # Let seller decide which buyer to negotiate with
+        # We'll use a combined conversation history that includes both buyers' conversations
+        combined_history = []
+        # Add buyer1 messages with prefix
+        for msg in observation.get("conversation_history_buyer1", []):
+            combined_history.append({
+                **msg,
+                "content": f"[Buyer 1] {msg['content']}"
+            })
+        # Add buyer2 messages with prefix
+        for msg in observation.get("conversation_history_buyer2", []):
+            combined_history.append({
+                **msg,
+                "content": f"[Buyer 2] {msg['content']}"
+            })
         
-        current_round = observation.get('current_round', 0)
+        # Get seller's choice - seller should indicate which buyer they want to negotiate with
+        seller_choice_response = seller.respond(
+            conversation_history=combined_history,
+            current_state={
+                **observation,
+                "instruction": "You are negotiating with two buyers for two products. Each round, you need to choose ONE buyer to negotiate with. Please clearly indicate which buyer (1 or 2) you want to negotiate with, for example: 'I want to negotiate with buyer 1' or 'Let me talk to buyer 2'. Prices represent total price for both products."
+            }
+        )
         
-        # First round: buyers respond first based on product info
-        if current_round == 0:
-            # Get buyer1's initial response
-            buyer1_action = buyer1.respond(
-                conversation_history=observation["conversation_history_buyer1"],
-                current_state=observation
-            )
-            
-            # Get buyer2's initial response
-            buyer2_action = buyer2.respond(
-                conversation_history=observation["conversation_history_buyer2"],
-                current_state=observation
-            )
-            
-            # Create updated conversation histories that include buyers' responses
-            updated_conversation_history_buyer1 = observation["conversation_history_buyer1"].copy()
-            updated_conversation_history_buyer2 = observation["conversation_history_buyer2"].copy()
-            
-            if buyer1_action:
-                updated_conversation_history_buyer1.append({
-                    "role": "buyer",
-                    "content": buyer1_action,
-                    "round": current_round
-                })
-            
-            if buyer2_action:
-                updated_conversation_history_buyer2.append({
-                    "role": "buyer",
-                    "content": buyer2_action,
-                    "round": current_round
-                })
-            
-            # Seller can see both buyers' messages and choose which one to negotiate with
-            combined_history = []
-            for msg in updated_conversation_history_buyer1:
-                combined_history.append({
-                    **msg,
-                    "content": f"[Buyer 1] {msg['content']}"
-                })
-            for msg in updated_conversation_history_buyer2:
-                combined_history.append({
-                    **msg,
-                    "content": f"[Buyer 2] {msg['content']}"
-                })
-            
-            # Get seller's response - seller should indicate which buyer they want to negotiate with
-            seller_response = seller.respond(
-                conversation_history=combined_history,
-                current_state={
-                    **observation,
-                    "instruction": "You are negotiating with two buyers. Each round, you need to choose ONE buyer to negotiate with and provide your negotiation message. Please clearly indicate which buyer (1 or 2) you want to negotiate with, for example: 'I want to negotiate with buyer 1' or 'Let me talk to buyer 2'."
-                }
-            )
-            
-            # Extract buyer choice from seller's response
-            selected_buyer = extract_buyer_choice(seller_response, observation)
-            print(f"\n[Seller chooses to negotiate with Buyer {selected_buyer} this round]")
-            
-            seller_action = seller_response
-            
-            # Use the buyer action for the selected buyer
-            if selected_buyer == 1:
-                buyer_action = buyer1_action
-            else:
-                buyer_action = buyer2_action
+        # Extract buyer choice from seller's response
+        selected_buyer = extract_buyer_choice(seller_choice_response, observation)
+        print(f"\n[Seller chooses to negotiate with Buyer {selected_buyer} this round]")
+        
+        # Get the conversation history for the selected buyer
+        if selected_buyer == 1:
+            conversation_history = observation["conversation_history_buyer1"]
         else:
-            # Subsequent rounds: seller chooses buyer first, then buyer responds, then seller responds
-            # Seller can see both buyers' information in the observation
-            combined_history = []
-            for msg in observation.get("conversation_history_buyer1", []):
-                combined_history.append({
-                    **msg,
-                    "content": f"[Buyer 1] {msg['content']}"
-                })
-            for msg in observation.get("conversation_history_buyer2", []):
-                combined_history.append({
-                    **msg,
-                    "content": f"[Buyer 2] {msg['content']}"
-                })
-            
-            # Get seller's response - seller should indicate which buyer they want to negotiate with
-            seller_response = seller.respond(
-                conversation_history=combined_history,
-                current_state={
-                    **observation,
-                    "instruction": "You are negotiating with two buyers. Each round, you need to choose ONE buyer to negotiate with and provide your negotiation message. Please clearly indicate which buyer (1 or 2) you want to negotiate with, for example: 'I want to negotiate with buyer 1' or 'Let me talk to buyer 2'."
-                }
-            )
-            
-            # Extract buyer choice from seller's response
-            selected_buyer = extract_buyer_choice(seller_response, observation)
-            print(f"\n[Seller chooses to negotiate with Buyer {selected_buyer} this round]")
-            
-            seller_action = seller_response
-            
-            # Get the conversation history for the selected buyer
-            if selected_buyer == 1:
-                conversation_history = observation["conversation_history_buyer1"]
-            else:
-                conversation_history = observation["conversation_history_buyer2"]
-            
-            # Create updated conversation history that includes seller's message
-            # So buyer can see seller's message before responding
-            updated_conversation_history = conversation_history.copy()
-            if seller_action:
-                updated_conversation_history.append({
-                    "role": "seller",
-                    "content": seller_action,
-                    "round": current_round
-                })
-            
-            # Get the selected buyer's response (buyer can now see seller's message)
-            if selected_buyer == 1:
-                buyer_action = buyer1.respond(
-                    conversation_history=updated_conversation_history,
-                    current_state=observation
-                )
-            else:
-                buyer_action = buyer2.respond(
-                    conversation_history=updated_conversation_history,
-                    current_state=observation
-                )
+            conversation_history = observation["conversation_history_buyer2"]
         
-        # Execute step with selected buyer and actions (order: buyer_action, seller_action)
+        # Get the selected buyer's response first (buyer responds based on current history)
+        if selected_buyer == 1:
+            buyer_action = buyer1.respond(
+                conversation_history=conversation_history,
+                current_state=observation
+            )
+        else:
+            buyer_action = buyer2.respond(
+                conversation_history=conversation_history,
+                current_state=observation
+            )
+        
+        # Create updated conversation history that includes buyer's response
+        # So seller can see buyer's message before responding
+        updated_conversation_history = conversation_history.copy()
+        if buyer_action:
+            current_round = observation.get("current_round", 0)
+            updated_conversation_history.append({
+                "role": "buyer",
+                "content": buyer_action,
+                "round": current_round
+            })
+        
+        # Get seller's negotiation response (seller can now see buyer's message)
+        seller_action = seller.respond(
+            conversation_history=updated_conversation_history,
+            current_state=observation
+        )
+        
+        # Execute step with selected buyer and actions (order: buyer -> seller)
         observation, reward, terminated, truncated, info = env.step(
             selected_buyer=selected_buyer,
-            buyer_action=buyer_action,
-            seller_action=seller_action
+            seller_action=seller_action,
+            buyer_action=buyer_action
         )
         done = terminated or truncated
         
@@ -435,13 +409,13 @@ def main(model_name=None):
             print(f"Status: {info['status']}")
             if info.get('selected_buyer'):
                 print(f"Final Selected Buyer: Buyer {info['selected_buyer']}")
-                print(f"Final Deal Price: ${info.get('final_deal_price', 0):.2f}")
+                print(f"Final Deal Total Price: ${info.get('final_deal_price', 0):.2f}")
             buyer1_price = info.get('buyer1_price', 0) or 0
             seller_price_buyer1 = info.get('seller_price_buyer1', 0) or 0
             buyer2_price = info.get('buyer2_price', 0) or 0
             seller_price_buyer2 = info.get('seller_price_buyer2', 0) or 0
-            print(f"Buyer1 Prices: Buyer=${buyer1_price:.2f} | Seller=${seller_price_buyer1:.2f}")
-            print(f"Buyer2 Prices: Buyer=${buyer2_price:.2f} | Seller=${seller_price_buyer2:.2f}")
+            print(f"Buyer1 Total Prices: Buyer=${buyer1_price:.2f} | Seller=${seller_price_buyer1:.2f}")
+            print(f"Buyer2 Total Prices: Buyer=${buyer2_price:.2f} | Seller=${seller_price_buyer2:.2f}")
             # current_round has been incremented to reflect the completed round
             actual_rounds = info['round']
             print(f"Total Rounds: {actual_rounds}")
@@ -486,23 +460,14 @@ def main(model_name=None):
                 "buyer1_max_price": buyer1_max_price,
                 "buyer2_max_price": buyer2_max_price,
                 "seller_min_price": seller_min_price,
-                "product_info": {
-                    "name": "2019 Honda Accord LX",
-                    "mileage": "45,000 miles",
-                    "condition": "Excellent",
-                    "service_history": "Full Honda dealership records",
-                    "accident_history": "Clean - no accidents",
-                    "original_price": 24000.0,
-                    "features": ["Backup camera", "Apple CarPlay", "Honda Sensing"],
-                    "issues_disclosed": "Minor paint chip on front bumper (repaired)",
-                },
+                "product_info": product_info,
                 "model": get_model_name(model),
             })
             break
     
     # Close environment
     env.close()
-    print("\nNegotiation completed!")
+    print("\nRiflescope & Epson printer bundle negotiation completed!")
     
     # Ensure elapsed_time is set even if negotiation didn't complete normally
     if "elapsed_time" not in results:
@@ -511,7 +476,7 @@ def main(model_name=None):
     # Save results to file
     try:
         # Create results directory structure
-        results_dir = Path(project_root) / "agenticpay" / "results" / "only_multi_buyer"
+        results_dir = Path(project_root) / "agenticpay" / "results" / "multi_buyer_multi_products"
         results_dir.mkdir(parents=True, exist_ok=True)
         
         # Get model name for directory (sanitize for filesystem)
@@ -531,11 +496,11 @@ def main(model_name=None):
             json.dump(results, f, indent=2, ensure_ascii=False)
         
         # Save output text
-        output_file = run_dir / "Task6_s2_output.txt"
+        output_file = run_dir / "Task7_s3_riflescope_epson_output.txt"
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write("="*80 + "\n")
-            f.write("Task6 Scenario 2: Used Car - Sequential Two-Buyer Negotiation Results\n")
-            f.write("Category: Daily Life Consumption\n")
+            f.write("Task7 Scenario 3: Riflescope & Epson Printer Bundle - Sequential Two-Buyer Two-Product Negotiation Results\n")
+            f.write("Category: Sports & Outdoors / Office Electronics\n")
             f.write("="*80 + "\n\n")
             f.write(f"Timestamp: {results['timestamp']}\n")
             f.write(f"Model: {results['model']}\n")
@@ -548,16 +513,20 @@ def main(model_name=None):
             f.write(f"Elapsed Time: {elapsed_time:.2f}s\n\n")
             if results.get('selected_buyer'):
                 f.write(f"Final Selected Buyer: Buyer {results['selected_buyer']}\n")
-                f.write(f"Final Deal Price: ${results.get('final_deal_price', 0):.2f}\n\n")
-            f.write("Final Prices:\n")
-            f.write(f"  Buyer1 - Buyer Price: ${results['buyer1_price']:.2f}" if results.get('buyer1_price') is not None else "  Buyer1 - Buyer Price: Not specified")
+                f.write(f"Final Deal Total Price: ${results.get('final_deal_price', 0):.2f}\n\n")
+            f.write("Final Prices (Total for Both Products):\n")
+            f.write(f"  Buyer1: Buyer=${results['buyer1_price']:.2f} | Seller=${results['seller_price_buyer1']:.2f}" if results.get('buyer1_price') is not None and results.get('seller_price_buyer1') is not None else "  Buyer1: Not specified")
             f.write("\n")
-            f.write(f"  Buyer1 - Seller Price: ${results['seller_price_buyer1']:.2f}" if results.get('seller_price_buyer1') is not None else "  Buyer1 - Seller Price: Not specified")
-            f.write("\n")
-            f.write(f"  Buyer2 - Buyer Price: ${results['buyer2_price']:.2f}" if results.get('buyer2_price') is not None else "  Buyer2 - Buyer Price: Not specified")
-            f.write("\n")
-            f.write(f"  Buyer2 - Seller Price: ${results['seller_price_buyer2']:.2f}" if results.get('seller_price_buyer2') is not None else "  Buyer2 - Seller Price: Not specified")
+            f.write(f"  Buyer2: Buyer=${results['buyer2_price']:.2f} | Seller=${results['seller_price_buyer2']:.2f}" if results.get('buyer2_price') is not None and results.get('seller_price_buyer2') is not None else "  Buyer2: Not specified")
             f.write("\n\n")
+            product_info = results.get('product_info', {})
+            f.write("Products:\n")
+            if 'products' in product_info:
+                for i, p in enumerate(product_info['products'], 1):
+                    f.write(f"  {i}. {p.get('name', 'N/A')} by {p.get('brand', 'N/A')} - ${p.get('price', 0):.2f}\n")
+                total_price = sum(p.get('price', 0) for p in product_info.get('products', []))
+                f.write(f"  Total Product Price: ${total_price:.2f}\n")
+            f.write("\n")
             f.write("Rewards:\n")
             if results.get('total_reward') is not None:
                 f.write(f"  Total Reward: {results['total_reward']:.3f}\n")
@@ -591,7 +560,7 @@ def main(model_name=None):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Task6 Scenario 2: Used Car - Sequential Two-Buyer Negotiation")
+    parser = argparse.ArgumentParser(description="Task7 Scenario 3: Riflescope & Epson Printer Bundle - Sequential Two-Buyer Two-Product Negotiation")
     parser.add_argument(
         "--model",
         type=str,

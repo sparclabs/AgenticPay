@@ -1,6 +1,6 @@
-"""Task7 Scenario 3: Short-term Rental - Sequential Two-Buyer Negotiation
+"""Task6 Scenario 2: Beauty Product - Sequential Two-Buyer Negotiation
 
-One seller negotiating with two potential renters for the same vacation apartment.
+One seller negotiating with two potential buyers for the same BFWood hair brush.
 Seller chooses which buyer to negotiate with each round.
 Category: Daily Life Consumption
 """
@@ -145,9 +145,10 @@ def main(model_name=None):
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
     print("Creating agents...")
-    buyer1_max_price = 210.0  # Maximum acceptable rental price per night for buyer1 (confidential) - budget-conscious
-    buyer2_max_price = 230.0  # Maximum acceptable rental price per night for buyer2 (confidential, different from buyer1)
-    seller_min_price = 150.0  # Minimum acceptable rental price per night for seller (confidential) - covers costs + minimum profit
+    # BFWood hair brush: pricing $6.48
+    buyer1_max_price = 8.0  # Maximum acceptable purchase price for buyer1 (confidential)
+    buyer2_max_price = 7.5  # Maximum acceptable purchase price for buyer2 (confidential, slightly lower than buyer1)
+    seller_min_price = 4.0  # Minimum acceptable selling price for seller (confidential)
     
     buyer1 = BuyerAgent(model=model, buyer_max_price=buyer1_max_price)
     buyer2 = BuyerAgent(model=model, buyer_max_price=buyer2_max_price)
@@ -160,26 +161,26 @@ def main(model_name=None):
         buyer2_agent=buyer2,
         seller_agent=seller,
         max_rounds=max_rounds,
-        initial_seller_price=195.0,  # Initial price per night offered by seller
+        initial_seller_price=6.48,  # Initial price offered by seller (product list price)
         buyer1_max_price=buyer1_max_price,  # Buyer1 bottom price (confidential)
         buyer2_max_price=buyer2_max_price,  # Buyer2 bottom price (confidential)
         seller_min_price=seller_min_price,  # Seller bottom price (confidential)
         environment_info={
-            "platform": "Airbnb",
-            "season": "Summer peak",
-            "availability": "7 days requested",
+            "platform": "Amazon",
+            "market_type": "B2C",
+            "availability_status": "In Stock",
         },
         price_tolerance=price_tolerance,
         reward_weights=reward_weights,  # Reward weights configuration
     )
     
     # Create user profile (text description of personal preferences)
-    user_profile = "Family vacation planner looking for good value. Wants clean, well-located property with amenities. Flexible on exact dates but prefers peak season. Concerned about reviews and cancellation policy."
+    user_profile = "Hair care conscious buyer interested in natural wooden brushes. Values quality materials like beech bristles and black walnut. Prefers products with good reviews for scalp massage and hair health."
     print(f"User Profile: {user_profile}")
     
     # Get user requirement
     # Use default requirement for automatic running
-    user_requirement = "Need vacation apartment for family of 4, 7 nights in July. Close to beach with kitchen."
+    user_requirement = "Looking for a natural wooden hair brush for scalp massage, preferably with beech bristles. Budget around $8."
     print(f"Using default requirement: {user_requirement}")
     
     # Reset environment
@@ -187,17 +188,23 @@ def main(model_name=None):
     print("Starting new sequential negotiation with two buyers...")
     print("="*60)
     
+    # Product from sampled_products2.jsonl line 2 - BFWood Wooden Paddle Hair Brush
+    product_image_url = "https://m.media-amazon.com/images/I/51bE06+44SL.jpg"
     observation, info = env.reset(
         user_requirement=user_requirement,
         product_info={
-            "name": "Beachfront 2BR Apartment in Miami",
-            "location": "South Beach - 2 blocks from ocean",
-            "bedrooms": 2,
-            "max_guests": 4,
-            "amenities": ["Full kitchen", "WiFi", "Pool", "Parking", "Beach chairs"],
-            "rating": "4.8/5 (127 reviews)",
-            "standard_rate": 250.0,
-            "cancellation_policy": "Moderate - Free cancellation 5 days before",
+            "name": "BFWood Wooden Paddle Hair Brush – Black Walnut Hairbrush for Massaging Scalp",
+            "condition": "New",
+            "brand": "Visit the BFWood Store",
+            "original_price": 6.48,
+            "availability_status": "In Stock.",
+            "product_category": "Beauty & Personal Care › Hair Care › Styling Tools & Appliances › Hair Brushes",
+            "average_rating": 4.5,
+            "total_reviews": 1652,
+            "seller_name": "BFWood",
+            "asin": "B083TZ4JSR",
+            "full_description": "BFWood hair brush bristles are made of natural beech; They make your hair silky and shiny by distributing oil from your scalp throughout the whole length of your hair. RELAXATION AND COMFORT: The cushioned base has an air hole which allows compression when you brush; The beech bristles massage your scalp and give you a comfortable hair brushing experience. SUITABLE FOR ALL HAIR TYPES: Whether you have thin or thick hair, this hair brush is perfect for you. Designed with soft tips and wide gaps, the bristles will help to detangle and smooth your hair without causing hair loss or breakage. NEW DESIGN GRIP: We designed a black walnut handle with curved sides, also adding thickness and curve to the grip; the ergonomic design allows the brush to fit comfortably in your hand. IDEAL GIFT: The package comes with a black walnut wooden brush and a canvas bag.",
+            "image_url": product_image_url,
         },
         user_profile=user_profile,  # Pass user profile
     )
@@ -208,7 +215,7 @@ def main(model_name=None):
     
     # Initialize results dictionary
     results = {
-        "task": "Task7_s3_short_term_rental_negotiation",
+        "task": "Task6_s2_beauty_product_negotiation",
         "timestamp": datetime.now().isoformat(),
         "user_requirement": user_requirement,
         "user_profile": user_profile,
@@ -487,14 +494,15 @@ def main(model_name=None):
                 "buyer2_max_price": buyer2_max_price,
                 "seller_min_price": seller_min_price,
                 "product_info": {
-                    "name": "Beachfront 2BR Apartment in Miami",
-                    "location": "South Beach - 2 blocks from ocean",
-                    "bedrooms": 2,
-                    "max_guests": 4,
-                    "amenities": ["Full kitchen", "WiFi", "Pool", "Parking", "Beach chairs"],
-                    "rating": "4.8/5 (127 reviews)",
-                    "standard_rate": 250.0,
-                    "cancellation_policy": "Moderate - Free cancellation 5 days before",
+                    "name": "BFWood Wooden Paddle Hair Brush – Black Walnut Hairbrush for Massaging Scalp",
+                    "condition": "New",
+                    "brand": "Visit the BFWood Store",
+                    "original_price": 6.48,
+                    "product_category": "Beauty & Personal Care › Hair Care › Styling Tools & Appliances › Hair Brushes",
+                    "average_rating": 4.5,
+                    "total_reviews": 1652,
+                    "asin": "B083TZ4JSR",
+                    "image_url": "https://m.media-amazon.com/images/I/51bE06+44SL.jpg",
                 },
                 "model": get_model_name(model),
             })
@@ -531,10 +539,10 @@ def main(model_name=None):
             json.dump(results, f, indent=2, ensure_ascii=False)
         
         # Save output text
-        output_file = run_dir / "Task7_s3_output.txt"
+        output_file = run_dir / "Task6_s2_beauty_product_output.txt"
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write("="*80 + "\n")
-            f.write("Task7 Scenario 3: Short-term Rental - Sequential Two-Buyer Negotiation Results\n")
+            f.write("Task6 Scenario 2: Beauty Product - Sequential Two-Buyer Negotiation Results\n")
             f.write("Category: Daily Life Consumption\n")
             f.write("="*80 + "\n\n")
             f.write(f"Timestamp: {results['timestamp']}\n")
@@ -591,7 +599,7 @@ def main(model_name=None):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Task7 Scenario 3: Short-term Rental - Sequential Two-Buyer Negotiation")
+    parser = argparse.ArgumentParser(description="Task6 Scenario 2: Beauty Product - Sequential Two-Buyer Negotiation")
     parser.add_argument(
         "--model",
         type=str,

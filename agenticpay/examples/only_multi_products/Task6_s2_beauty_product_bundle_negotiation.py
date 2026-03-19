@@ -1,6 +1,6 @@
-"""Task5 Scenario 1: Used Smartphone Bundle - Two-Product Negotiation
+"""Task6 Scenario 2: Beauty Product Bundle - Two-Product Negotiation
 
-Buyer negotiates for two used tech items: iPhone 14 Pro and AirPods Pro.
+Buyer negotiates for NOU Oriental fragrance + BFWood hair brush bundle.
 Bundle purchase with total price negotiation.
 Category: Daily Life Consumption
 """
@@ -105,8 +105,9 @@ def main(model_name=None):
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
     # buyer_max_price and seller_min_price represent total expected cost for both products
     print("Creating agents...")
-    buyer_max_price = 660.0  # Maximum acceptable total purchase price for buyer (confidential, for both products) - iPhone $560 + AirPods $100
-    seller_min_price = 420.0  # Minimum acceptable total selling price for seller (confidential, for both products) - iPhone $350 + AirPods $70
+    # NOU fragrance $21.95 + BFWood hair brush $6.48 = $28.43 total
+    buyer_max_price = 30.0  # Maximum acceptable total purchase price for buyer (confidential)
+    seller_min_price = 20.0  # Minimum acceptable total selling price for seller (confidential)
     buyer = BuyerAgent(model=model, buyer_max_price=buyer_max_price)
     seller = SellerAgent(model=model, seller_min_price=seller_min_price)
     
@@ -117,44 +118,49 @@ def main(model_name=None):
         buyer_agent=buyer,
         seller_agent=seller,
         max_rounds=max_rounds,
-        initial_seller_price=620.0,  # Initial total price offered by seller for both products
+        initial_seller_price=28.43,  # Initial total price offered by seller for both items ($21.95 + $6.48)
         buyer_max_price=buyer_max_price,  # Buyer total max price (confidential, for both products)
         seller_min_price=seller_min_price,  # Seller total min price (confidential, for both products)
         environment_info={
-            "platform": "eBay",
-            "market_type": "C2C",
-            "listing_age": "3 days",
+            "platform": "Amazon",
+            "market_type": "B2C",
+            "availability_status": "In Stock",
         },
         price_tolerance=price_tolerance,
     )
     
     # Create user profile (text description of personal preferences)
-    user_profile = "Tech-savvy user who researches prices carefully before buying. Concerned about device condition and battery health. Prefers to buy from individuals with good track records and complete accessories."
+    user_profile = "Style-conscious buyer interested in men's grooming. Values natural ingredients in fragrances and quality hair care tools. Prefers products with good reviews from Beauty & Personal Care category."
     print(f"User Profile: {user_profile}")
     
-    # Define two products with their individual prices
-    # The product_info should contain a list of two products
+    # Define two products from sampled_products2.jsonl (lines 1-2: Oriental fragrance + BFWood hair brush)
     product_info = {
         "products": [
             {
-                "name": "iPhone 14 Pro 128GB",
-                "condition": "Used - Good",
-                "price": 520.0,  # Individual price of first product
-                "battery_health": "87%",
-                "purchase_date": "2023-03",
-                "original_price": 999.0,
-                "accessories": ["Original box", "Charger"],
-                "issues_disclosed": "Minor scratches on back",
+                "name": "Oriental Eau de Toilette – Natural Eau de Toilette for Men Woody Eau de Toilette Infused with Essential Oils Fragrance for Men with Oriental Woody Tones NOU Oliban Eau de Toilette for Men – 1.7 Fl Oz",
+                "price": 21.95,
+                "condition": "New",
+                "brand": "Brand: nou",
+                "product_category": "Beauty & Personal Care › Fragrance",
+                "average_rating": 4,
+                "total_reviews": 6,
+                "seller_name": "AmTm Cosmetics",
+                "asin": "B08XQWJX8P",
+                "full_description": "NOU OLIBAN ORIENTAL SCENT FOR MEN – this fragrance for men has been perfectly blended and infused with essential oils, resulting in an intriguing, mysterious scent. ORIENTAL EAU DE TOILETTE CRAFTED BY FRENCH PERFUMERS – created with pure and natural ingredients and infused with aromatic essential oils. OLIBAN WOODY FRAGRANCE NOTES – features elemi and olibanum, toned down by chamomile. Heart notes are patchouli and cistus, with sandalwood, leather, vanilla and benzoin.",
+                "image_url": "https://m.media-amazon.com/images/I/51gDhcURgKL.jpg",
             },
             {
-                "name": "AirPods Pro (2nd Gen)",
-                "condition": "Used - Excellent",
-                "price": 100.0,  # Individual price of second product
-                "battery_health": "Good",
-                "purchase_date": "2023-06",
-                "original_price": 249.0,
-                "accessories": ["All ear tips", "USB-C charging case"],
-                "issues_disclosed": "No issues, barely used",
+                "name": "BFWood Wooden Paddle Hair Brush – Black Walnut Hairbrush for Massaging Scalp",
+                "price": 6.48,
+                "condition": "New",
+                "brand": "Visit the BFWood Store",
+                "product_category": "Beauty & Personal Care › Hair Care › Styling Tools & Appliances › Hair Brushes",
+                "average_rating": 4.5,
+                "total_reviews": 1652,
+                "seller_name": "BFWood",
+                "asin": "B083TZ4JSR",
+                "full_description": "BFWood hair brush bristles are made of natural beech; They make your hair silky and shiny by distributing oil from your scalp. RELAXATION AND COMFORT: The cushioned base has an air hole which allows compression when you brush; The beech bristles massage your scalp. SUITABLE FOR ALL HAIR TYPES: Designed with soft tips and wide gaps. NEW DESIGN GRIP: Black walnut handle with curved sides, ergonomic design. IDEAL GIFT: Comes with a black walnut wooden brush and a canvas bag.",
+                "image_url": "https://m.media-amazon.com/images/I/51bE06+44SL.jpg",
             },
         ]
     }
@@ -168,7 +174,7 @@ def main(model_name=None):
     
     # Get user requirement (should describe purchasing two products)
     # Use default requirement for automatic running
-    user_requirement = "I'm looking for a used iPhone 14 Pro bundle with AirPods Pro, both in good condition with original accessories."
+    user_requirement = "I'm looking for a men's oriental woody fragrance and a quality wooden hair brush for scalp massage. Prefer natural ingredients, good reviews. Budget around $30 for both."
     print(f"Using default requirement: {user_requirement}")
     
     # Reset environment
@@ -188,7 +194,7 @@ def main(model_name=None):
     
     # Initialize results dictionary
     results = {
-        "task": "Task5_s1_used_smartphone_bundle_negotiation",
+        "task": "Task6_s2_beauty_product_bundle_negotiation",
         "timestamp": datetime.now().isoformat(),
         "user_requirement": user_requirement,
         "user_profile": user_profile,
@@ -320,10 +326,10 @@ def main(model_name=None):
             json.dump(results, f, indent=2, ensure_ascii=False)
         
         # Save output text
-        output_file = run_dir / "Task5_s1_output.txt"
+        output_file = run_dir / "Task6_s2_output.txt"
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write("="*80 + "\n")
-            f.write("Task5 Scenario 1: Used Smartphone Bundle - Two-Product Negotiation Results\n")
+            f.write("Task6 Scenario 2: Beauty Product Bundle - Two-Product Negotiation Results\n")
             f.write("Category: Daily Life Consumption\n")
             f.write("="*80 + "\n\n")
             f.write(f"Timestamp: {results['timestamp']}\n")
@@ -370,7 +376,7 @@ def main(model_name=None):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Task5 Scenario 1: Used Smartphone Bundle - Two-Product Negotiation")
+    parser = argparse.ArgumentParser(description="Task6 Scenario 2: Beauty Product Bundle - Two-Product Negotiation")
     parser.add_argument(
         "--model",
         type=str,

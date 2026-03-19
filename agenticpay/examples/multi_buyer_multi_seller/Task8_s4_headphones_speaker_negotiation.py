@@ -1,8 +1,8 @@
-"""Task8 Scenario 4: Website Development - Sequential Two-Buyer Two-Seller Negotiation
+"""Task8 Scenario 4: Headphones & Bluetooth Speaker - Sequential Two-Buyer Two-Seller Negotiation
 
-Two buyers negotiating with two freelance developers for website development services.
+Two buyers negotiating with two sellers for electronics products (Kids Headphones and Sony Bluetooth Speaker).
 Each buyer chooses one seller per round to negotiate with.
-Category: Professional Services
+Category: Electronics
 """
 
 import os
@@ -148,10 +148,10 @@ def main(model_name=None):
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
     print("Creating agents...")
-    buyer1_max_price = 5400.0  # Maximum acceptable price for buyer1 (confidential) - small business
-    buyer2_max_price = 6000.0  # Maximum acceptable price for buyer2 (confidential) - startup with funding
-    seller1_min_price = 2500.0  # Minimum acceptable price for seller1 (confidential) - standard package
-    seller2_min_price = 2800.0  # Minimum acceptable price for seller2 (confidential) - premium package
+    buyer1_max_price = 14.0  # Maximum acceptable price for buyer1 (confidential) - Kids Headphones
+    buyer2_max_price = 110.0  # Maximum acceptable price for buyer2 (confidential) - Sony Bluetooth Speaker
+    seller1_min_price = 10.0  # Minimum acceptable price for seller1 (confidential) - Kids Headphones
+    seller2_min_price = 80.0  # Minimum acceptable price for seller2 (confidential) - Sony Bluetooth Speaker
     
     buyer1 = BuyerAgent(model=model, buyer_max_price=buyer1_max_price)
     buyer2 = BuyerAgent(model=model, buyer_max_price=buyer2_max_price)
@@ -166,28 +166,28 @@ def main(model_name=None):
         seller1_agent=seller1,
         seller2_agent=seller2,
         max_rounds=max_rounds,
-        initial_seller1_price=4200.0,  # Initial price offered by seller1
-        initial_seller2_price=4800.0,  # Initial price offered by seller2 (higher for premium)
+        initial_seller1_price=14.99,  # Initial price offered by seller1 (Kids Headphones list price)
+        initial_seller2_price=108.49,  # Initial price offered by seller2 (Sony Speaker pricing)
         buyer1_max_price=buyer1_max_price,  # Buyer1 bottom price (confidential)
         buyer2_max_price=buyer2_max_price,  # Buyer2 bottom price (confidential)
         seller1_min_price=seller1_min_price,  # Seller1 bottom price (confidential)
         seller2_min_price=seller2_min_price,  # Seller2 bottom price (confidential)
         environment_info={
-            "platform": "Upwork",
+            "platform": "Amazon",
             "comparison_enabled": True,
-            "market_rate_range": "$3,000-$8,000",
+            "market_type": "B2C",
         },
         price_tolerance=0,
         reward_weights=reward_weights,  # Reward weights configuration
     )
     
     # Create user profile (text description of personal preferences)
-    user_profile = "Two clients competing for website developers. Buyer1 is small business with limited budget. Buyer2 is funded startup willing to pay more for better quality."
+    user_profile = "Two buyers looking for electronics. Buyer1 is a parent seeking affordable kids headphones for school. Buyer2 wants a portable Bluetooth speaker for outdoor use."
     print(f"User Profile: {user_profile}")
     
     # Get user requirement
     # Use default requirement for automatic running
-    user_requirement = "Need professional e-commerce website with mobile-friendly design"
+    user_requirement = "Buyer1: Looking for kids wireless headphones with volume control, Bluetooth and 3.5mm jack. Buyer2: Looking for portable Bluetooth speaker with good bass and waterproof design."
     print(f"Using default requirement: {user_requirement}")
     
     # Reset environment
@@ -195,19 +195,36 @@ def main(model_name=None):
     print("Starting new sequential negotiation with two buyers and two sellers...")
     print("="*60)
     
+    # Product info: Seller1 = Kids Headphones (from Task7 example), Seller2 = Sony Bluetooth Speaker (from sampled_products2.jsonl 4th)
+    product_info = {
+        "name_seller1": "Kids Wireless Headphones, Adjustable Headband, Stereo Sound, 3.5mm Jack, Kids Bluetooth Headphones, Volume Control, Foldable, Build-in Microphone, Over-Ear Headphones for Kids for School Home, Travel",
+        "condition_seller1": "New",
+        "brand_seller1": "Brand: NVRADCHUA",
+        "original_price_seller1": 14.99,
+        "availability_status_seller1": "In Stock.",
+        "product_category_seller1": "Electronics › Headphones › Over-Ear Headphones",
+        "average_rating_seller1": 4.0,
+        "total_reviews_seller1": 2,
+        "seller_name_seller1": "Manyutech",
+        "asin_seller1": "B09KQNH5C6",
+        "full_description_seller1": "WIRELESS & WIRED KIDS HEADPHONES: Built with 5.0 Bluetooth chip for fast and stable connection, also with 3.5mm jack. Compatible with smartphones, laptops, tablets, computers, TVs. Cute cat headphones designed with cartoon pattern, comfortable and soft ear cushions to protect child's ears. Excellent sound quality and adjustable headband, stretchable and foldable design for travel and storage. Long battery life (up to 7 hours) and built-in microphone for calls, video chats, or online lessons. Perfect for kids headphones for school and outdoor use.",
+        "image_url_seller1": "https://m.media-amazon.com/images/I/41B+OC0qnOL.jpg",
+        "name_seller2": "Sony Extra Bass Portable Bluetooth Speaker Black - SRS-XB33/BC (Renewed)",
+        "brand_seller2": "Visit the Amazon Renewed Store",
+        "pricing_seller2": "$108.49",
+        "original_price_seller2": 108.49,
+        "availability_status_seller2": "Only 1 left in stock - order soon.",
+        "product_category_seller2": "Electronics › Portable Audio & Video › Portable Speakers & Docks › Portable Bluetooth Speakers",
+        "average_rating_seller2": 4.5,
+        "total_reviews_seller2": 962,
+        "seller_name_seller2": "Planet Open Box",
+        "asin_seller2": "B08FZDJRQ7",
+        "full_description_seller2": "This pre-owned or refurbished product has been professionally inspected and tested to work and look like new. How a product becomes part of Amazon Renewed, your destination for pre-owned, refurbished products: A customer buys a new product and returns it or trades it in for a newer or different model. That product is inspected and tested to work and look like new by Amazon-qualified suppliers. Then, the product is sold as an Amazon Renewed product on Amazon. If not satisfied with the purchase, renewed products are eligible for replacement or refund under the Amazon Renewed Guarantee.",
+        "image_url_seller2": "https://m.media-amazon.com/images/I/41+lMIUpYbL.jpg",
+    }
     observation, info = env.reset(
         user_requirement=user_requirement,
-        product_info={
-            "name": "E-commerce Website Development",
-            "scope_seller1": "5 pages, 50 products, basic features",
-            "scope_seller2": "7 pages, 100 products, advanced features",
-            "timeline_seller1": "4-6 weeks",
-            "timeline_seller2": "5-7 weeks",
-            "tech_stack_seller1": "React + Node.js",
-            "tech_stack_seller2": "Next.js + Node.js",
-            "rating_seller1": "4.9/5 (127 reviews)",
-            "rating_seller2": "5.0/5 (203 reviews)",
-        },
+        product_info=product_info,
         user_profile=user_profile,  # Pass user profile
     )
     
@@ -217,7 +234,7 @@ def main(model_name=None):
     
     # Initialize results dictionary
     results = {
-        "task": "Task8_s4_website_development_negotiation",
+        "task": "Task8_s4_headphones_speaker_negotiation",
         "timestamp": datetime.now().isoformat(),
         "user_requirement": user_requirement,
         "user_profile": user_profile,
@@ -520,7 +537,6 @@ def main(model_name=None):
             
             # Collect results
             elapsed_time = time.time() - start_time
-            product_info = info.get('product_info', {})
             results.update({
                 "status": info.get('status', 'unknown'),
                 "success": terminated,
@@ -551,7 +567,7 @@ def main(model_name=None):
                 "buyer2_max_price": buyer2_max_price,
                 "seller1_min_price": seller1_min_price,
                 "seller2_min_price": seller2_min_price,
-                "product_info": product_info,
+                "product_info": product_info,  # Use product_info passed to reset (env doesn't return it)
                 "model": get_model_name(model),
             })
             break
@@ -587,11 +603,11 @@ def main(model_name=None):
             json.dump(results, f, indent=2, ensure_ascii=False)
         
         # Save output text
-        output_file = run_dir / "Task8_s4_output.txt"
+        output_file = run_dir / "Task8_s4_headphones_speaker_output.txt"
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write("="*80 + "\n")
-            f.write("Task8 Scenario 4: Website Development - Sequential Two-Buyer Two-Seller Negotiation Results\n")
-            f.write("Category: Professional Services\n")
+            f.write("Task8 Scenario 4: Headphones & Bluetooth Speaker - Sequential Two-Buyer Two-Seller Negotiation Results\n")
+            f.write("Category: Electronics\n")
             f.write("="*80 + "\n\n")
             f.write(f"Timestamp: {results['timestamp']}\n")
             f.write(f"Model: {results['model']}\n")
@@ -615,10 +631,14 @@ def main(model_name=None):
             f.write(f"  Buyer2-Seller2: Buyer=${results['b2s2_buyer_price']:.2f} | Seller=${results['b2s2_seller_price']:.2f}" if results.get('b2s2_buyer_price') is not None and results.get('b2s2_seller_price') is not None else "  Buyer2-Seller2: Not specified")
             f.write("\n\n")
             product_info = results.get('product_info', {})
-            f.write("Product:\n")
-            f.write(f"  Name: {product_info.get('name', 'N/A')}\n")
-            f.write(f"  Brand: {product_info.get('brand', 'N/A')}\n")
-            f.write(f"  Price: ${product_info.get('price', 0):.2f}\n")
+            f.write("Product (Seller1 - Kids Headphones):\n")
+            f.write(f"  Name: {product_info.get('name_seller1', 'N/A')}\n")
+            f.write(f"  Brand: {product_info.get('brand_seller1', 'N/A')}\n")
+            f.write(f"  Price: ${product_info.get('original_price_seller1', 0):.2f}\n")
+            f.write("Product (Seller2 - Sony Speaker):\n")
+            f.write(f"  Name: {product_info.get('name_seller2', 'N/A')}\n")
+            f.write(f"  Brand: {product_info.get('brand_seller2', 'N/A')}\n")
+            f.write(f"  Price: ${product_info.get('original_price_seller2', 0):.2f}\n")
             f.write("\n")
             f.write("Rewards:\n")
             if results.get('total_reward') is not None:
@@ -655,7 +675,7 @@ def main(model_name=None):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Task8 Scenario 4: Website Development - Sequential Two-Buyer Two-Seller Negotiation")
+    parser = argparse.ArgumentParser(description="Task8 Scenario 4: Headphones & Bluetooth Speaker - Sequential Two-Buyer Two-Seller Negotiation")
     parser.add_argument(
         "--model",
         type=str,

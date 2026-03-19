@@ -1,9 +1,9 @@
-"""Task6 Scenario 2: Used Car Package - Sequential Two-Buyer Two-Seller Two-Product Negotiation
+"""Task8 Scenario 4: Headphones & Bluetooth Speaker Bundle - Sequential Two-Buyer Two-Seller Two-Product Negotiation
 
-Two buyers negotiating with two sellers for used cars with warranty packages.
+Two buyers negotiating with two sellers for electronics bundle (Kids Headphones + Sony Bluetooth Speaker).
 Each buyer chooses one seller per round to negotiate with.
-Prices represent total price for the car package (vehicle + warranty/extras).
-Category: Daily Life Consumption
+Prices represent total price for both products in the bundle.
+Category: Electronics
 """
 
 import os
@@ -148,13 +148,13 @@ def main(model_name=None):
     print(f"✓ Successfully initialized: {model}")
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
-    # buyer_max_price and seller_min_price represent total expected cost for the car package (vehicle + warranty)
-    # Based on scenario 1-2: buyer_max_price=$18,000 (KBB value 95%), seller_min_price=$14,000 (loan balance + bottom price)
+    # buyer_max_price and seller_min_price represent total expected cost for the bundle (Kids Headphones + Sony Speaker)
+    # Product1: Kids Headphones $14.99, Product2: Sony Speaker $108.49, Total: $123.48
     print("Creating agents...")
-    buyer1_max_price = 18000.0  # Maximum acceptable total purchase price for buyer1 (confidential, family budget)
-    buyer2_max_price = 19500.0  # Maximum acceptable total purchase price for buyer2 (confidential, higher budget with more requirements)
-    seller1_min_price = 14000.0  # Minimum acceptable total selling price for seller1 (confidential, good condition package)
-    seller2_min_price = 13500.0  # Minimum acceptable total selling price for seller2 (confidential, fair condition package)
+    buyer1_max_price = 125.0  # Maximum acceptable total bundle price for buyer1 (confidential)
+    buyer2_max_price = 130.0  # Maximum acceptable total bundle price for buyer2 (confidential)
+    seller1_min_price = 95.0  # Minimum acceptable total bundle price for seller1 (confidential)
+    seller2_min_price = 90.0  # Minimum acceptable total bundle price for seller2 (confidential)
     
     buyer1 = BuyerAgent(model=model, buyer_max_price=buyer1_max_price)
     buyer2 = BuyerAgent(model=model, buyer_max_price=buyer2_max_price)
@@ -169,75 +169,75 @@ def main(model_name=None):
         seller1_agent=seller1,
         seller2_agent=seller2,
         max_rounds=max_rounds,
-        initial_seller1_price=17500.0,  # Initial total price offered by seller1 for the car package (excellent condition)
-        initial_seller2_price=16500.0,  # Initial total price offered by seller2 for the car package (good condition, lower)
-        buyer1_max_price=buyer1_max_price,  # Buyer1 total max price (confidential, for car package)
-        buyer2_max_price=buyer2_max_price,  # Buyer2 total max price (confidential, for car package)
-        seller1_min_price=seller1_min_price,  # Seller1 total min price (confidential, for car package)
-        seller2_min_price=seller2_min_price,  # Seller2 total min price (confidential, for car package)
+        initial_seller1_price=123.48,  # Initial total price offered by seller1 for the bundle (Kids Headphones $14.99 + Sony Speaker $108.49)
+        initial_seller2_price=120.0,  # Initial total price offered by seller2 for the bundle
+        buyer1_max_price=buyer1_max_price,  # Buyer1 total max price (confidential, for development package)
+        buyer2_max_price=buyer2_max_price,  # Buyer2 total max price (confidential, for development package)
+        seller1_min_price=seller1_min_price,  # Seller1 total min price (confidential, for development package)
+        seller2_min_price=seller2_min_price,  # Seller2 total min price (confidential, for development package)
         environment_info={
-            "platform": "Craigslist",
-            "market_type": "C2C",
-            "season": "Spring (good selling season)",
-            "inspection": "Pre-purchase inspection recommended",
-            "meeting": "Local meetup for test drive",
+            "platform": "Amazon",
+            "market_type": "B2C",
+            "comparison_enabled": True,
         },
         price_tolerance=price_tolerance,
         reward_weights=reward_weights,  # Reward weights configuration
     )
     
     # Create user profile (text description of personal preferences)
-    user_profile = "Two buyers competing for used cars. Buyer1 is a family looking for reliable transportation. Buyer2 is an individual willing to pay more for better condition and warranty. Both value service history and clean records."
+    user_profile = "Two buyers looking for electronics bundle. Buyer1 wants Kids Headphones for school and Sony Bluetooth Speaker for outdoor use. Buyer2 has similar needs. Both value quality, good reviews, and reasonable prices."
     print(f"User Profile: {user_profile}")
     
-    # Define two products with their individual prices
-    # The product_info should contain a list of two products (vehicle + warranty package)
-    # Based on scenario 1-2: 2020 Honda Accord EX-L
+    # Define two products: Product1 from Task7 example (Kids Headphones), Product2 from sampled_products2.jsonl 4th (Sony Speaker)
     product_info = {
         "products": [
             {
-                "name": "2020 Honda Accord EX-L",
-                "brand": "Honda",
-                "price": 16000.0,  # Individual price of the vehicle
-                "mileage_seller1": 45000,
-                "mileage_seller2": 52000,
-                "condition_seller1": "Excellent - No accidents, single owner",
-                "condition_seller2": "Good - No accidents, second owner",
-                "accidents_reported": 0,
-                "service_records_seller1": "Complete dealership service records",
-                "service_records_seller2": "Partial service records available",
-                "kelley_blue_book_value": 19500,
-                "features": ["Leather seats", "Sunroof", "Apple CarPlay", "Honda Sensing"],
-                "reason_for_selling": "Upgrading to SUV",
+                "name": "Kids Wireless Headphones, Adjustable Headband, Stereo Sound, 3.5mm Jack, Kids Bluetooth Headphones, Volume Control, Foldable, Build-in Microphone, Over-Ear Headphones for Kids for School Home, Travel",
+                "brand": "Brand: NVRADCHUA",
+                "price": 14.99,
+                "condition": "New",
+                "availability_status": "In Stock.",
+                "product_category": "Electronics › Headphones › Over-Ear Headphones",
+                "average_rating": 4.0,
+                "total_reviews": 2,
+                "seller_name": "Manyutech",
+                "asin": "B09KQNH5C6",
+                "full_description": "WIRELESS & WIRED KIDS HEADPHONES: Built with 5.0 Bluetooth chip for fast and stable connection, also with 3.5mm jack. Compatible with smartphones, laptops, tablets, computers, TVs. Cute cat headphones designed with cartoon pattern, comfortable and soft ear cushions to protect child's ears. Excellent sound quality and adjustable headband, stretchable and foldable design for travel and storage. Long battery life (up to 7 hours) and built-in microphone for calls, video chats, or online lessons. Perfect for kids headphones for school and outdoor use.",
+                "image_url": "https://m.media-amazon.com/images/I/41B+OC0qnOL.jpg",
             },
             {
-                "name": "Extended Warranty & Accessories Package",
-                "brand": "Various",
-                "price": 1500.0,  # Individual price of warranty/extras
-                "warranty_seller1": ["6-month powertrain warranty", "New tires", "Recent brake service"],
-                "warranty_seller2": ["3-month basic warranty", "Original tires (60% tread)"],
-                "included_seller1": "Winter floor mats, cargo organizer, full tank of gas",
-                "included_seller2": "Basic floor mats",
+                "name": "Sony Extra Bass Portable Bluetooth Speaker Black - SRS-XB33/BC (Renewed)",
+                "brand": "Visit the Amazon Renewed Store",
+                "price": 108.49,
+                "pricing": "$108.49",
+                "availability_status": "Only 1 left in stock - order soon.",
+                "product_category": "Electronics › Portable Audio & Video › Portable Speakers & Docks › Portable Bluetooth Speakers",
+                "average_rating": 4.5,
+                "total_reviews": 962,
+                "seller_name": "Planet Open Box",
+                "asin": "B08FZDJRQ7",
+                "full_description": "This pre-owned or refurbished product has been professionally inspected and tested to work and look like new. How a product becomes part of Amazon Renewed, your destination for pre-owned, refurbished products: A customer buys a new product and returns it or trades it in for a newer or different model. That product is inspected and tested to work and look like new by Amazon-qualified suppliers. Then, the product is sold as an Amazon Renewed product on Amazon. If not satisfied with the purchase, renewed products are eligible for replacement or refund under the Amazon Renewed Guarantee.",
+                "image_url": "https://m.media-amazon.com/images/I/41+lMIUpYbL.jpg",
             },
         ]
     }
     
     # Calculate total product price
     total_product_price = sum(p["price"] for p in product_info["products"])
-    print(f"\nProducts (Car Package):")
+    print(f"\nProducts (Electronics Bundle):")
     for i, p in enumerate(product_info["products"], 1):
         print(f"  {i}. {p['name']}: ${p['price']:.2f}")
     print(f"  Total Package Price: ${total_product_price:.2f}")
     
-    # Get user requirement (should describe purchasing the car package)
+    # Get user requirement (should describe purchasing the electronics bundle)
     # Use default requirement for automatic running
-    user_requirement = "Looking for a reliable mid-size sedan, 2019 or newer, under 50k miles, with good service history and some warranty coverage. Budget around $18,000."
+    user_requirement = "I'm looking for a bundle: Kids wireless headphones with volume control and 3.5mm jack for school, plus a portable Bluetooth speaker with good bass and waterproof design for outdoor use."
     print(f"Using default requirement: {user_requirement}")
     
     # Reset environment
     print("\n" + "="*60)
-    print("Starting new sequential negotiation for used car packages...")
-    print("Two buyers competing with two sellers for Honda Accord + Warranty")
+    print("Starting new sequential negotiation for electronics bundle...")
+    print("Two buyers competing with two sellers for Kids Headphones + Sony Bluetooth Speaker")
     print("="*60)
     
     observation, info = env.reset(
@@ -252,7 +252,7 @@ def main(model_name=None):
     
     # Initialize results dictionary
     results = {
-        "task": "Task6_s2_used_car_package_negotiation",
+        "task": "Task8_s4_headphones_speaker_bundle_negotiation",
         "timestamp": datetime.now().isoformat(),
         "user_requirement": user_requirement,
         "user_profile": user_profile,
@@ -592,7 +592,7 @@ def main(model_name=None):
     
     # Close environment
     env.close()
-    print("\nUsed car package negotiation completed!")
+    print("\nHeadphones & Bluetooth Speaker bundle negotiation completed!")
     
     # Ensure elapsed_time is set even if negotiation didn't complete normally
     if "elapsed_time" not in results:
@@ -621,11 +621,11 @@ def main(model_name=None):
             json.dump(results, f, indent=2, ensure_ascii=False)
         
         # Save output text
-        output_file = run_dir / "Task6_s2_output.txt"
+        output_file = run_dir / "Task8_s4_output.txt"
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write("="*80 + "\n")
-            f.write("Task6 Scenario 2: Used Car Package - Sequential Two-Buyer Two-Seller Two-Product Negotiation Results\n")
-            f.write("Category: Daily Life Consumption\n")
+            f.write("Task8 Scenario 4: Headphones & Bluetooth Speaker Bundle - Sequential Two-Buyer Two-Seller Two-Product Negotiation Results\n")
+            f.write("Category: Electronics\n")
             f.write("="*80 + "\n\n")
             f.write(f"Timestamp: {results['timestamp']}\n")
             f.write(f"Model: {results['model']}\n")
@@ -691,7 +691,7 @@ def main(model_name=None):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Task6 Scenario 2: Used Car Package - Sequential Two-Buyer Two-Seller Two-Product Negotiation")
+    parser = argparse.ArgumentParser(description="Task8 Scenario 4: Headphones & Bluetooth Speaker Bundle - Sequential Two-Buyer Two-Seller Two-Product Negotiation")
     parser.add_argument(
         "--model",
         type=str,

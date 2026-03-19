@@ -1,8 +1,9 @@
-"""Task5 Scenario 1: Used Smartphone - Sequential Two-Seller Per One Product Negotiation
+"""Task7 Scenario 3: Epson Receipt Printer - Sequential Two-Seller Negotiation
 
-Buyer negotiating with two sellers offering different used iPhone models.
-Buyer chooses one seller per round to negotiate with.
-Category: Daily Life Consumption
+Two sellers offering the same Epson TM-T20 thermal receipt printer on Amazon.
+Buyer compares offers and chooses which seller to negotiate with each round.
+Category: Office Electronics
+Product source: sampled_products2.jsonl (3rd sample - Epson C31CB10023 TM-T20)
 """
 
 import os
@@ -17,23 +18,15 @@ from datetime import datetime
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 sys.path.insert(0, project_root)
 
-from agenticpay.envs.multi_products_multi_seller.Task3_sequential_two_seller_per_one_product_negotiation import Task3SequentialTwoSellerPerOneProductNegotiation
+from agenticpay.envs.only_multi_seller.Task3_sequential_two_seller_negotiation import Task3SequentialTwoSellerNegotiation
 from agenticpay.agents.buyer_agent import BuyerAgent
 from agenticpay.agents.seller_agent import SellerAgent
 from agenticpay.models.custom_llm import CustomLLM
+from agenticpay.models.qwen3_vl import Qwen3VL
+from agenticpay.models.vllm_lm import VLLMLLM
+from agenticpay.models.sglang_vlm import SGLangVLM
+from agenticpay.examples.config import reward_weights, max_rounds, price_tolerance
 import re
-
-# Import configuration parameters
-examples_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, examples_dir)
-try:
-    from config import reward_weights, max_rounds, price_tolerance, OPENAI_API_KEY
-except ImportError:
-    # Default values if config not available
-    reward_weights = {"buyer_savings": 1.0, "seller_profit": 1.0, "time_cost": 0.1}
-    max_rounds = 20
-    price_tolerance = 1.0
-    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 
 def get_model_name(model):
@@ -82,10 +75,11 @@ def extract_seller_choice(buyer_response: str, observation: dict) -> int:
     response_lower = buyer_response.lower()
     
     # Look for explicit seller mentions
-    if re.search(r'seller\s*2|second\s+seller|seller\s*two', response_lower):
-        return 2
-    elif re.search(r'seller\s*1|first\s+seller|seller\s*one', response_lower):
-        return 1
+    if re.search(r'seller\s*[12]|first\s+seller|seller\s*one', response_lower):
+        if re.search(r'seller\s*2|second\s+seller|seller\s*two', response_lower):
+            return 2
+        elif re.search(r'seller\s*1|first\s+seller|seller\s*one', response_lower):
+            return 1
     
     # If no explicit mention, try to infer from context
     # Check if buyer mentions prices or other indicators
@@ -116,7 +110,7 @@ def extract_seller_choice(buyer_response: str, observation: dict) -> int:
 
 
 def main(model_name=None):
-    """Main function: Demonstrates sequential multi-seller negotiation flow with different products
+    """Main function: Demonstrates sequential multi-seller negotiation flow
     
     Args:
         model_name: Optional model name. If None, uses default model.
@@ -125,7 +119,7 @@ def main(model_name=None):
     print("Initializing model...")
     
     # Check API key
-    api_key = os.getenv("OPENAI_API_KEY") or OPENAI_API_KEY
+    api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         print("Warning: OPENAI_API_KEY not set. Please set it to use OpenAI models.")
         print("You can set it with: export OPENAI_API_KEY='your-key-here'")
@@ -133,17 +127,35 @@ def main(model_name=None):
     
     # Use provided model name or default
     if model_name is None:
-        model_name = "gpt-5.2"  # Default model
+        model_name = "qwen3-14b"  # Default model
     
-    model = CustomLLM(api_key=api_key, model=model_name)  # claude-sonnet-4-5-20250929, gpt-5.2, gemini-3-pro-all, gpt-3.5-turbo, DeepSeek-R1
+    model = CustomLLM(api_key=api_key, model=model_name) # claude-sonnet-4-5-20250929, gpt-5.2, gemini-3-pro-all, gpt-3.5-turbo, DeepSeek-R1
+
+    # Build absolute path to model directory
+    # model_path = os.path.join(project_root, "models", "download_models", "Qwen3-8B-Instruct")
+    # model_path = os.path.abspath(model_path)
+
+    # vLLM LLM Model
+    # model = VLLMLLM(
+    #     model_path=model_path,
+    #     trust_remote_code=True,
+    #     gpu_memory_utilization=0.9,
+    #     tensor_parallel_size=4, # 4 GPUs
+    # )
+
+    # SGLang VLM Model
+    # model = SGLangVLM(
+    #     model_path=model_path,
+    # )
     
     print(f"✓ Successfully initialized: {model}")
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
     print("Creating agents...")
-    buyer_max_price = 560.0  # Maximum acceptable purchase price for buyer (confidential) - 70% of official refurb price
-    seller1_min_price = 350.0  # Minimum acceptable selling price for seller1 (confidential) - platform buyback price
-    seller2_min_price = 360.0  # Minimum acceptable selling price for seller2 (confidential, different from seller1)
+    # Epson TM-T20 receipt printer list price $320 - buyer wants discount, sellers have different cost bases
+    buyer_max_price = 300.0  # Maximum acceptable purchase price for buyer (confidential)
+    seller1_min_price = 260.0  # Minimum acceptable selling price for seller1 (confidential)
+    seller2_min_price = 270.0  # Minimum acceptable selling price for seller2 (confidential, slightly higher than seller1)
     
     buyer = BuyerAgent(model=model, buyer_max_price=buyer_max_price)
     seller1 = SellerAgent(model=model, seller_min_price=seller1_min_price)
@@ -151,62 +163,67 @@ def main(model_name=None):
     
     # Create environment
     print("Creating sequential multi-seller negotiation environment...")
-    env = Task3SequentialTwoSellerPerOneProductNegotiation(
+    env = Task3SequentialTwoSellerNegotiation(
         buyer_agent=buyer,
         seller1_agent=seller1,
         seller2_agent=seller2,
         max_rounds=max_rounds,
-        initial_seller1_price=520.0,  # Initial price offered by seller1
-        initial_seller2_price=530.0,  # Initial price offered by seller2 (slightly higher)
+        initial_seller1_price=320.0,  # Initial price offered by seller1 (list price)
+        initial_seller2_price=315.0,  # Initial price offered by seller2 (slightly lower to attract)
         buyer_max_price=buyer_max_price,  # Buyer bottom price (confidential)
         seller1_min_price=seller1_min_price,  # Seller1 bottom price (confidential)
         seller2_min_price=seller2_min_price,  # Seller2 bottom price (confidential)
         environment_info={
-            "platform": "eBay",
-            "market_type": "C2C",
-            "comparison_enabled": True,
+            "platform": "Amazon",
+            "market_type": "B2C",
+            "similar_listings_available": 3,
+            "availability_status": "In stock. Usually ships within 3 to 4 days.",
         },
-        price_tolerance=0,
+        price_tolerance=price_tolerance,
         reward_weights=reward_weights,  # Reward weights configuration
     )
     
     # Create user profile (text description of personal preferences)
-    user_profile = "Tech-savvy user who researches prices carefully before buying. Concerned about device condition and battery health. Prefers to buy from individuals with good track records and complete accessories."
+    user_profile = "Small business owner setting up a retail store. Needs reliable receipt printer for POS system. Prefers Ethernet interface and values Epson brand reputation."
     print(f"User Profile: {user_profile}")
     
     # Get user requirement
+    # print("\n" + "="*60)
+    # print("Please enter the product requirement you want to purchase:")
+    # user_requirement = input("> ").strip()
+    # if not user_requirement:
+    #     print("No requirement entered, using default requirement...")
+    #     user_requirement = "I need a high-quality winter jacket for cold weather"
+    #     print(f"Using default requirement: {user_requirement}")
     # Use default requirement for automatic running
-    user_requirement = "I'm looking for a used iPhone 14 Pro in good condition, preferably with original accessories."
+    user_requirement = "I need an Epson thermal receipt printer with Ethernet interface for my store. Prefer TM-T20 model, dark grey color. Looking for good price from reputable seller."
     print(f"Using default requirement: {user_requirement}")
     
-    # Reset environment with different products for each seller
+    # Reset environment
     print("\n" + "="*60)
-    print("Starting new sequential negotiation with two sellers (each with similar iPhone 14 Pro but different conditions)...")
+    print("Starting new sequential negotiation with two sellers...")
     print("="*60)
     
+    # Product image for VLM (图文): from sampled_products2.jsonl 3rd sample - Epson TM-T20
+    product_image_url = "https://m.media-amazon.com/images/I/51BzGMyEVfL.jpg"
+
     observation, info = env.reset(
         user_requirement=user_requirement,
-        seller1_product_info={
-            "name": "iPhone 14 Pro 128GB",
-            "condition": "Used - Good",
-            "battery_health": "87%",
-            "purchase_date": "2023-03",
-            "original_price": 999.0,
-            "accessories": ["Original box", "Charger"],
-            "issues_disclosed": "Minor scratches on back",
-            "seller_rating": "98.5% positive (245 sales)",
-            "listing_age": "3 days",
-        },
-        seller2_product_info={
-            "name": "iPhone 14 Pro 128GB",
-            "condition": "Used - Very Good",
-            "battery_health": "91%",
-            "purchase_date": "2023-05",
-            "original_price": 999.0,
-            "accessories": ["Original box", "Charger", "Screen protector"],
-            "issues_disclosed": "No issues, barely used",
-            "seller_rating": "97.8% positive (189 sales)",
-            "listing_age": "5 days",
+        product_info={
+            "name": "Epson C31CB10023 TM-T20 Readyprint Thermal Receipt Printer, Ethernet Interface, Without Cable, Dark Grey",
+            "condition": "New",
+            "brand": "Visit the Epson Store",
+            "model": "C31CB10023",
+            "style": "Ethernet Interface, Dark Grey",
+            "original_price": 320.0,
+            "availability_status": "In stock. Usually ships within 3 to 4 days.",
+            "product_category": "Office Products › Office Electronics",
+            "average_rating": 4.1,
+            "total_reviews": 4,
+            "seller_name": "SourceLink Technologies",
+            "asin": "B00A0WG5KW",
+            "full_description": "For nearly 40 years, Epson has led the industry in developing innovative, reliable, high-performance products. From scanners to printers to 3D projectors, our award-winning technology brings your images to life. Epson Headquartered and established on the shore of Lake Suwa in Nagano, Japan. Ethernet interface. Dark gray color. Without Cable.",
+            "image_url": product_image_url,  # For VLM: product image (图文)
         },
         user_profile=user_profile,  # Pass user profile
     )
@@ -217,7 +234,7 @@ def main(model_name=None):
     
     # Initialize results dictionary
     results = {
-        "task": "Task5_s1_used_smartphone_negotiation",
+        "task": "Task7_s3_epson_receipt_printer_negotiation",
         "timestamp": datetime.now().isoformat(),
         "user_requirement": user_requirement,
         "user_profile": user_profile,
@@ -250,7 +267,7 @@ def main(model_name=None):
             conversation_history=combined_history,
             current_state={
                 **observation,
-                "instruction": "You are negotiating with two sellers, each offering a different jacket model. Each round, you need to choose ONE seller to negotiate with and provide your negotiation message. Please clearly indicate which seller (1 or 2) you want to negotiate with, for example: 'I want to negotiate with seller 1' or 'Let me talk to seller 2'."
+                "instruction": "You are negotiating with two sellers. Each round, you need to choose ONE seller to negotiate with and provide your negotiation message. Please clearly indicate which seller (1 or 2) you want to negotiate with, for example: 'I want to negotiate with seller 1' or 'Let me talk to seller 2'."
             }
         )
         
@@ -263,17 +280,17 @@ def main(model_name=None):
         buyer_action = buyer_response
         
         # Get the conversation history for the selected seller
-        if selected_seller == 1:
-            conversation_history = observation["conversation_history_seller1"]
-        else:
-            conversation_history = observation["conversation_history_seller2"]
-        
         # Create updated conversation history that includes buyer's response
         # So seller can see buyer's message before responding
-        updated_conversation_history = conversation_history.copy()
+        if selected_seller == 1:
+            conversation_history = observation["conversation_history_seller1"].copy()
+        else:
+            conversation_history = observation["conversation_history_seller2"].copy()
+        
+        # Add buyer's message to the conversation history
         if buyer_action:
             current_round = observation.get("current_round", 0)
-            updated_conversation_history.append({
+            conversation_history.append({
                 "role": "buyer",
                 "content": buyer_action,
                 "round": current_round
@@ -282,12 +299,12 @@ def main(model_name=None):
         # Get the selected seller's response (seller can now see buyer's message)
         if selected_seller == 1:
             seller_action = seller1.respond(
-                conversation_history=updated_conversation_history,
+                conversation_history=conversation_history,
                 current_state=observation
             )
         else:
             seller_action = seller2.respond(
-                conversation_history=updated_conversation_history,
+                conversation_history=conversation_history,
                 current_state=observation
             )
         
@@ -306,7 +323,7 @@ def main(model_name=None):
         sys.stdout.flush()
         
         # Display step rewards for each round with detailed calculation
-        if 'step_seller1_reward' in info or 'step_seller2_reward' in info or 'step_buyer_reward' in info:
+        if 'step_buyer_reward' in info or 'step_seller1_reward' in info or 'step_seller2_reward' in info:
             print(f"\n[Step Rewards] ", end="")
             if 'step_buyer_reward' in info:
                 print(f"Buyer: {info['step_buyer_reward']:.3f}", end="")
@@ -387,13 +404,6 @@ def main(model_name=None):
             if info.get('selected_seller'):
                 print(f"Final Selected Seller: Seller {info['selected_seller']}")
                 print(f"Final Deal Price: ${info.get('final_deal_price', 0):.2f}")
-                # Display product info for selected seller
-                if info['selected_seller'] == 1:
-                    product_info = info.get('seller1_product_info', {})
-                    print(f"Selected Product: {product_info.get('name', 'N/A')} by {product_info.get('brand', 'N/A')}")
-                elif info['selected_seller'] == 2:
-                    product_info = info.get('seller2_product_info', {})
-                    print(f"Selected Product: {product_info.get('name', 'N/A')} by {product_info.get('brand', 'N/A')}")
             seller1_price = info.get('seller1_price', 0) or 0
             buyer_price_seller1 = info.get('buyer_price_seller1', 0) or 0
             seller2_price = info.get('seller2_price', 0) or 0
@@ -422,10 +432,6 @@ def main(model_name=None):
             
             # Collect results
             elapsed_time = time.time() - start_time
-            seller1_product_info = info.get('seller1_product_info', {})
-            seller2_product_info = info.get('seller2_product_info', {})
-            # current_round has been incremented to reflect the completed round
-            actual_rounds = info.get('round', 0)
             results.update({
                 "status": info.get('status', 'unknown'),
                 "success": terminated,
@@ -435,7 +441,7 @@ def main(model_name=None):
                 "seller2_price": info.get('seller2_price'),
                 "buyer_price_seller1": info.get('buyer_price_seller1'),
                 "buyer_price_seller2": info.get('buyer_price_seller2'),
-                "total_rounds": actual_rounds,
+                "total_rounds": info.get('round', 0),
                 "total_reward": float(reward) if reward is not None else None,
                 "buyer_reward": info.get('buyer_reward'),
                 "seller1_reward": info.get('seller1_reward'),
@@ -448,8 +454,15 @@ def main(model_name=None):
                 "buyer_max_price": buyer_max_price,
                 "seller1_min_price": seller1_min_price,
                 "seller2_min_price": seller2_min_price,
-                "seller1_product_info": seller1_product_info,
-                "seller2_product_info": seller2_product_info,
+                "product_info": {
+                    "name": "Epson C31CB10023 TM-T20 Readyprint Thermal Receipt Printer, Ethernet Interface, Without Cable, Dark Grey",
+                    "original_price": 320.00,
+                    "product_category": "Office Products › Office Electronics",
+                    "average_rating": 4.1,
+                    "total_reviews": 4,
+                    "asin": "B00A0WG5KW",
+                    "brand": "Visit the Epson Store",
+                },
                 "model": get_model_name(model),
             })
             break
@@ -465,7 +478,7 @@ def main(model_name=None):
     # Save results to file
     try:
         # Create results directory structure
-        results_dir = Path(project_root) / "agenticpay" / "results" / "multi_products_multi_seller"
+        results_dir = Path(project_root) / "agenticpay" / "results" / "only_multi_seller"
         results_dir.mkdir(parents=True, exist_ok=True)
         
         # Get model name for directory (sanitize for filesystem)
@@ -484,12 +497,12 @@ def main(model_name=None):
         with open(summary_file, 'w', encoding='utf-8') as f:
             json.dump(results, f, indent=2, ensure_ascii=False)
         
-        # Save output text
-        output_file = run_dir / "Task5_s1_output.txt"
+        # Save output text (we'll create a simple output file with key information)
+        output_file = run_dir / "Task7_s3_epson_receipt_printer_output.txt"
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write("="*80 + "\n")
-            f.write("Task5 Scenario 1: Used Smartphone - Sequential Two-Seller Per One Product Negotiation Results\n")
-            f.write("Category: Daily Life Consumption\n")
+            f.write("Task7 Scenario 3: Epson Receipt Printer - Sequential Two-Seller Negotiation Results\n")
+            f.write("Category: Office Electronics\n")
             f.write("="*80 + "\n\n")
             f.write(f"Timestamp: {results['timestamp']}\n")
             f.write(f"Model: {results['model']}\n")
@@ -502,9 +515,7 @@ def main(model_name=None):
             f.write(f"Elapsed Time: {elapsed_time:.2f}s\n\n")
             if results.get('selected_seller'):
                 f.write(f"Final Selected Seller: Seller {results['selected_seller']}\n")
-                f.write(f"Final Deal Price: ${results.get('final_deal_price', 0):.2f}\n")
-                selected_product = results.get('seller1_product_info' if results['selected_seller'] == 1 else 'seller2_product_info', {})
-                f.write(f"Selected Product: {selected_product.get('name', 'N/A')} by {selected_product.get('brand', 'N/A')}\n\n")
+                f.write(f"Final Deal Price: ${results.get('final_deal_price', 0):.2f}\n\n")
             f.write("Final Prices:\n")
             f.write(f"  Seller1 - Seller Price: ${results['seller1_price']:.2f}" if results.get('seller1_price') is not None else "  Seller1 - Seller Price: Not specified")
             f.write("\n")
@@ -514,12 +525,6 @@ def main(model_name=None):
             f.write("\n")
             f.write(f"  Seller2 - Buyer Price: ${results['buyer_price_seller2']:.2f}" if results.get('buyer_price_seller2') is not None else "  Seller2 - Buyer Price: Not specified")
             f.write("\n\n")
-            f.write("Products:\n")
-            seller1_product = results.get('seller1_product_info', {})
-            f.write(f"  Seller1 Product: {seller1_product.get('name', 'N/A')} by {seller1_product.get('brand', 'N/A')} (${seller1_product.get('price', 0):.2f})\n")
-            seller2_product = results.get('seller2_product_info', {})
-            f.write(f"  Seller2 Product: {seller2_product.get('name', 'N/A')} by {seller2_product.get('brand', 'N/A')} (${seller2_product.get('price', 0):.2f})\n")
-            f.write("\n")
             f.write("Rewards:\n")
             if results.get('total_reward') is not None:
                 f.write(f"  Total Reward: {results['total_reward']:.3f}\n")
@@ -553,7 +558,7 @@ def main(model_name=None):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Task5 Scenario 1: Used Smartphone - Sequential Two-Seller Per One Product Negotiation")
+    parser = argparse.ArgumentParser(description="Task7 Scenario 3: Epson Receipt Printer - Sequential Two-Seller Negotiation")
     parser.add_argument(
         "--model",
         type=str,
@@ -562,4 +567,3 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     main(model_name=args.model)
-

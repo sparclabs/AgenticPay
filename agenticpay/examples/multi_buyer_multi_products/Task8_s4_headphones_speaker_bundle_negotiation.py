@@ -1,9 +1,9 @@
-"""Task8 Scenario 4: Website Development Package - Sequential Two-Buyer Two-Product Negotiation
+"""Task8 Scenario 4: Headphones & Bluetooth Speaker Bundle - Sequential Two-Buyer Two-Product Negotiation
 
-One seller negotiating with two buyers for website development package (core development + add-ons).
+One seller negotiating with two buyers for electronics bundle (Kids Headphones + Sony Bluetooth Speaker).
 Seller chooses one buyer per round to negotiate with.
-Prices represent total price for the development package.
-Category: Professional Services
+Prices represent total price for both products.
+Category: Electronics
 """
 
 import os
@@ -144,12 +144,11 @@ def main(model_name=None):
     print(f"✓ Successfully initialized: {model}")
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
-    # buyer_max_price and seller_min_price represent total expected cost for website development package
-    # Based on scenario 2-1: buyer_max_price=$5,000 (small business budget), seller_min_price=$2,500 (freelancer time cost)
+    # buyer_max_price and seller_min_price represent total for Kids Headphones + Sony Bluetooth Speaker bundle
     print("Creating agents...")
-    buyer1_max_price = 5000.0  # Maximum acceptable total price for buyer1 (confidential, small boutique)
-    buyer2_max_price = 6000.0  # Maximum acceptable total price for buyer2 (confidential, growing business)
-    seller_min_price = 2500.0  # Minimum acceptable total price for seller (confidential, development cost)
+    buyer1_max_price = 130.0  # Maximum acceptable total for buyer1 (confidential, tight budget)
+    buyer2_max_price = 140.0  # Maximum acceptable total for buyer2 (confidential, willing to pay more)
+    seller_min_price = 100.0  # Minimum acceptable total for seller (confidential, cost basis)
     
     buyer1 = BuyerAgent(model=model, buyer_max_price=buyer1_max_price)
     buyer2 = BuyerAgent(model=model, buyer_max_price=buyer2_max_price)
@@ -162,63 +161,71 @@ def main(model_name=None):
         buyer2_agent=buyer2,
         seller_agent=seller,
         max_rounds=max_rounds,
-        initial_seller_price=4500.0,  # Initial total price offered by seller for development package
+        initial_seller_price=125.0,  # Initial total price offered by seller for electronics bundle
         buyer1_max_price=buyer1_max_price,  # Buyer1 total max price (confidential, for package)
         buyer2_max_price=buyer2_max_price,  # Buyer2 total max price (confidential, for package)
         seller_min_price=seller_min_price,  # Seller total min price (confidential, for package)
         environment_info={
-            "platform": "Upwork",
-            "freelancer_rating": "4.9/5 (127 jobs)",
-            "project_urgency": "Medium (4-6 weeks)",
+            "platform": "Amazon",
+            "market_type": "B2C",
+            "availability_status": "In Stock.",
         },
         price_tolerance=0,  # Set price_tolerance to 0
         reward_weights=reward_weights,  # Reward weights configuration
     )
     
     # Create user profile (text description of personal preferences)
-    user_profile = "Two buyers competing for website developer. Buyer1 is small boutique with tight budget. Buyer2 is growing business willing to pay more for add-ons."
+    user_profile = "Two buyers competing for electronics bundle. Buyer1 has tight budget for kids headphones and portable speaker. Buyer2 is willing to pay more for quality audio products."
     print(f"User Profile: {user_profile}")
     
-    # Define two products with their individual prices
-    # The product_info should contain a list of two products (core development + optional add-ons)
+    # Define two products (Kids Headphones from Task7 example + Sony Speaker from sampled_products2.jsonl 4th)
     product_info = {
         "products": [
             {
-                "name": "Core E-commerce Website Development",
-                "brand": "Freelance Developer",
-                "price": 3500.0,  # Individual price of core development
-                "base_scope": ["5 pages", "Product catalog (up to 50 items)", "Shopping cart", "Payment integration"],
-                "estimated_timeline": "4-6 weeks",
-                "tech_stack": "React + Node.js + PostgreSQL",
-                "revision_rounds": 3,
-                "mobile_responsive": True,
+                "name": "Kids Wireless Headphones, Adjustable Headband, Stereo Sound, 3.5mm Jack, Kids Bluetooth Headphones, Volume Control, Foldable, Build-in Microphone, Over-Ear Headphones for Kids for School Home, Travel",
+                "brand": "Brand: NVRADCHUA",
+                "price": 14.99,
+                "condition": "New",
+                "availability_status": "In Stock.",
+                "product_category": "Electronics › Headphones › Over-Ear Headphones",
+                "average_rating": 4.0,
+                "total_reviews": 2,
+                "seller_name": "Manyutech",
+                "asin": "B09KQNH5C6",
+                "full_description": "WIRELESS & WIRED KIDS HEADPHONES: Built with 5.0 Bluetooth chip for fast and stable connection, also with 3.5mm jack. Compatible with smartphones, laptops, tablets, computers, TVs. Cute cat headphones designed with cartoon pattern, comfortable and soft ear cushions to protect child's ears. Excellent sound quality and adjustable headband, stretchable and foldable design for travel and storage. Long battery life (up to 7 hours) and built-in microphone for calls, video chats, or online lessons. Perfect for kids headphones for school and outdoor use.",
+                "image_url": "https://m.media-amazon.com/images/I/41B+OC0qnOL.jpg",
             },
             {
-                "name": "Optional Add-ons & Services Package",
-                "brand": "Developer",
-                "price": 1000.0,  # Individual price of add-ons
-                "optional_features": ["Blog section ($300)", "SEO package ($400)", "Multi-language ($500)"],
-                "support": "3 months free maintenance",
-                "training": "2-hour admin training session included",
+                "name": "Sony Extra Bass Portable Bluetooth Speaker Black - SRS-XB33/BC (Renewed)",
+                "brand": "Visit the Amazon Renewed Store",
+                "price": 108.49,
+                "availability_status": "Only 1 left in stock - order soon.",
+                "product_category": "Electronics › Portable Audio & Video › Portable Speakers & Docks › Portable Bluetooth Speakers",
+                "average_rating": 4.5,
+                "total_reviews": 962,
+                "seller_name": "Planet Open Box",
+                "asin": "B08FZDJRQ7",
+                "full_description": "This pre-owned or refurbished product has been professionally inspected and tested to work and look like new. How a product becomes part of Amazon Renewed, your destination for pre-owned, refurbished products: A customer buys a new product and returns it or trades it in for a newer or different model. That product is inspected and tested to work and look like new by Amazon-qualified suppliers. Then, the product is sold as an Amazon Renewed product on Amazon. If not satisfied with the purchase, renewed products are eligible for replacement or refund under the Amazon Renewed Guarantee.",
+                "image_url": "https://m.media-amazon.com/images/I/41+lMIUpYbL.jpg",
             },
         ]
     }
     
     # Calculate total product price
     total_product_price = sum(p["price"] for p in product_info["products"])
-    print(f"\nProducts (Development Package):")
+    print(f"\nProducts (Electronics Bundle):")
     for i, p in enumerate(product_info["products"], 1):
         print(f"  {i}. {p['name']}: ${p['price']:.2f}")
-    print(f"  Total Package Price: ${total_product_price:.2f}")
+    print(f"  Total Bundle Price: ${total_product_price:.2f}")
     
     # Get user requirement
-    user_requirement = "Need professional e-commerce website for boutique clothing store. Must be mobile-friendly and easy to update."
+    user_requirement = "Looking for kids wireless headphones with volume control and Sony portable Bluetooth speaker. Prefer affordable bundle for home and travel use with good battery life."
     print(f"Using default requirement: {user_requirement}")
     
     # Reset environment
     print("\n" + "="*60)
-    print("Starting new sequential negotiation for website development...")
-    print("Seller choosing between two buyers for E-commerce Website Package")
+    print("Starting new sequential negotiation for electronics bundle...")
+    print("Seller choosing between two buyers for Kids Headphones + Sony Bluetooth Speaker Bundle")
     print("="*60)
     
     observation, info = env.reset(
@@ -233,7 +240,7 @@ def main(model_name=None):
     
     # Initialize results dictionary
     results = {
-        "task": "Task8_s4_website_development_package_negotiation",
+        "task": "Task8_s4_headphones_speaker_bundle_negotiation",
         "timestamp": datetime.now().isoformat(),
         "user_requirement": user_requirement,
         "user_profile": user_profile,
@@ -266,7 +273,7 @@ def main(model_name=None):
             conversation_history=combined_history,
             current_state={
                 **observation,
-                "instruction": "You are negotiating with two buyers for two products. Each round, you need to choose ONE buyer to negotiate with. Please clearly indicate which buyer (1 or 2) you want to negotiate with, for example: 'I want to negotiate with buyer 1' or 'Let me talk to buyer 2'. Prices represent total price for both products."
+                "instruction": "You are negotiating with two buyers for Kids Headphones and Sony Bluetooth Speaker bundle. Each round, you need to choose ONE buyer to negotiate with. Please clearly indicate which buyer (1 or 2) you want to negotiate with, for example: 'I want to negotiate with buyer 1' or 'Let me talk to buyer 2'. Prices represent total price for both products."
             }
         )
         
@@ -454,7 +461,7 @@ def main(model_name=None):
     
     # Close environment
     env.close()
-    print("\nWebsite development package negotiation completed!")
+    print("\nElectronics bundle negotiation completed!")
     
     # Ensure elapsed_time is set even if negotiation didn't complete normally
     if "elapsed_time" not in results:
@@ -483,11 +490,11 @@ def main(model_name=None):
             json.dump(results, f, indent=2, ensure_ascii=False)
         
         # Save output text
-        output_file = run_dir / "Task8_s4_output.txt"
+        output_file = run_dir / "Task8_s4_headphones_speaker_bundle_output.txt"
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write("="*80 + "\n")
-            f.write("Task8 Scenario 4: Website Development Package - Sequential Two-Buyer Two-Product Negotiation Results\n")
-            f.write("Category: Professional Services\n")
+            f.write("Task8 Scenario 4: Headphones & Bluetooth Speaker Bundle - Sequential Two-Buyer Two-Product Negotiation Results\n")
+            f.write("Category: Electronics\n")
             f.write("="*80 + "\n\n")
             f.write(f"Timestamp: {results['timestamp']}\n")
             f.write(f"Model: {results['model']}\n")
@@ -547,7 +554,7 @@ def main(model_name=None):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Task8 Scenario 4: Website Development Package - Sequential Two-Buyer Two-Product Negotiation")
+    parser = argparse.ArgumentParser(description="Task8 Scenario 4: Headphones & Bluetooth Speaker Bundle - Sequential Two-Buyer Two-Product Negotiation")
     parser.add_argument(
         "--model",
         type=str,

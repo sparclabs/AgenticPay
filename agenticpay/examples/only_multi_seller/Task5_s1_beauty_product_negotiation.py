@@ -1,8 +1,9 @@
-"""Task5 Scenario 1: Used Smartphone - Sequential Two-Seller Negotiation
+"""Task5 Scenario 1: Beauty Product - Sequential Two-Seller Negotiation
 
-Two sellers offering the same used iPhone 14 Pro on eBay platform.
+Two sellers offering the same Maybelline Expert Wear Eyeshadow on Amazon platform.
 Buyer compares offers and chooses which seller to negotiate with each round.
 Category: Daily Life Consumption
+Tests agent's ability to handle multi-seller beauty product negotiation with product images (图文).
 """
 
 import os
@@ -21,6 +22,7 @@ from agenticpay.envs.only_multi_seller.Task3_sequential_two_seller_negotiation i
 from agenticpay.agents.buyer_agent import BuyerAgent
 from agenticpay.agents.seller_agent import SellerAgent
 from agenticpay.models.custom_llm import CustomLLM
+from agenticpay.models.openai_vlm import OpenAIVLM
 from agenticpay.models.qwen3_vl import Qwen3VL
 from agenticpay.models.vllm_lm import VLLMLLM
 from agenticpay.models.sglang_vlm import SGLangVLM
@@ -85,13 +87,13 @@ def extract_seller_choice(buyer_response: str, observation: dict) -> int:
     seller1_price = observation.get("seller1_price")
     seller2_price = observation.get("seller2_price")
     
-    # If buyer mentions a specific price, try to match it
+    # If buyer mentions a specific price, try to match it (beauty product price range ~$5-8)
     price_match = re.search(r'\$?(\d+\.?\d*)', buyer_response)
     if price_match:
         mentioned_price = float(price_match.group(1))
-        if seller1_price is not None and abs(mentioned_price - seller1_price) < 5:
+        if seller1_price is not None and abs(mentioned_price - seller1_price) < 1:
             return 1
-        elif seller2_price is not None and abs(mentioned_price - seller2_price) < 5:
+        elif seller2_price is not None and abs(mentioned_price - seller2_price) < 1:
             return 2
     
     # Default: if no clear indication, check which seller has been negotiated with more
@@ -124,11 +126,12 @@ def main(model_name=None):
         print("You can set it with: export OPENAI_API_KEY='your-key-here'")
         return
     
-    # Use provided model name or default
-    if model_name is None:
-        model_name = "qwen3-14b"  # Default model
-    
-    model = CustomLLM(api_key=api_key, model=model_name) # claude-sonnet-4-5-20250929, gpt-5.2, gemini-3-pro-all, gpt-3.5-turbo, DeepSeek-R1
+    # Use OpenAIVLM (Vision Language Model) for beauty product negotiation with product images (图文)
+    model_name = model_name or "gpt-4o-mini"  # gpt-4o, gpt-4o-mini, gpt-4-vision-preview, etc.
+    model = OpenAIVLM(model=model_name, api_key=api_key)
+
+    # Alternative: CustomLLM for text-only models
+    # model = CustomLLM(api_key=api_key, model=model_name)
 
     # Build absolute path to model directory
     # model_path = os.path.join(project_root, "models", "download_models", "Qwen3-8B-Instruct")
@@ -150,10 +153,11 @@ def main(model_name=None):
     print(f"✓ Successfully initialized: {model}")
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
+    # Scenario: Maybelline Eyeshadow - two sellers on Amazon
     print("Creating agents...")
-    buyer_max_price = 560.0  # Maximum acceptable purchase price for buyer (confidential) - 70% of official refurb price
-    seller1_min_price = 350.0  # Minimum acceptable selling price for seller1 (confidential) - platform buyback price
-    seller2_min_price = 360.0  # Minimum acceptable selling price for seller2 (confidential, slightly higher than seller1)
+    buyer_max_price = 6.50  # Maximum acceptable purchase price for buyer (confidential)
+    seller1_min_price = 5.00  # Minimum acceptable selling price for seller1 (confidential)
+    seller2_min_price = 5.20  # Minimum acceptable selling price for seller2 (confidential, slightly higher than seller1)
     
     buyer = BuyerAgent(model=model, buyer_max_price=buyer_max_price)
     seller1 = SellerAgent(model=model, seller_min_price=seller1_min_price)
@@ -166,23 +170,24 @@ def main(model_name=None):
         seller1_agent=seller1,
         seller2_agent=seller2,
         max_rounds=max_rounds,
-        initial_seller1_price=520.0,  # Initial price offered by seller1
-        initial_seller2_price=530.0,  # Initial price offered by seller2 (slightly higher)
+        initial_seller1_price=7.50,  # Initial price offered by seller1 (list price $7.98)
+        initial_seller2_price=7.80,  # Initial price offered by seller2 (slightly higher)
         buyer_max_price=buyer_max_price,  # Buyer bottom price (confidential)
         seller1_min_price=seller1_min_price,  # Seller1 bottom price (confidential)
         seller2_min_price=seller2_min_price,  # Seller2 bottom price (confidential)
         environment_info={
-            "platform": "eBay",
-            "market_type": "C2C",
+            "platform": "Amazon",
+            "market_type": "B2C",
             "listing_age_seller1": "3 days",
             "listing_age_seller2": "5 days",
+            "availability_status": "Only 5 left in stock - order soon.",
         },
         price_tolerance=price_tolerance,
         reward_weights=reward_weights,  # Reward weights configuration
     )
     
     # Create user profile (text description of personal preferences)
-    user_profile = "Tech-savvy user who researches prices carefully before buying. Concerned about device condition and battery health. Prefers to buy from individuals with good track records and complete accessories."
+    user_profile = "Beauty-conscious user who researches product reviews before buying. Cares about brand quality and value for money. Prefers to buy from sellers with good ratings and reasonable prices."
     print(f"User Profile: {user_profile}")
     
     # Get user requirement
@@ -194,7 +199,7 @@ def main(model_name=None):
     #     user_requirement = "I need a high-quality winter jacket for cold weather"
     #     print(f"Using default requirement: {user_requirement}")
     # Use default requirement for automatic running
-    user_requirement = "I'm looking for a used iPhone 14 Pro in good condition, preferably with original accessories."
+    user_requirement = "I'm looking for Maybelline Expert Wear Eyeshadow in Turquoise Glass Perfect Pastels shade, preferably new with good reviews."
     print(f"Using default requirement: {user_requirement}")
     
     # Reset environment
@@ -202,18 +207,30 @@ def main(model_name=None):
     print("Starting new sequential negotiation with two sellers...")
     print("="*60)
     
+    # Product image for VLM: URL or local path (OpenAIVLM supports both)
+    product_image_url = "https://m.media-amazon.com/images/I/41IiEBGouZL.jpg"  # Eyeshadow/makeup image
+
     observation, info = env.reset(
         user_requirement=user_requirement,
         product_info={
-            "name": "iPhone 14 Pro 128GB",
-            "condition": "Used - Good",
-            "battery_health": "87%",
-            "purchase_date": "2023-03",
-            "original_price": 999.0,
-            "accessories": ["Original box", "Charger"],
-            "issues_disclosed": "Minor scratches on back",
+            "name": "Maybelline New York Expert Wear Eyeshadow Singles, 130s Turquoise Glass Perfect Pastels, 0.09 Ounce",
+            "condition": "New",
+            "brand": "Maybelline New York",
+            "shade": "130s Turquoise Glass Perfect Pastels",
+            "size": "0.09 Ounce",
+            "original_price": 7.98,
+            "availability_quantity": 5,
+            "availability_status": "Only 5 left in stock - order soon.",
+            "product_category": "Beauty & Personal Care › Makeup › Eyes › Eyeshadow",
+            "average_rating": 4.2,
+            "total_reviews": 54,
+            "full_description": "Easy to use. Lots to choose. All-day crease-proof wear. Rich, velvety textures. Glides on effortlessly with superior smoothness.",
+            "seller1_name": "Mommy Dezarn's Miscellaneous",
+            "seller2_name": "Beauty Deals Plus",
             "seller1_rating": "98.5% positive (245 sales)",
             "seller2_rating": "97.8% positive (189 sales)",
+            "asin": "B0046VILG4",
+            "image_url": product_image_url,  # For VLM: product image (图文)
         },
         user_profile=user_profile,  # Pass user profile
     )
@@ -224,7 +241,7 @@ def main(model_name=None):
     
     # Initialize results dictionary
     results = {
-        "task": "Task5_s1_used_smartphone_negotiation",
+        "task": "Task5_s1_beauty_product_negotiation",
         "timestamp": datetime.now().isoformat(),
         "user_requirement": user_requirement,
         "user_profile": user_profile,
@@ -445,13 +462,19 @@ def main(model_name=None):
                 "seller1_min_price": seller1_min_price,
                 "seller2_min_price": seller2_min_price,
                 "product_info": {
-                    "name": "iPhone 14 Pro 128GB",
-                    "condition": "Used - Good",
-                    "battery_health": "87%",
-                    "purchase_date": "2023-03",
-                    "original_price": 999.0,
-                    "accessories": ["Original box", "Charger"],
-                    "issues_disclosed": "Minor scratches on back",
+                    "name": "Maybelline New York Expert Wear Eyeshadow Singles, 130s Turquoise Glass Perfect Pastels, 0.09 Ounce",
+                    "condition": "New",
+                    "brand": "Maybelline New York",
+                    "shade": "130s Turquoise Glass Perfect Pastels",
+                    "size": "0.09 Ounce",
+                    "original_price": 7.98,
+                    "availability_quantity": 5,
+                    "availability_status": "Only 5 left in stock - order soon.",
+                    "product_category": "Beauty & Personal Care › Makeup › Eyes › Eyeshadow",
+                    "average_rating": 4.2,
+                    "total_reviews": 54,
+                    "asin": "B0046VILG4",
+                    "image_url": product_image_url,
                 },
                 "model": get_model_name(model),
             })
@@ -488,10 +511,10 @@ def main(model_name=None):
             json.dump(results, f, indent=2, ensure_ascii=False)
         
         # Save output text (we'll create a simple output file with key information)
-        output_file = run_dir / "Task5_s1_output.txt"
+        output_file = run_dir / "Task5_s1_beauty_product_output.txt"
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write("="*80 + "\n")
-            f.write("Task5 Scenario 1: Used Smartphone - Sequential Two-Seller Negotiation Results\n")
+            f.write("Task5 Scenario 1: Beauty Product (Maybelline Eyeshadow) - Sequential Two-Seller Negotiation Results\n")
             f.write("Category: Daily Life Consumption\n")
             f.write("="*80 + "\n\n")
             f.write(f"Timestamp: {results['timestamp']}\n")
@@ -548,7 +571,7 @@ def main(model_name=None):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Task5 Scenario 1: Used Smartphone - Sequential Two-Seller Negotiation")
+    parser = argparse.ArgumentParser(description="Task5 Scenario 1: Beauty Product (Maybelline Eyeshadow) - Sequential Two-Seller Negotiation")
     parser.add_argument(
         "--model",
         type=str,

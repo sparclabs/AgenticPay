@@ -1,7 +1,7 @@
-"""Task7 Scenario 3: Vacation Rental Bundle - Two-Product Negotiation
+"""Task5 Scenario 1: Beauty Product Bundle - Two-Product Negotiation
 
-Buyer negotiates for beachfront apartment with airport transfer service bundle.
-Bundle purchase with total price negotiation for 5-night stay.
+Buyer negotiates for two beauty products: Maybelline Eyeshadow and NOU Oliban Eau de Toilette.
+Bundle purchase with total price negotiation. Tests agent's ability with product images (图文).
 Category: Daily Life Consumption
 """
 
@@ -21,6 +21,7 @@ from agenticpay import make  # Use registration system
 from agenticpay.agents.buyer_agent import BuyerAgent
 from agenticpay.agents.seller_agent import SellerAgent
 from agenticpay.models.custom_llm import CustomLLM
+from agenticpay.models.openai_vlm import OpenAIVLM
 from agenticpay.models.qwen3_vl import Qwen3VL
 from agenticpay.models.vllm_lm import VLLMLLM
 from agenticpay.models.sglang_vlm import SGLangVLM
@@ -77,11 +78,12 @@ def main(model_name=None):
         print("You can set it with: export OPENAI_API_KEY='your-key-here'")
         return
     
-    # Use provided model name or default
-    if model_name is None:
-        model_name = "gemini-3-pro-all"  # Default model
-    
-    model = CustomLLM(api_key=api_key, model=model_name) # claude-sonnet-4-5-20250929, gpt-5.2, gemini-3-pro-all, gpt-3.5-turbo, DeepSeek-R1
+    # Use OpenAIVLM (Vision Language Model) for beauty product negotiation with product images (图文)
+    model_name = model_name or "gpt-4o-mini"  # gpt-4o, gpt-4o-mini, gpt-4-vision-preview, etc.
+    model = OpenAIVLM(model=model_name, api_key=api_key)
+
+    # Alternative: CustomLLM for text-only models
+    # model = CustomLLM(api_key=api_key, model=model_name)
 
     # Build absolute path to model directory
     # model_path = os.path.join(project_root, "models", "download_models", "Qwen3-8B-Instruct")
@@ -104,9 +106,10 @@ def main(model_name=None):
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
     # buyer_max_price and seller_min_price represent total expected cost for both products
+    # Scenario: Beauty bundle - Maybelline Eyeshadow + NOU Oliban Eau de Toilette
     print("Creating agents...")
-    buyer_max_price = 980.0  # Maximum acceptable total purchase price for buyer (confidential) - Rental $900 + Transfer $80
-    seller_min_price = 580.0  # Minimum acceptable total selling price for seller (confidential) - Rental $500 + Transfer $80
+    buyer_max_price = 24.0  # Maximum acceptable total purchase price for buyer (confidential, for both products)
+    seller_min_price = 20.0  # Minimum acceptable total selling price for seller (confidential, for both products)
     buyer = BuyerAgent(model=model, buyer_max_price=buyer_max_price)
     seller = SellerAgent(model=model, seller_min_price=seller_min_price)
     
@@ -117,44 +120,56 @@ def main(model_name=None):
         buyer_agent=buyer,
         seller_agent=seller,
         max_rounds=max_rounds,
-        initial_seller_price=930.0,  # Initial total price offered by seller for both services
+        initial_seller_price=28.0,  # Initial total price offered by seller for both products
         buyer_max_price=buyer_max_price,  # Buyer total max price (confidential, for both products)
         seller_min_price=seller_min_price,  # Seller total min price (confidential, for both products)
         environment_info={
-            "platform": "Airbnb",
-            "season": "Peak summer",
-            "days_until_checkin": 14,
+            "platform": "Amazon",
+            "market_type": "B2C",
+            "listing_age": "3 days",
+            "availability_status": "In Stock.",
         },
         price_tolerance=price_tolerance,
     )
     
     # Create user profile (text description of personal preferences)
-    user_profile = "Budget-conscious traveler planning a beach vacation. Flexible on exact dates but prefers mid-July. Looking for good value and clean accommodation with ocean view. Appreciates hosts who offer extra services."
+    user_profile = "Beauty-conscious user who researches product reviews before buying. Cares about brand quality and value for money. Prefers to buy from sellers with good ratings and reasonable prices."
     print(f"User Profile: {user_profile}")
     
-    # Define two products with their individual prices
-    # The product_info should contain a list of two products
+    # Product images for VLM (图文): URL or local path
+    product1_image_url = "https://m.media-amazon.com/images/I/41IiEBGouZL.jpg"  # Maybelline Eyeshadow
+    product2_image_url = "https://m.media-amazon.com/images/I/51gDhcURgKL.jpg"  # NOU Oliban Eau de Toilette
+    
+    # Define two beauty products with their individual prices (图文 format with image_url)
+    # Product 1: Maybelline (Task4), Product 2: NOU Oliban (sampled_products2.jsonl)
     product_info = {
         "products": [
             {
-                "name": "Beachfront Studio Apartment (5 nights)",
-                "base_price_per_night": 150.0,
-                "price": 850.0,  # Individual price of first product (5 nights with peak season multiplier)
-                "seasonal_multiplier": 1.5,
-                "minimum_nights": 3,
-                "cleaning_fee": 80.0,
-                "amenities": ["Ocean view", "WiFi", "Kitchen", "Parking"],
-                "availability": "July 15-22 (Peak season)",
-                "host_rating": "4.9/5 (156 reviews)",
+                "name": "Maybelline New York Expert Wear Eyeshadow Singles, 130s Turquoise Glass Perfect Pastels, 0.09 Ounce",
+                "condition": "New",
+                "price": 7.50,  # Individual price of first product
+                "brand": "Maybelline New York",
+                "shade": "130s Turquoise Glass Perfect Pastels",
+                "size": "0.09 Ounce",
+                "original_price": 7.98,
+                "product_category": "Beauty & Personal Care › Makeup › Eyes › Eyeshadow",
+                "average_rating": 4.2,
+                "total_reviews": 54,
+                "full_description": "Easy to use. Lots to choose. All-day crease-proof wear. Rich, velvety textures. Glides on effortlessly with superior smoothness.",
+                "image_url": product1_image_url,
             },
             {
-                "name": "Round-trip Airport Transfer Service",
-                "provider": "Host's private car service",
-                "price": 80.0,  # Individual price of second product
-                "distance": "25 miles each way",
-                "vehicle": "Comfortable sedan",
-                "includes": "Meet & greet, luggage assistance",
-                "flexibility": "Can adjust pickup time",
+                "name": "Oriental Eau de Toilette – Natural Eau de Toilette for Men Woody Eau de Toilette Infused with Essential Oils NOU Oliban Eau de Toilette for Men – 1.7 Fl Oz",
+                "condition": "New",
+                "price": 21.95,  # Individual price of second product
+                "brand": "NOU",
+                "size": "1.7 Fl Oz (50ml)",
+                "original_price": 21.95,
+                "product_category": "Beauty & Personal Care › Fragrance",
+                "average_rating": 4,
+                "total_reviews": 6,
+                "full_description": "NOU OLIBAN ORIENTAL SCENT FOR MEN – this fragrance for men has been perfectly blended and infused with essential oils. Expertly crafted by French perfumers. Natural Eau de Toilette for men with woody fragrance notes: elemi, olibanum, patchouli, sandalwood, leather, vanilla.",
+                "image_url": product2_image_url,
             },
         ]
     }
@@ -168,7 +183,7 @@ def main(model_name=None):
     
     # Get user requirement (should describe purchasing two products)
     # Use default requirement for automatic running
-    user_requirement = "Need a beachfront apartment for 5 nights in mid-July with airport transfer service, looking for a good deal."
+    user_requirement = "I'm looking for a beauty bundle: Maybelline Expert Wear Eyeshadow in Turquoise shade and NOU Oliban Eau de Toilette for men, preferably new with good reviews."
     print(f"Using default requirement: {user_requirement}")
     
     # Reset environment
@@ -188,7 +203,7 @@ def main(model_name=None):
     
     # Initialize results dictionary
     results = {
-        "task": "Task7_s3_vacation_rental_bundle_negotiation",
+        "task": "Task5_s1_beauty_product_bundle_negotiation",
         "timestamp": datetime.now().isoformat(),
         "user_requirement": user_requirement,
         "user_profile": user_profile,
@@ -320,10 +335,10 @@ def main(model_name=None):
             json.dump(results, f, indent=2, ensure_ascii=False)
         
         # Save output text
-        output_file = run_dir / "Task7_s3_output.txt"
+        output_file = run_dir / "Task5_s1_beauty_product_bundle_output.txt"
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write("="*80 + "\n")
-            f.write("Task7 Scenario 3: Vacation Rental Bundle - Two-Product Negotiation Results\n")
+            f.write("Task5 Scenario 1: Beauty Product Bundle - Two-Product Negotiation Results\n")
             f.write("Category: Daily Life Consumption\n")
             f.write("="*80 + "\n\n")
             f.write(f"Timestamp: {results['timestamp']}\n")
@@ -370,7 +385,7 @@ def main(model_name=None):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Task7 Scenario 3: Vacation Rental Bundle - Two-Product Negotiation")
+    parser = argparse.ArgumentParser(description="Task5 Scenario 1: Beauty Product Bundle - Two-Product Negotiation (图文)")
     parser.add_argument(
         "--model",
         type=str,

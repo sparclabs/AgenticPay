@@ -1,8 +1,8 @@
-"""Task8 Scenario 4: Website Development - Sequential Two-Seller Negotiation
+"""Task6 Scenario 2: Beauty Product - Sequential Two-Seller Per One Product Negotiation
 
-Two freelance developers on Upwork offering custom e-commerce website development.
-Buyer compares portfolios and quotes, choosing which developer to negotiate with each round.
-Category: Professional Services
+Buyer negotiating with two sellers: Seller1 offers ARM & HAMMER Toothpaste, Seller2 offers BFWood hair brush.
+Buyer chooses one seller per round to negotiate with.
+Category: Daily Life Consumption
 """
 
 import os
@@ -17,15 +17,23 @@ from datetime import datetime
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 sys.path.insert(0, project_root)
 
-from agenticpay.envs.only_multi_seller.Task3_sequential_two_seller_negotiation import Task3SequentialTwoSellerNegotiation
+from agenticpay.envs.multi_products_multi_seller.Task3_sequential_two_seller_per_one_product_negotiation import Task3SequentialTwoSellerPerOneProductNegotiation
 from agenticpay.agents.buyer_agent import BuyerAgent
 from agenticpay.agents.seller_agent import SellerAgent
 from agenticpay.models.custom_llm import CustomLLM
-from agenticpay.models.qwen3_vl import Qwen3VL
-from agenticpay.models.vllm_lm import VLLMLLM
-from agenticpay.models.sglang_vlm import SGLangVLM
-from agenticpay.examples.config import reward_weights, max_rounds, price_tolerance
 import re
+
+# Import configuration parameters
+examples_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, examples_dir)
+try:
+    from config import reward_weights, max_rounds, price_tolerance, OPENAI_API_KEY
+except ImportError:
+    # Default values if config not available
+    reward_weights = {"buyer_savings": 1.0, "seller_profit": 1.0, "time_cost": 0.1}
+    max_rounds = 20
+    price_tolerance = 1.0
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 
 def get_model_name(model):
@@ -74,11 +82,10 @@ def extract_seller_choice(buyer_response: str, observation: dict) -> int:
     response_lower = buyer_response.lower()
     
     # Look for explicit seller mentions
-    if re.search(r'seller\s*[12]|first\s+seller|seller\s*one', response_lower):
-        if re.search(r'seller\s*2|second\s+seller|seller\s*two', response_lower):
-            return 2
-        elif re.search(r'seller\s*1|first\s+seller|seller\s*one', response_lower):
-            return 1
+    if re.search(r'seller\s*2|second\s+seller|seller\s*two', response_lower):
+        return 2
+    elif re.search(r'seller\s*1|first\s+seller|seller\s*one', response_lower):
+        return 1
     
     # If no explicit mention, try to infer from context
     # Check if buyer mentions prices or other indicators
@@ -109,7 +116,7 @@ def extract_seller_choice(buyer_response: str, observation: dict) -> int:
 
 
 def main(model_name=None):
-    """Main function: Demonstrates sequential multi-seller negotiation flow
+    """Main function: Demonstrates sequential multi-seller negotiation flow with different products
     
     Args:
         model_name: Optional model name. If None, uses default model.
@@ -118,7 +125,7 @@ def main(model_name=None):
     print("Initializing model...")
     
     # Check API key
-    api_key = os.getenv("OPENAI_API_KEY")
+    api_key = os.getenv("OPENAI_API_KEY") or OPENAI_API_KEY
     if not api_key:
         print("Warning: OPENAI_API_KEY not set. Please set it to use OpenAI models.")
         print("You can set it with: export OPENAI_API_KEY='your-key-here'")
@@ -126,34 +133,18 @@ def main(model_name=None):
     
     # Use provided model name or default
     if model_name is None:
-        model_name = "qwen3-14b"  # Default model
+        model_name = "gpt-5.2"  # Default model
     
-    model = CustomLLM(api_key=api_key, model=model_name) # claude-sonnet-4-5-20250929, gpt-5.2, gemini-3-pro-all, gpt-3.5-turbo, DeepSeek-R1
-
-    # Build absolute path to model directory
-    # model_path = os.path.join(project_root, "models", "download_models", "Qwen3-8B-Instruct")
-    # model_path = os.path.abspath(model_path)
-
-    # vLLM LLM Model
-    # model = VLLMLLM(
-    #     model_path=model_path,
-    #     trust_remote_code=True,
-    #     gpu_memory_utilization=0.9,
-    #     tensor_parallel_size=4, # 4 GPUs
-    # )
-
-    # SGLang VLM Model
-    # model = SGLangVLM(
-    #     model_path=model_path,
-    # )
+    model = CustomLLM(api_key=api_key, model=model_name)  # claude-sonnet-4-5-20250929, gpt-5.2, gemini-3-pro-all, gpt-3.5-turbo, DeepSeek-R1
     
     print(f"✓ Successfully initialized: {model}")
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
     print("Creating agents...")
-    buyer_max_price = 5000.0  # Maximum acceptable purchase price for buyer (confidential)
-    seller1_min_price = 2500.0  # Minimum acceptable selling price for seller1 (confidential)
-    seller2_min_price = 2800.0  # Minimum acceptable selling price for seller2 (confidential, slightly higher)
+    # Seller1: Toothpaste $16, Seller2: BFWood hair brush $6.48
+    buyer_max_price = 18.0  # Maximum acceptable purchase price for buyer (confidential)
+    seller1_min_price = 12.0  # Minimum acceptable selling price for seller1 - Toothpaste (confidential)
+    seller2_min_price = 4.0  # Minimum acceptable selling price for seller2 - Hair brush (confidential)
     
     buyer = BuyerAgent(model=model, buyer_max_price=buyer_max_price)
     seller1 = SellerAgent(model=model, seller_min_price=seller1_min_price)
@@ -161,61 +152,72 @@ def main(model_name=None):
     
     # Create environment
     print("Creating sequential multi-seller negotiation environment...")
-    env = Task3SequentialTwoSellerNegotiation(
+    env = Task3SequentialTwoSellerPerOneProductNegotiation(
         buyer_agent=buyer,
         seller1_agent=seller1,
         seller2_agent=seller2,
         max_rounds=max_rounds,
-        initial_seller1_price=4200.0,  # Initial price offered by seller1
-        initial_seller2_price=4500.0,  # Initial price offered by seller2 (higher)
+        initial_seller1_price=16.0,  # Initial price offered by seller1 (Toothpaste)
+        initial_seller2_price=6.48,  # Initial price offered by seller2 (BFWood hair brush)
         buyer_max_price=buyer_max_price,  # Buyer bottom price (confidential)
         seller1_min_price=seller1_min_price,  # Seller1 bottom price (confidential)
         seller2_min_price=seller2_min_price,  # Seller2 bottom price (confidential)
         environment_info={
-            "platform": "Upwork",
-            "market_rate_range": "$3,000-$8,000",
-            "seller1_rating": "4.9/5 (127 jobs)",
-            "seller2_rating": "4.8/5 (94 jobs)",
-            "seller1_response_time": "1-2 hours",
-            "seller2_response_time": "2-4 hours",
+            "platform": "Amazon",
+            "market_type": "B2C",
+            "availability_status": "In Stock",
         },
-        price_tolerance=price_tolerance,
+        price_tolerance=0,
         reward_weights=reward_weights,  # Reward weights configuration
     )
     
     # Create user profile (text description of personal preferences)
-    user_profile = "Small business owner with limited technical knowledge. Wants a professional website but concerned about hidden costs and project scope expanding. Values clear communication and fixed deliverables."
+    user_profile = "Health-conscious buyer interested in oral care and hair care. Values natural ingredients, good reviews. Prefers quality products from Beauty & Personal Care category."
     print(f"User Profile: {user_profile}")
     
     # Get user requirement
-    # print("\n" + "="*60)
-    # print("Please enter the product requirement you want to purchase:")
-    # user_requirement = input("> ").strip()
-    # if not user_requirement:
-    #     print("No requirement entered, using default requirement...")
-    #     user_requirement = "I need a high-quality winter jacket for cold weather"
-    #     print(f"Using default requirement: {user_requirement}")
     # Use default requirement for automatic running
-    user_requirement = "I need a professional e-commerce website for my boutique clothing store. Must be mobile-friendly and easy to update."
+    user_requirement = "Looking for either ARM & HAMMER toothpaste for oral care or a quality wooden hair brush for scalp massage. Budget around $18."
     print(f"Using default requirement: {user_requirement}")
     
-    # Reset environment
+    # Reset environment with different products for each seller
+    # Seller1: Product from Task5_s2_toothpaste_negotiation (example)
+    # Seller2: Product from sampled_products2.jsonl line 2 (BFWood hair brush)
     print("\n" + "="*60)
-    print("Starting new sequential negotiation with two sellers...")
+    print("Starting new sequential negotiation with two sellers (Seller1: Toothpaste, Seller2: Hair brush)...")
     print("="*60)
     
     observation, info = env.reset(
         user_requirement=user_requirement,
-        product_info={
-            "name": "Custom E-commerce Website Development",
-            "base_scope": ["5 pages", "Product catalog (up to 50 products)", "Shopping cart", "Payment integration (Stripe/PayPal)"],
-            "estimated_timeline": "4-6 weeks",
-            "revision_rounds": 3,
-            "tech_stack": "React + Node.js + PostgreSQL",
-            "seller1_experience": "8 years, specializes in e-commerce",
-            "seller2_experience": "5 years, full-stack developer",
-            "seller1_portfolio": "15+ e-commerce sites",
-            "seller2_portfolio": "10+ web applications",
+        seller1_product_info={
+            "name": "ARM & HAMMER Peroxicare Toothpaste – Clean Mint- Fluoride Toothpaste , 6 Ounce (Pack of 6)",
+            "condition": "New",
+            "brand": "Visit the Arm & Hammer Store",
+            "size": "6 Ounce (Pack of 6)",
+            "original_price": 16.0,
+            "price": 16.0,
+            "availability_status": "In Stock",
+            "product_category": "Beauty & Personal Care › Oral Care › Toothpaste",
+            "average_rating": 4.8,
+            "total_reviews": 538,
+            "asin": "B001E77OCU",
+            "full_description": "Arm & Hammer PeroxiCare Deep Clean Toothpaste is the ultimate deep cleaning formula that cleans and whitens safely, gently and effectively. The fluoride cavity protection and enamel strengthening formula removes more plaque in hard to reach places than a non-baking soda toothpaste.",
+            "image_url": "https://m.media-amazon.com/images/I/41-M-nTTsGL.jpg",
+        },
+        seller2_product_info={
+            "name": "BFWood Wooden Paddle Hair Brush – Black Walnut Hairbrush for Massaging Scalp",
+            "condition": "New",
+            "brand": "Visit the BFWood Store",
+            "original_price": 6.48,
+            "price": 6.48,
+            "availability_status": "In Stock.",
+            "product_category": "Beauty & Personal Care › Hair Care › Styling Tools & Appliances › Hair Brushes",
+            "average_rating": 4.5,
+            "total_reviews": 1652,
+            "seller_name": "BFWood",
+            "asin": "B083TZ4JSR",
+            "full_description": "BFWood hair brush bristles are made of natural beech; They make your hair silky and shiny by distributing oil from your scalp. RELAXATION AND COMFORT: The cushioned base has an air hole which allows compression when you brush; The beech bristles massage your scalp. SUITABLE FOR ALL HAIR TYPES: Designed with soft tips and wide gaps. NEW DESIGN GRIP: Black walnut handle with curved sides, ergonomic design. IDEAL GIFT: Comes with a black walnut wooden brush and a canvas bag.",
+            "image_url": "https://m.media-amazon.com/images/I/51bE06+44SL.jpg",
         },
         user_profile=user_profile,  # Pass user profile
     )
@@ -226,7 +228,7 @@ def main(model_name=None):
     
     # Initialize results dictionary
     results = {
-        "task": "Task8_s4_website_development_negotiation",
+        "task": "Task6_s2_beauty_product_negotiation",
         "timestamp": datetime.now().isoformat(),
         "user_requirement": user_requirement,
         "user_profile": user_profile,
@@ -259,7 +261,7 @@ def main(model_name=None):
             conversation_history=combined_history,
             current_state={
                 **observation,
-                "instruction": "You are negotiating with two sellers. Each round, you need to choose ONE seller to negotiate with and provide your negotiation message. Please clearly indicate which seller (1 or 2) you want to negotiate with, for example: 'I want to negotiate with seller 1' or 'Let me talk to seller 2'."
+                "instruction": "You are negotiating with two sellers: Seller1 offers ARM & HAMMER Toothpaste, Seller2 offers BFWood hair brush. Each round, you need to choose ONE seller to negotiate with and provide your negotiation message. Please clearly indicate which seller (1 or 2) you want to negotiate with, for example: 'I want to negotiate with seller 1' or 'Let me talk to seller 2'."
             }
         )
         
@@ -272,17 +274,17 @@ def main(model_name=None):
         buyer_action = buyer_response
         
         # Get the conversation history for the selected seller
+        if selected_seller == 1:
+            conversation_history = observation["conversation_history_seller1"]
+        else:
+            conversation_history = observation["conversation_history_seller2"]
+        
         # Create updated conversation history that includes buyer's response
         # So seller can see buyer's message before responding
-        if selected_seller == 1:
-            conversation_history = observation["conversation_history_seller1"].copy()
-        else:
-            conversation_history = observation["conversation_history_seller2"].copy()
-        
-        # Add buyer's message to the conversation history
+        updated_conversation_history = conversation_history.copy()
         if buyer_action:
             current_round = observation.get("current_round", 0)
-            conversation_history.append({
+            updated_conversation_history.append({
                 "role": "buyer",
                 "content": buyer_action,
                 "round": current_round
@@ -291,12 +293,12 @@ def main(model_name=None):
         # Get the selected seller's response (seller can now see buyer's message)
         if selected_seller == 1:
             seller_action = seller1.respond(
-                conversation_history=conversation_history,
+                conversation_history=updated_conversation_history,
                 current_state=observation
             )
         else:
             seller_action = seller2.respond(
-                conversation_history=conversation_history,
+                conversation_history=updated_conversation_history,
                 current_state=observation
             )
         
@@ -315,7 +317,7 @@ def main(model_name=None):
         sys.stdout.flush()
         
         # Display step rewards for each round with detailed calculation
-        if 'step_buyer_reward' in info or 'step_seller1_reward' in info or 'step_seller2_reward' in info:
+        if 'step_seller1_reward' in info or 'step_seller2_reward' in info or 'step_buyer_reward' in info:
             print(f"\n[Step Rewards] ", end="")
             if 'step_buyer_reward' in info:
                 print(f"Buyer: {info['step_buyer_reward']:.3f}", end="")
@@ -396,6 +398,13 @@ def main(model_name=None):
             if info.get('selected_seller'):
                 print(f"Final Selected Seller: Seller {info['selected_seller']}")
                 print(f"Final Deal Price: ${info.get('final_deal_price', 0):.2f}")
+                # Display product info for selected seller
+                if info['selected_seller'] == 1:
+                    product_info = info.get('seller1_product_info', {})
+                    print(f"Selected Product: {product_info.get('name', 'N/A')} by {product_info.get('brand', 'N/A')}")
+                elif info['selected_seller'] == 2:
+                    product_info = info.get('seller2_product_info', {})
+                    print(f"Selected Product: {product_info.get('name', 'N/A')} by {product_info.get('brand', 'N/A')}")
             seller1_price = info.get('seller1_price', 0) or 0
             buyer_price_seller1 = info.get('buyer_price_seller1', 0) or 0
             seller2_price = info.get('seller2_price', 0) or 0
@@ -424,6 +433,10 @@ def main(model_name=None):
             
             # Collect results
             elapsed_time = time.time() - start_time
+            seller1_product_info = info.get('seller1_product_info', {})
+            seller2_product_info = info.get('seller2_product_info', {})
+            # current_round has been incremented to reflect the completed round
+            actual_rounds = info.get('round', 0)
             results.update({
                 "status": info.get('status', 'unknown'),
                 "success": terminated,
@@ -433,7 +446,7 @@ def main(model_name=None):
                 "seller2_price": info.get('seller2_price'),
                 "buyer_price_seller1": info.get('buyer_price_seller1'),
                 "buyer_price_seller2": info.get('buyer_price_seller2'),
-                "total_rounds": info.get('round', 0),
+                "total_rounds": actual_rounds,
                 "total_reward": float(reward) if reward is not None else None,
                 "buyer_reward": info.get('buyer_reward'),
                 "seller1_reward": info.get('seller1_reward'),
@@ -446,11 +459,8 @@ def main(model_name=None):
                 "buyer_max_price": buyer_max_price,
                 "seller1_min_price": seller1_min_price,
                 "seller2_min_price": seller2_min_price,
-                "product_info": {
-                    "name": "Custom E-commerce Website Development",
-                    "estimated_timeline": "4-6 weeks",
-                    "tech_stack": "React + Node.js + PostgreSQL",
-                },
+                "seller1_product_info": seller1_product_info,
+                "seller2_product_info": seller2_product_info,
                 "model": get_model_name(model),
             })
             break
@@ -466,7 +476,7 @@ def main(model_name=None):
     # Save results to file
     try:
         # Create results directory structure
-        results_dir = Path(project_root) / "agenticpay" / "results" / "only_multi_seller"
+        results_dir = Path(project_root) / "agenticpay" / "results" / "multi_products_multi_seller"
         results_dir.mkdir(parents=True, exist_ok=True)
         
         # Get model name for directory (sanitize for filesystem)
@@ -485,12 +495,12 @@ def main(model_name=None):
         with open(summary_file, 'w', encoding='utf-8') as f:
             json.dump(results, f, indent=2, ensure_ascii=False)
         
-        # Save output text (we'll create a simple output file with key information)
-        output_file = run_dir / "Task8_s4_output.txt"
+        # Save output text
+        output_file = run_dir / "Task6_s2_beauty_product_output.txt"
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write("="*80 + "\n")
-            f.write("Task8 Scenario 4: Website Development - Sequential Two-Seller Negotiation Results\n")
-            f.write("Category: Professional Services\n")
+            f.write("Task6 Scenario 2: Beauty Product - Sequential Two-Seller Per One Product Negotiation Results\n")
+            f.write("Category: Daily Life Consumption\n")
             f.write("="*80 + "\n\n")
             f.write(f"Timestamp: {results['timestamp']}\n")
             f.write(f"Model: {results['model']}\n")
@@ -503,7 +513,9 @@ def main(model_name=None):
             f.write(f"Elapsed Time: {elapsed_time:.2f}s\n\n")
             if results.get('selected_seller'):
                 f.write(f"Final Selected Seller: Seller {results['selected_seller']}\n")
-                f.write(f"Final Deal Price: ${results.get('final_deal_price', 0):.2f}\n\n")
+                f.write(f"Final Deal Price: ${results.get('final_deal_price', 0):.2f}\n")
+                selected_product = results.get('seller1_product_info' if results['selected_seller'] == 1 else 'seller2_product_info', {})
+                f.write(f"Selected Product: {selected_product.get('name', 'N/A')} by {selected_product.get('brand', 'N/A')}\n\n")
             f.write("Final Prices:\n")
             f.write(f"  Seller1 - Seller Price: ${results['seller1_price']:.2f}" if results.get('seller1_price') is not None else "  Seller1 - Seller Price: Not specified")
             f.write("\n")
@@ -513,6 +525,12 @@ def main(model_name=None):
             f.write("\n")
             f.write(f"  Seller2 - Buyer Price: ${results['buyer_price_seller2']:.2f}" if results.get('buyer_price_seller2') is not None else "  Seller2 - Buyer Price: Not specified")
             f.write("\n\n")
+            f.write("Products:\n")
+            seller1_product = results.get('seller1_product_info', {})
+            f.write(f"  Seller1 Product: {seller1_product.get('name', 'N/A')} by {seller1_product.get('brand', 'N/A')} (${seller1_product.get('price', 0):.2f})\n")
+            seller2_product = results.get('seller2_product_info', {})
+            f.write(f"  Seller2 Product: {seller2_product.get('name', 'N/A')} by {seller2_product.get('brand', 'N/A')} (${seller2_product.get('price', 0):.2f})\n")
+            f.write("\n")
             f.write("Rewards:\n")
             if results.get('total_reward') is not None:
                 f.write(f"  Total Reward: {results['total_reward']:.3f}\n")
@@ -546,7 +564,7 @@ def main(model_name=None):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Task8 Scenario 4: Website Development - Sequential Two-Seller Negotiation")
+    parser = argparse.ArgumentParser(description="Task6 Scenario 2: Beauty Product - Sequential Two-Seller Per One Product Negotiation")
     parser.add_argument(
         "--model",
         type=str,
@@ -555,3 +573,4 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     main(model_name=args.model)
+

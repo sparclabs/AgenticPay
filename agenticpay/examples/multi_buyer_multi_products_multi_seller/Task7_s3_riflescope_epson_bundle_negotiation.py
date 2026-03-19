@@ -1,9 +1,9 @@
-"""Task5 Scenario 1: Used Smartphone Bundle - Sequential Two-Buyer Two-Seller Two-Product Negotiation
+"""Task7 Scenario 3: Riflescope & Epson Printer Bundle - Sequential Two-Buyer Two-Seller Two-Product Negotiation
 
-Two buyers negotiating with two sellers for used smartphone bundles (phone + accessories).
+Two buyers negotiating with two sellers for product bundle (Crimson Trace Riflescope + Epson thermal receipt printer).
 Each buyer chooses one seller per round to negotiate with.
-Prices represent total price for the bundle (smartphone + accessories).
-Category: Daily Life Consumption
+Prices represent total price for the bundle.
+Category: Sports & Outdoors / Office Electronics
 """
 
 import os
@@ -148,13 +148,12 @@ def main(model_name=None):
     print(f"✓ Successfully initialized: {model}")
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
-    # buyer_max_price and seller_min_price represent total expected cost for the bundle (smartphone + accessories)
-    # Based on scenario: buyer_max_price=$560 (refurbished price 70%), seller_min_price=$350 (platform buyback price)
+    # buyer_max_price and seller_min_price represent total for Riflescope ($218.79) + Epson Printer ($320) = $538.79 bundle
     print("Creating agents...")
-    buyer1_max_price = 560.0  # Maximum acceptable total purchase price for buyer1 (confidential, student budget)
-    buyer2_max_price = 620.0  # Maximum acceptable total purchase price for buyer2 (confidential, professional budget, higher)
-    seller1_min_price = 350.0  # Minimum acceptable total selling price for seller1 (confidential, good condition bundle)
-    seller2_min_price = 320.0  # Minimum acceptable total selling price for seller2 (confidential, fair condition bundle)
+    buyer1_max_price = 530.0  # Maximum acceptable total for buyer1 (confidential, budget buyer)
+    buyer2_max_price = 560.0  # Maximum acceptable total for buyer2 (confidential, higher budget)
+    seller1_min_price = 480.0  # Minimum acceptable total for seller1 (confidential)
+    seller2_min_price = 450.0  # Minimum acceptable total for seller2 (confidential)
     
     buyer1 = BuyerAgent(model=model, buyer_max_price=buyer1_max_price)
     buyer2 = BuyerAgent(model=model, buyer_max_price=buyer2_max_price)
@@ -169,73 +168,80 @@ def main(model_name=None):
         seller1_agent=seller1,
         seller2_agent=seller2,
         max_rounds=max_rounds,
-        initial_seller1_price=520.0,  # Initial total price offered by seller1 for the bundle (good condition)
-        initial_seller2_price=480.0,  # Initial total price offered by seller2 for the bundle (fair condition, lower)
+        initial_seller1_price=520.0,  # Initial total price offered by seller1 for Riflescope+Epson bundle
+        initial_seller2_price=500.0,  # Initial total price offered by seller2 for Riflescope+Epson bundle
         buyer1_max_price=buyer1_max_price,  # Buyer1 total max price (confidential, for bundle)
         buyer2_max_price=buyer2_max_price,  # Buyer2 total max price (confidential, for bundle)
         seller1_min_price=seller1_min_price,  # Seller1 total min price (confidential, for bundle)
         seller2_min_price=seller2_min_price,  # Seller2 total min price (confidential, for bundle)
         environment_info={
-            "platform": "eBay",
-            "market_type": "C2C",
-            "listing_age": "3 days",
-            "inspection": "Buyer can test before purchase",
-            "meeting": "Local meetup or shipping available",
+            "platform": "Amazon",
+            "market_type": "B2C",
+            "comparison_enabled": True,
         },
         price_tolerance=price_tolerance,
         reward_weights=reward_weights,  # Reward weights configuration
     )
     
     # Create user profile (text description of personal preferences)
-    user_profile = "Two buyers competing for used smartphone bundles. Buyer1 is a student on tight budget. Buyer2 is a professional willing to pay more for better condition. Both value complete accessories."
+    user_profile = "Two buyers competing for product bundle. Buyer1 is a budget buyer looking for good value. Buyer2 has higher budget for quality optics and office equipment. Both value quality and reliable products."
     print(f"User Profile: {user_profile}")
     
-    # Define two products with their individual prices
-    # The product_info should contain a list of two products (smartphone + accessories bundle)
-    # Based on scenario 1-1: Used iPhone 14 Pro 128GB
+    # Define two products with their individual prices (from Task6 example + sampled_products2.jsonl 3rd sample)
+    # Product 1: Crimson Trace Riflescope (from Task6_s3_riflescope_negotiation.py)
+    # Product 2: Epson TM-T20 Receipt Printer (from sampled_products2.jsonl line 4)
     product_info = {
         "products": [
             {
-                "name": "iPhone 14 Pro 128GB",
-                "brand": "Apple",
-                "price": 450.0,  # Individual price of the smartphone
-                "condition_seller1": "Used - Excellent (9/10)",
-                "condition_seller2": "Used - Good (7.5/10)",
-                "battery_health_seller1": "92%",
-                "battery_health_seller2": "87%",
-                "purchase_date": "2023-03",
-                "original_price": 999.0,
-                "issues_disclosed_seller1": "Minimal wear, barely visible scratches",
-                "issues_disclosed_seller2": "Minor scratches on back, some wear on screen",
+                "name": "Crimson Trace Brushline Pro Riflescope with Lightweight Solid Construction, Scope Caps and Lens Cloth for Hunting, Shooting and Outdoor",
+                "brand": "Visit the Crimson Trace Store",
+                "price": 218.79,
+                "condition": "New",
+                "model": "Brushline Pro Riflescope 2.5-10x42mm CT Plex Reticle",
+                "style": "2.5-10x42mm Plex",
+                "availability_status": "Only 14 left in stock (more on the way).",
+                "product_category": "Sports & Outdoors › Hunting & Fishing › Shooting › Optics › Gun Scopes › Rifle Scopes",
+                "average_rating": 4.3,
+                "total_reviews": 28,
+                "seller_name": "Amazon.com",
+                "asin": "B08GS6B87J",
+                "full_description": "SPECS: 2.5-10 magnification with a 42mm lens diameter, aerospace grade 1\" tube and weighs 16.6 oz - FOV Range: 40.3 ft Min - 10.1 ft Max. ACCURACY: Features a second focal plane, non-illuminated, CT Plex reticle with a 4\" eye relief, 1/4\" click value and quick spring-loaded zero reset capped turrets. EASE OF USE: Windage (right side), elevation (top) knobs are capped and can be easily unscrewed and adjusted when sighting in at the range by turning with your fingers (no tool required). DURABLE: Constructed of lightweight anodized aluminum with multi-coated lenses and is waterproof, shockproof and nitrogen purged to prevent fogging. INCLUDES: Lens cloth and scope caps.",
+                "image_url": "https://m.media-amazon.com/images/I/31j7DdlfrOL.jpg",
             },
             {
-                "name": "Original Accessories Bundle",
-                "brand": "Apple",
-                "price": 50.0,  # Individual price of accessories
-                "included_seller1": ["Original box", "MagSafe Charger", "Lightning Cable", "SIM tool"],
-                "included_seller2": ["Lightning Cable", "Third-party case"],
-                "condition_seller1": "Complete original set",
-                "condition_seller2": "Partial, missing original box and charger",
+                "name": "Epson C31CB10023 TM-T20 Readyprint Thermal Receipt Printer, Ethernet Interface, Without Cable, Dark Grey",
+                "brand": "Visit the Epson Store",
+                "price": 320.0,
+                "condition": "New",
+                "model": "C31CB10023",
+                "availability_status": "In stock. Usually ships within 3 to 4 days.",
+                "product_category": "Office Products › Office Electronics",
+                "average_rating": 4.1,
+                "total_reviews": 4,
+                "seller_name": "SourceLink Technologies",
+                "asin": "B00A0WG5KW",
+                "full_description": "For nearly 40 years, Epson has led the industry in developing innovative, reliable, high-performance products. From scanners to printers to 3D projectors, our award-winning technology brings your images to life. Epson Headquartered and established on the shore of Lake Suwa in Nagano, Japan.",
+                "image_url": "https://m.media-amazon.com/images/I/51BzGMyEVfL.jpg",
             },
         ]
     }
     
     # Calculate total product price
     total_product_price = sum(p["price"] for p in product_info["products"])
-    print(f"\nProducts (Bundle):")
+    print(f"\nProducts (Riflescope & Epson Bundle):")
     for i, p in enumerate(product_info["products"], 1):
         print(f"  {i}. {p['name']}: ${p['price']:.2f}")
     print(f"  Total Bundle Price: ${total_product_price:.2f}")
     
-    # Get user requirement (should describe purchasing the bundle)
+    # Get user requirement (should describe purchasing the product bundle)
     # Use default requirement for automatic running
-    user_requirement = "Looking for a used iPhone 14 Pro in good condition with original accessories. Prefer complete bundle with box and charger."
+    user_requirement = "I need a Crimson Trace Riflescope for hunting and an Epson thermal receipt printer for my small business. Looking for good value, reliable products with good reviews."
     print(f"Using default requirement: {user_requirement}")
     
     # Reset environment
     print("\n" + "="*60)
-    print("Starting new sequential negotiation for used smartphone bundles...")
-    print("Two buyers competing with two sellers for iPhone 14 Pro + Accessories")
+    print("Starting new sequential negotiation for Riflescope & Epson printer bundle...")
+    print("Two buyers competing with two sellers for product bundle")
     print("="*60)
     
     observation, info = env.reset(
@@ -250,7 +256,7 @@ def main(model_name=None):
     
     # Initialize results dictionary
     results = {
-        "task": "Task5_s1_used_smartphone_bundle_negotiation",
+        "task": "Task7_s3_riflescope_epson_bundle_negotiation",
         "timestamp": datetime.now().isoformat(),
         "user_requirement": user_requirement,
         "user_profile": user_profile,
@@ -590,7 +596,7 @@ def main(model_name=None):
     
     # Close environment
     env.close()
-    print("\nUsed smartphone bundle negotiation completed!")
+    print("\nRiflescope & Epson printer bundle negotiation completed!")
     
     # Ensure elapsed_time is set even if negotiation didn't complete normally
     if "elapsed_time" not in results:
@@ -619,11 +625,11 @@ def main(model_name=None):
             json.dump(results, f, indent=2, ensure_ascii=False)
         
         # Save output text
-        output_file = run_dir / "Task5_s1_output.txt"
+        output_file = run_dir / "Task7_s3_riflescope_epson_output.txt"
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write("="*80 + "\n")
-            f.write("Task5 Scenario 1: Used Smartphone Bundle - Sequential Two-Buyer Two-Seller Two-Product Negotiation Results\n")
-            f.write("Category: Daily Life Consumption\n")
+            f.write("Task7 Scenario 3: Riflescope & Epson Printer Bundle - Sequential Two-Buyer Two-Seller Two-Product Negotiation Results\n")
+            f.write("Category: Sports & Outdoors / Office Electronics\n")
             f.write("="*80 + "\n\n")
             f.write(f"Timestamp: {results['timestamp']}\n")
             f.write(f"Model: {results['model']}\n")
@@ -689,7 +695,7 @@ def main(model_name=None):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Task5 Scenario 1: Used Smartphone Bundle - Sequential Two-Buyer Two-Seller Two-Product Negotiation")
+    parser = argparse.ArgumentParser(description="Task7 Scenario 3: Riflescope & Epson Printer Bundle - Sequential Two-Buyer Two-Seller Two-Product Negotiation")
     parser.add_argument(
         "--model",
         type=str,

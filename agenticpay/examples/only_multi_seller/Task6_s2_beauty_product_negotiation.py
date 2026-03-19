@@ -1,6 +1,6 @@
-"""Task6 Scenario 2: Used Car - Sequential Two-Seller Negotiation
+"""Task6 Scenario 2: Beauty Product - Sequential Two-Seller Negotiation
 
-Two private sellers offering similar 2020 Honda Accord on Craigslist.
+Two sellers offering NOU Oriental Eau de Toilette (men's fragrance) on Amazon.
 Buyer compares offers and chooses which seller to negotiate with each round.
 Category: Daily Life Consumption
 """
@@ -151,9 +151,10 @@ def main(model_name=None):
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
     print("Creating agents...")
-    buyer_max_price = 18000.0  # Maximum acceptable purchase price for buyer (confidential) - 95% of KBB value
-    seller1_min_price = 14000.0  # Minimum acceptable selling price for seller1 (confidential) - loan remaining + bottom price
-    seller2_min_price = 14500.0  # Minimum acceptable selling price for seller2 (confidential, slightly higher than seller1)
+    # NOU Oriental Eau de Toilette: pricing $21.95
+    buyer_max_price = 22.0  # Maximum acceptable purchase price for buyer (confidential)
+    seller1_min_price = 14.0  # Minimum acceptable selling price for seller1 (confidential)
+    seller2_min_price = 15.0  # Minimum acceptable selling price for seller2 (confidential, slightly higher than seller1)
     
     buyer = BuyerAgent(model=model, buyer_max_price=buyer_max_price)
     seller1 = SellerAgent(model=model, seller_min_price=seller1_min_price)
@@ -166,24 +167,24 @@ def main(model_name=None):
         seller1_agent=seller1,
         seller2_agent=seller2,
         max_rounds=max_rounds,
-        initial_seller1_price=17500.0,  # Initial price offered by seller1
-        initial_seller2_price=17800.0,  # Initial price offered by seller2 (slightly higher)
+        initial_seller1_price=21.95,  # Initial price offered by seller1 (product list price)
+        initial_seller2_price=22.95,  # Initial price offered by seller2 (slightly higher)
         buyer_max_price=buyer_max_price,  # Buyer bottom price (confidential)
         seller1_min_price=seller1_min_price,  # Seller1 bottom price (confidential)
         seller2_min_price=seller2_min_price,  # Seller2 bottom price (confidential)
         environment_info={
-            "platform": "Craigslist",
-            "market_type": "C2C",
-            "season": "Spring (good selling season)",
-            "seller1_location": "15 miles away",
-            "seller2_location": "8 miles away",
+            "platform": "Amazon",
+            "market_type": "B2C",
+            "seller1_name": "AmTm Cosmetics",
+            "seller2_name": "Fragrance World",  # Both sell same NOU fragrance
+            "availability_status": "In Stock",
         },
         price_tolerance=price_tolerance,
         reward_weights=reward_weights,  # Reward weights configuration
     )
     
     # Create user profile (text description of personal preferences)
-    user_profile = "Practical buyer looking for a reliable family car. Concerned about maintenance history, accident records, and hidden mechanical issues. Prefers to thoroughly inspect vehicle before purchase."
+    user_profile = "Style-conscious buyer interested in men's fragrances. Values natural ingredients and essential oils. Prefers woody, oriental scents with good reviews."
     print(f"User Profile: {user_profile}")
     
     # Get user requirement
@@ -195,7 +196,7 @@ def main(model_name=None):
     #     user_requirement = "I need a high-quality winter jacket for cold weather"
     #     print(f"Using default requirement: {user_requirement}")
     # Use default requirement for automatic running
-    user_requirement = "Looking for a reliable mid-size sedan, 2019 or newer, under 50k miles, budget around $18,000."
+    user_requirement = "I'm looking for a men's oriental woody fragrance with essential oils, preferably natural ingredients, good for daily wear. Budget around $22."
     print(f"Using default requirement: {user_requirement}")
     
     # Reset environment
@@ -203,19 +204,23 @@ def main(model_name=None):
     print("Starting new sequential negotiation with two sellers...")
     print("="*60)
     
+    # Product from sampled_products2.jsonl - NOU Oriental Eau de Toilette (men's fragrance)
+    product_image_url = "https://m.media-amazon.com/images/I/51gDhcURgKL.jpg"
     observation, info = env.reset(
         user_requirement=user_requirement,
         product_info={
-            "name": "2020 Honda Accord EX-L",
-            "mileage": 45000,
-            "condition": "Excellent",
-            "accidents_reported": 0,
-            "service_records": "Available",
-            "kelley_blue_book_value": 19500,
-            "features": ["Leather seats", "Sunroof", "Apple CarPlay"],
-            "reason_for_selling": "Upgrading to SUV",
-            "seller1_ownership": "2 years, single owner",
-            "seller2_ownership": "3 years, single owner",
+            "name": "Oriental Eau de Toilette – Natural Eau de Toilette for Men Woody Eau de Toilette Infused with Essential Oils Fragrance for Men with Oriental Woody Tones NOU Oliban Eau de Toilette for Men – 1.7 Fl Oz",
+            "condition": "New",
+            "brand": "Brand: nou",
+            "original_price": 21.95,
+            "availability_status": "In Stock.",
+            "product_category": "Beauty & Personal Care › Fragrance",
+            "average_rating": 4,
+            "total_reviews": 6,
+            "seller_name": "AmTm Cosmetics",
+            "asin": "B08XQWJX8P",
+            "full_description": "NOU OLIBAN ORIENTAL SCENT FOR MEN – this fragrance for men has been perfectly blended and infused with essential oils, resulting in an intriguing, mysterious scent that is powerful and appealing to women. ORIENTAL EAU DE TOILETTE CRAFTED BY FRENCH PERFUMERS – expertly crafted by French perfumers, this natural fragrance for men is created with pure and natural ingredients and infused with aromatic essential oils. OLIBAN WOODY FRAGRANCE NOTES – this natural Eau de Toilette for men features elemi and olibanum, toned down by the relaxing scent of chamomile. The heart notes are patchouli and cistus, with raised notes of sandalwood, leather, vanilla and benzoin resulting in a masculine, powerful fragrance for men.",
+            "image_url": product_image_url,
         },
         user_profile=user_profile,  # Pass user profile
     )
@@ -226,7 +231,7 @@ def main(model_name=None):
     
     # Initialize results dictionary
     results = {
-        "task": "Task6_s2_used_car_negotiation",
+        "task": "Task6_s2_beauty_product_negotiation",
         "timestamp": datetime.now().isoformat(),
         "user_requirement": user_requirement,
         "user_profile": user_profile,
@@ -447,11 +452,15 @@ def main(model_name=None):
                 "seller1_min_price": seller1_min_price,
                 "seller2_min_price": seller2_min_price,
                 "product_info": {
-                    "name": "2020 Honda Accord EX-L",
-                    "mileage": 45000,
-                    "condition": "Excellent",
-                    "kelley_blue_book_value": 19500,
-                    "features": ["Leather seats", "Sunroof", "Apple CarPlay"],
+                    "name": "Oriental Eau de Toilette – Natural Eau de Toilette for Men Woody Eau de Toilette Infused with Essential Oils Fragrance for Men with Oriental Woody Tones NOU Oliban Eau de Toilette for Men – 1.7 Fl Oz",
+                    "condition": "New",
+                    "brand": "Brand: nou",
+                    "original_price": 21.95,
+                    "product_category": "Beauty & Personal Care › Fragrance",
+                    "average_rating": 4,
+                    "total_reviews": 6,
+                    "asin": "B08XQWJX8P",
+                    "image_url": "https://m.media-amazon.com/images/I/51gDhcURgKL.jpg",
                 },
                 "model": get_model_name(model),
             })
@@ -488,10 +497,10 @@ def main(model_name=None):
             json.dump(results, f, indent=2, ensure_ascii=False)
         
         # Save output text (we'll create a simple output file with key information)
-        output_file = run_dir / "Task6_s2_output.txt"
+        output_file = run_dir / "Task6_s2_beauty_product_output.txt"
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write("="*80 + "\n")
-            f.write("Task6 Scenario 2: Used Car - Sequential Two-Seller Negotiation Results\n")
+            f.write("Task6 Scenario 2: Beauty Product - Sequential Two-Seller Negotiation Results\n")
             f.write("Category: Daily Life Consumption\n")
             f.write("="*80 + "\n\n")
             f.write(f"Timestamp: {results['timestamp']}\n")
@@ -548,7 +557,7 @@ def main(model_name=None):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Task6 Scenario 2: Used Car - Sequential Two-Seller Negotiation")
+    parser = argparse.ArgumentParser(description="Task6 Scenario 2: Beauty Product - Sequential Two-Seller Negotiation")
     parser.add_argument(
         "--model",
         type=str,
