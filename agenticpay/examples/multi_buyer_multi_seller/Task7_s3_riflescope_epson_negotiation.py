@@ -20,7 +20,7 @@ sys.path.insert(0, project_root)
 from agenticpay.envs.multi_buyer_multi_seller.Task3_sequential_two_buyer_two_seller_negotiation import Task3SequentialTwoBuyerTwoSellerNegotiation
 from agenticpay.agents.buyer_agent import BuyerAgent
 from agenticpay.agents.seller_agent import SellerAgent
-from agenticpay.models.custom_llm import CustomLLM
+from agenticpay.models.openai_vlm import OpenAIVLM
 import re
 
 # Import configuration parameters
@@ -138,11 +138,9 @@ def main(model_name=None):
         print("You can set it with: export OPENAI_API_KEY='your-key-here'")
         return
     
-    # Use provided model name or default
-    if model_name is None:
-        model_name = "gpt-5.2"  # Default model
-    
-    model = CustomLLM(api_key=api_key, model=model_name)  # claude-sonnet-4-5-20250929, gpt-5.2, gemini-3-pro-all, gpt-3.5-turbo, DeepSeek-R1
+    # Use OpenAIVLM (Vision Language Model) for Riflescope & Epson negotiation with product images (图文)
+    model_name = model_name or "gpt-4o-mini"  # gpt-4o, gpt-4o-mini, gpt-4-vision-preview, etc.
+    model = OpenAIVLM(model=model_name, api_key=api_key)
     
     print(f"✓ Successfully initialized: {model}")
     
@@ -182,12 +180,12 @@ def main(model_name=None):
     )
     
     # Create user profile (text description of personal preferences)
-    user_profile = "Two renters competing for Miami apartments. Buyer1 is business traveler valuing amenities. Buyer2 is tourist seeking good value location."
+    user_profile = "Two buyers interested in Sports & Outdoors or Office Electronics. Buyer1 is hunter looking for riflescope. Buyer2 runs small business seeking receipt printer."
     print(f"User Profile: {user_profile}")
     
     # Get user requirement
     # Use default requirement for automatic running
-    user_requirement = "Need 1BR apartment in Miami for 1 week in July. Prefer beach access."
+    user_requirement = "I'm looking for either a Crimson Trace Riflescope for hunting or an Epson thermal receipt printer for my small business. Prefer good value and reliable products."
     print(f"Using default requirement: {user_requirement}")
     
     # Reset environment
@@ -195,18 +193,42 @@ def main(model_name=None):
     print("Starting new sequential negotiation with two buyers and two sellers...")
     print("="*60)
     
+    # Product info: Seller1 = Crimson Trace Riflescope, Seller2 = Epson thermal receipt printer (with images for VLM 图文)
+    riflescope_image_url = "https://m.media-amazon.com/images/I/31j7DdlfrOL.jpg"
+    epson_image_url = "https://m.media-amazon.com/images/I/51BzGMyEVfL.jpg"
     observation, info = env.reset(
         user_requirement=user_requirement,
         product_info={
-            "name": "1BR Apartment Short-term Rental",
-            "location": "Miami Beach",
-            "duration": "1 week (7 nights)",
-            "unit_seller1": "Ocean view, 2min walk to beach, pool, gym",
-            "unit_seller2": "City view, 10min walk to beach, basic amenities",
-            "bedrooms": 1,
-            "bathrooms": 1,
-            "rating_seller1": "4.9/5 (superhost)",
-            "rating_seller2": "4.6/5",
+            "seller1_product": {
+                "name": "Crimson Trace Brushline Pro Riflescope with Lightweight Solid Construction, Scope Caps and Lens Cloth for Hunting, Shooting and Outdoor",
+                "condition": "New",
+                "brand": "Visit the Crimson Trace Store",
+                "model": "Brushline Pro Riflescope 2.5-10x42mm CT Plex Reticle",
+                "price": 218.79,
+                "original_price": 218.79,
+                "product_category": "Sports & Outdoors › Hunting & Fishing › Shooting › Optics › Gun Scopes › Rifle Scopes",
+                "average_rating": 4.3,
+                "total_reviews": 28,
+                "asin": "B08GS6B87J",
+                "full_description": "SPECS: 2.5-10 magnification with a 42mm lens diameter, aerospace grade 1\" tube and weighs 16.6 oz. ACCURACY: Features a second focal plane, non-illuminated, CT Plex reticle. DURABLE: Constructed of lightweight anodized aluminum with multi-coated lenses, waterproof, shockproof.",
+                "image_url": riflescope_image_url,
+            },
+            "seller2_product": {
+                "name": "Epson C31CB10023 TM-T20 Readyprint Thermal Receipt Printer, Ethernet Interface, Without Cable, Dark Grey",
+                "condition": "New",
+                "brand": "Visit the Epson Store",
+                "model": "C31CB10023",
+                "price": 320.0,
+                "original_price": 320.0,
+                "product_category": "Office Products › Office Electronics",
+                "average_rating": 4.1,
+                "total_reviews": 4,
+                "asin": "B00A0WG5KW",
+                "full_description": "For nearly 40 years, Epson has led the industry in developing innovative, reliable, high-performance products. From scanners to printers to 3D projectors, our award-winning technology brings your images to life.",
+                "image_url": epson_image_url,
+            },
+            "condition_seller1": "New - Crimson Trace Riflescope",
+            "condition_seller2": "New - Epson Thermal Receipt Printer",
         },
         user_profile=user_profile,  # Pass user profile
     )
@@ -607,10 +629,10 @@ def main(model_name=None):
                 f.write(f"Final Deal Price: ${results.get('final_deal_price', 0):.2f}\n")
                 product_info = results.get('product_info', {})
                 if results['selected_seller'] == 1:
-                    p = product_info.get('product_seller1', {})
+                    p = product_info.get('seller1_product', {})
                     f.write(f"Selected Product: {p.get('name', 'N/A')} by {p.get('brand', 'N/A')}\n\n")
                 elif results['selected_seller'] == 2:
-                    p = product_info.get('product_seller2', {})
+                    p = product_info.get('seller2_product', {})
                     f.write(f"Selected Product: {p.get('name', 'N/A')} by {p.get('brand', 'N/A')}\n\n")
             f.write("Final Prices:\n")
             f.write(f"  Buyer1-Seller1: Buyer=${results['b1s1_buyer_price']:.2f} | Seller=${results['b1s1_seller_price']:.2f}" if results.get('b1s1_buyer_price') is not None and results.get('b1s1_seller_price') is not None else "  Buyer1-Seller1: Not specified")
@@ -623,10 +645,10 @@ def main(model_name=None):
             f.write("\n\n")
             product_info = results.get('product_info', {})
             f.write("Products:\n")
-            p1 = product_info.get('product_seller1', {})
+            p1 = product_info.get('seller1_product', {})
             price1 = p1.get('original_price', p1.get('price', 0)) or 0
             f.write(f"  Seller1: {p1.get('name', 'N/A')} by {p1.get('brand', 'N/A')} (${price1:.2f})\n")
-            p2 = product_info.get('product_seller2', {})
+            p2 = product_info.get('seller2_product', {})
             price2 = p2.get('original_price', p2.get('price', 0)) or 0
             f.write(f"  Seller2: {p2.get('name', 'N/A')} by {p2.get('brand', 'N/A')} (${price2:.2f})\n")
             f.write("\n")

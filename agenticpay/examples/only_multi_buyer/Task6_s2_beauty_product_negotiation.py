@@ -21,6 +21,7 @@ from agenticpay.envs.only_multi_buyer.Task3_sequential_two_buyer_negotiation imp
 from agenticpay.agents.buyer_agent import BuyerAgent
 from agenticpay.agents.seller_agent import SellerAgent
 from agenticpay.models.custom_llm import CustomLLM
+from agenticpay.models.openai_vlm import OpenAIVLM
 import re
 
 # Import configuration parameters
@@ -135,11 +136,9 @@ def main(model_name=None):
         print("You can set it with: export OPENAI_API_KEY='your-key-here'")
         return
     
-    # Use provided model name or default
-    if model_name is None:
-        model_name = "gpt-5.2"  # Default model
-    
-    model = CustomLLM(api_key=api_key, model=model_name)  # claude-sonnet-4-5-20250929, gpt-5.2, gemini-3-pro-all, gpt-3.5-turbo, DeepSeek-R1
+    # Use OpenAIVLM (Vision Language Model) for multi-buyer negotiation with product images (图文)
+    model_name = model_name or "gpt-4o-mini"  # gpt-4o, gpt-4o-mini, gpt-4-vision-preview, etc.
+    model = OpenAIVLM(model=model_name, api_key=api_key)
     
     print(f"✓ Successfully initialized: {model}")
     

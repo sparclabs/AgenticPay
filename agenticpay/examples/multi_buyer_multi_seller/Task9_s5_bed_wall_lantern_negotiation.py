@@ -20,7 +20,7 @@ sys.path.insert(0, project_root)
 from agenticpay.envs.multi_buyer_multi_seller.Task3_sequential_two_buyer_two_seller_negotiation import Task3SequentialTwoBuyerTwoSellerNegotiation
 from agenticpay.agents.buyer_agent import BuyerAgent
 from agenticpay.agents.seller_agent import SellerAgent
-from agenticpay.models.custom_llm import CustomLLM
+from agenticpay.models.openai_vlm import OpenAIVLM
 import re
 
 # Import configuration parameters
@@ -138,11 +138,9 @@ def main(model_name=None):
         print("You can set it with: export OPENAI_API_KEY='your-key-here'")
         return
     
-    # Use provided model name or default
-    if model_name is None:
-        model_name = "gpt-5.2"  # Default model
-    
-    model = CustomLLM(api_key=api_key, model=model_name)  # claude-sonnet-4-5-20250929, gpt-5.2, gemini-3-pro-all, gpt-3.5-turbo, DeepSeek-R1
+    # Use OpenAIVLM (Vision Language Model) for Wall Lantern & Bed negotiation with product images (图文)
+    model_name = model_name or "gpt-4o-mini"  # gpt-4o, gpt-4o-mini, gpt-4-vision-preview, etc.
+    model = OpenAIVLM(model=model_name, api_key=api_key)
     
     print(f"✓ Successfully initialized: {model}")
     
@@ -229,7 +227,6 @@ def main(model_name=None):
                 "full_description": "The cole bed set with rails enhances a traditional silhouette with its unique and whimsical accents. classic ball finials are accentuated by sweeping scrollwork and intricate castings. the black twinkle finish offers a great base, intensifying your decor and color scheme. all of these wonderful details culminate with the sturdy steel construction. some assembly required. available in black twinkle color and queen size. this set includes one headboard and one footboard. headboard measures 52-inch height by 62-inch width by 2-inch depth and footboard measures 32-inch height by 62-inch width by 2-inch depth.",
                 "image_url": "https://m.media-amazon.com/images/I/41Bw9FRPu8L.jpg",
             },
-        },
     }
     observation, info = env.reset(
         user_requirement=user_requirement,

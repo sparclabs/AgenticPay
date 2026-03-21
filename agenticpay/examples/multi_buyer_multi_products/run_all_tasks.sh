@@ -76,10 +76,10 @@ TASK_SCRIPTS["Task7"]="Task7_s3_riflescope_epson_bundle_negotiation"
 TASK_SCRIPTS["Task8"]="Task8_s4_headphones_speaker_bundle_negotiation"
 TASK_SCRIPTS["Task9"]="Task9_s5_bed_wall_lantern_package_negotiation"
 TASK_SCRIPTS["Task10"]="Task10_s6_home_renovation_package_negotiation"
-TASK_SCRIPTS["Task11"]="Task11_s7_saas_software_package_negotiation"
-TASK_SCRIPTS["Task12"]="Task12_s8_raw_materials_procurement_package_negotiation"
-TASK_SCRIPTS["Task13"]="Task13_s9_luxury_watch_package_negotiation"
-TASK_SCRIPTS["Task14"]="Task14_s10_business_acquisition_package_negotiation"
+TASK_SCRIPTS["Task11"]="Task11_s7_flipflops_tshirt_bundle_negotiation"
+TASK_SCRIPTS["Task12"]="Task12_s8_jeans_shirt_package_negotiation"
+TASK_SCRIPTS["Task13"]="Task13_s9_beverage_air_plants_package_negotiation"
+TASK_SCRIPTS["Task14"]="Task14_s10_food_color_smokehouse_package_negotiation"
 
 # Determine which tasks to run
 if [ ${#TASKS[@]} -eq 0 ]; then
