@@ -1,8 +1,8 @@
-"""Task9 Scenario 5: Commercial Photography - Sequential Two-Seller Per One Product Negotiation
+"""Task9 Scenario 5: Wall Lantern & Queen Bed - Sequential Two-Seller Negotiation
 
-Buyer negotiating with two photographers offering different product photography packages.
-Buyer chooses one seller per round to negotiate with.
-Category: Professional Services
+Two sellers: Seller1 offers Sea Gull Wall Lantern, Seller2 offers Hillsdale Queen Bed.
+Buyer compares products and pricing, choosing which seller to negotiate with each round.
+Category: Home & Kitchen
 """
 
 import os
@@ -17,23 +17,15 @@ from datetime import datetime
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 sys.path.insert(0, project_root)
 
-from agenticpay.envs.multi_products_multi_seller.Task3_sequential_two_seller_per_one_product_negotiation import Task3SequentialTwoSellerPerOneProductNegotiation
+from agenticpay.envs.only_multi_seller.Task3_sequential_two_seller_negotiation import Task3SequentialTwoSellerNegotiation
 from agenticpay.agents.buyer_agent import BuyerAgent
 from agenticpay.agents.seller_agent import SellerAgent
 from agenticpay.models.custom_llm import CustomLLM
+from agenticpay.models.qwen3_vl import Qwen3VL
+from agenticpay.models.vllm_lm import VLLMLLM
+from agenticpay.models.sglang_vlm import SGLangVLM
+from agenticpay.examples.config import reward_weights, max_rounds, price_tolerance
 import re
-
-# Import configuration parameters
-examples_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, examples_dir)
-try:
-    from config import reward_weights, max_rounds, price_tolerance, OPENAI_API_KEY
-except ImportError:
-    # Default values if config not available
-    reward_weights = {"buyer_savings": 1.0, "seller_profit": 1.0, "time_cost": 0.1}
-    max_rounds = 20
-    price_tolerance = 1.0
-    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 
 def get_model_name(model):
@@ -82,10 +74,11 @@ def extract_seller_choice(buyer_response: str, observation: dict) -> int:
     response_lower = buyer_response.lower()
     
     # Look for explicit seller mentions
-    if re.search(r'seller\s*2|second\s+seller|seller\s*two', response_lower):
-        return 2
-    elif re.search(r'seller\s*1|first\s+seller|seller\s*one', response_lower):
-        return 1
+    if re.search(r'seller\s*[12]|first\s+seller|seller\s*one', response_lower):
+        if re.search(r'seller\s*2|second\s+seller|seller\s*two', response_lower):
+            return 2
+        elif re.search(r'seller\s*1|first\s+seller|seller\s*one', response_lower):
+            return 1
     
     # If no explicit mention, try to infer from context
     # Check if buyer mentions prices or other indicators
@@ -116,7 +109,7 @@ def extract_seller_choice(buyer_response: str, observation: dict) -> int:
 
 
 def main(model_name=None):
-    """Main function: Demonstrates sequential multi-seller negotiation flow with different products
+    """Main function: Demonstrates sequential multi-seller negotiation flow
     
     Args:
         model_name: Optional model name. If None, uses default model.
@@ -125,7 +118,7 @@ def main(model_name=None):
     print("Initializing model...")
     
     # Check API key
-    api_key = os.getenv("OPENAI_API_KEY") or OPENAI_API_KEY
+    api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         print("Warning: OPENAI_API_KEY not set. Please set it to use OpenAI models.")
         print("You can set it with: export OPENAI_API_KEY='your-key-here'")
@@ -133,17 +126,34 @@ def main(model_name=None):
     
     # Use provided model name or default
     if model_name is None:
-        model_name = "gpt-5.2"  # Default model
+        model_name = "qwen3-14b"  # Default model
     
-    model = CustomLLM(api_key=api_key, model=model_name)  # claude-sonnet-4-5-20250929, gpt-5.2, gemini-3-pro-all, gpt-3.5-turbo, DeepSeek-R1
+    model = CustomLLM(api_key=api_key, model=model_name) # claude-sonnet-4-5-20250929, gpt-5.2, gemini-3-pro-all, gpt-3.5-turbo, DeepSeek-R1
+
+    # Build absolute path to model directory
+    # model_path = os.path.join(project_root, "models", "download_models", "Qwen3-8B-Instruct")
+    # model_path = os.path.abspath(model_path)
+
+    # vLLM LLM Model
+    # model = VLLMLLM(
+    #     model_path=model_path,
+    #     trust_remote_code=True,
+    #     gpu_memory_utilization=0.9,
+    #     tensor_parallel_size=4, # 4 GPUs
+    # )
+
+    # SGLang VLM Model
+    # model = SGLangVLM(
+    #     model_path=model_path,
+    # )
     
     print(f"✓ Successfully initialized: {model}")
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
     print("Creating agents...")
-    buyer_max_price = 2000.0  # Maximum acceptable price for buyer (confidential) - e-commerce seller budget
-    seller1_min_price = 800.0  # Minimum acceptable price for seller1 (confidential) - covers equipment and time
-    seller2_min_price = 900.0  # Minimum acceptable price for seller2 (confidential, higher due to premium service)
+    buyer_max_price = 250.0  # Maximum acceptable purchase price for buyer (confidential)
+    seller1_min_price = 45.0  # Minimum acceptable selling price for seller1 - Wall Lantern (confidential)
+    seller2_min_price = 180.0  # Minimum acceptable selling price for seller2 - Queen Bed (confidential)
     
     buyer = BuyerAgent(model=model, buyer_max_price=buyer_max_price)
     seller1 = SellerAgent(model=model, seller_min_price=seller1_min_price)
@@ -151,63 +161,84 @@ def main(model_name=None):
     
     # Create environment
     print("Creating sequential multi-seller negotiation environment...")
-    env = Task3SequentialTwoSellerPerOneProductNegotiation(
+    env = Task3SequentialTwoSellerNegotiation(
         buyer_agent=buyer,
         seller1_agent=seller1,
         seller2_agent=seller2,
         max_rounds=max_rounds,
-        initial_seller1_price=1500.0,  # Initial price offered by seller1
-        initial_seller2_price=1800.0,  # Initial price offered by seller2 (higher for premium package)
+        initial_seller1_price=61.17,  # Initial price offered by seller1 - Wall Lantern
+        initial_seller2_price=226.20,  # Initial price offered by seller2 - Queen Bed
         buyer_max_price=buyer_max_price,  # Buyer bottom price (confidential)
         seller1_min_price=seller1_min_price,  # Seller1 bottom price (confidential)
         seller2_min_price=seller2_min_price,  # Seller2 bottom price (confidential)
         environment_info={
-            "purpose": "E-commerce listing",
             "platform": "Amazon",
-            "deadline": "2 weeks",
+            "market_type": "B2C",
+            "seller1_listing_age": "4 days",
+            "seller2_listing_age": "2 weeks",
         },
-        price_tolerance=0,
+        price_tolerance=price_tolerance,
         reward_weights=reward_weights,  # Reward weights configuration
     )
     
     # Create user profile (text description of personal preferences)
-    user_profile = "E-commerce seller looking for professional product photography. Values portfolio quality and quick turnaround. Concerned about usage rights and additional editing costs. Wants cohesive visual branding."
+    user_profile = "Homeowner looking to furnish bedroom and enhance outdoor lighting. Values quality fixtures, UL listing for wet locations for outdoor use. For bedroom, prefers metal frame with assembly option, queen size."
     print(f"User Profile: {user_profile}")
     
     # Get user requirement
+    # print("\n" + "="*60)
+    # print("Please enter the product requirement you want to purchase:")
+    # user_requirement = input("> ").strip()
+    # if not user_requirement:
+    #     print("No requirement entered, using default requirement...")
+    #     user_requirement = "I need a high-quality winter jacket for cold weather"
+    #     print(f"Using default requirement: {user_requirement}")
     # Use default requirement for automatic running
-    user_requirement = "Need professional product photos for my Amazon listing. 10 products with cohesive branding."
+    user_requirement = "I'm looking for either a Sea Gull Lighting Wynfield outdoor wall lantern for my porch, or a Hillsdale Cole Frame Queen Bed for my bedroom. Prefer clear beveled glass and black finish for the lantern; for the bed need assembly required with box spring."
     print(f"Using default requirement: {user_requirement}")
     
-    # Reset environment with different products for each seller
+    # Reset environment
     print("\n" + "="*60)
-    print("Starting new sequential negotiation with two photographers (each with different package levels)...")
+    print("Starting new sequential negotiation with two sellers...")
     print("="*60)
     
+    # Product 1: Sea Gull Wall Lantern (from Task8 example)
+    # Product 2: Hillsdale Queen Bed (from sampled_products2.jsonl line 5)
     observation, info = env.reset(
         user_requirement=user_requirement,
-        seller1_product_info={
-            "name": "Product Photography Package - Standard",
-            "products_count": 10,
-            "shots_per_product": 3,
-            "edited_images": 15,
-            "delivery_days": 7,
-            "usage_rights": "Commercial, 1-year exclusive",
-            "photographer_experience": "10 years, e-commerce focus",
-            "portfolio": "100+ successful product shoots",
-            "rating": "4.8/5 (89 reviews)",
-        },
-        seller2_product_info={
-            "name": "Product Photography Package - Premium",
-            "products_count": 10,
-            "shots_per_product": 5,
-            "edited_images": 25,
-            "delivery_days": 5,
-            "usage_rights": "Commercial, unlimited",
-            "photographer_experience": "15 years, Fortune 500 clients",
-            "portfolio": "200+ successful shoots, award-winning",
-            "rating": "5.0/5 (156 reviews)",
-            "bonus": "Free lifestyle shots included",
+        product_info={
+            "seller1_product": {
+                "name": "Sea Gull Lighting 85200-12 Wynfield One-Light Outdoor Wall Lantern with Clear Beveled Glass Panels, Black Finish",
+                "condition": "New",
+                "brand": "Visit the Sea Gull Lighting Store",
+                "model": "85200-12",
+                "original_price": 61.17,
+                "availability_quantity": 7,
+                "availability_status": "Only 7 left in stock - order soon.",
+                "product_category": "Tools & Home Improvement › Lighting & Ceiling Fans › Outdoor Lighting › Porch & Patio Lights › Wall Lights",
+                "average_rating": 4.4,
+                "total_reviews": 11,
+                "seller_name": "Amazon.com",
+                "asin": "B003HBR86S",
+                "full_description": "The Sea Gull Lighting Wynfield one light outdoor wall fixture in black enhances the beauty of your property, makes your home safer and more secure, and increases the number of pleasurable hours you spend outdoors. The Wynfield collection by Sea Gull Lighting complements classical home designs with its soft curves and colonial accents. A Black Powdercoat finish over a durable cast aluminum body adds dependable quality to an enduring style. Either Frosted glass or Clear Beveled glass give the fixtures distinct appeal. The one-light fixtures with Clear Beveled glass can easily convert to LED by purchasing LED replacement lamps sold separately. Requires 1 A19 medium light bulb, 100-watt max (sold separately). This fixture is dimmable with a dimmable bulb (not included). UL listed for wet locations.",
+                "image_url": "https://m.media-amazon.com/images/I/51c3GuGWaSL.jpg",
+            },
+            "seller2_product": {
+                "name": "Hillsdale Furniture Hillsdale Cole Frame Queen Bed, Black twinkle",
+                "condition": "New",
+                "brand": "Visit the Hillsdale Store",
+                "model": "1601BQR",
+                "original_price": 226.20,
+                "availability_quantity": 2,
+                "availability_status": "Only 2 left in stock - order soon.",
+                "product_category": "Home & Kitchen › Furniture › Bedroom Furniture › Beds, Frames & Bases › Beds",
+                "average_rating": 4.5,
+                "total_reviews": 14,
+                "seller_name": "Amazon.com",
+                "asin": "B004A9L7ZO",
+                "full_description": "The cole bed set with rails enhances a traditional silhouette with its unique and whimsical accents. classic ball finials are accentuated by sweeping scrollwork and intricate castings. the black twinkle finish offers a great base, intensifying your decor and color scheme. all of these wonderful details culminate with the sturdy steel construction. some assembly required. available in black twinkle color and queen size. this set includes one headboard and one footboard. headboard measures 52-inch height by 62-inch width by 2-inch depth and footboard measures 32-inch height by 62-inch width by 2-inch depth.",
+                "image_url": "https://m.media-amazon.com/images/I/41Bw9FRPu8L.jpg",
+            },
         },
         user_profile=user_profile,  # Pass user profile
     )
@@ -218,7 +249,7 @@ def main(model_name=None):
     
     # Initialize results dictionary
     results = {
-        "task": "Task9_s5_commercial_photography_negotiation",
+        "task": "Task9_s5_bed_wall_lantern_negotiation",
         "timestamp": datetime.now().isoformat(),
         "user_requirement": user_requirement,
         "user_profile": user_profile,
@@ -251,7 +282,7 @@ def main(model_name=None):
             conversation_history=combined_history,
             current_state={
                 **observation,
-                "instruction": "You are negotiating with two sellers, each offering a different jacket model. Each round, you need to choose ONE seller to negotiate with and provide your negotiation message. Please clearly indicate which seller (1 or 2) you want to negotiate with, for example: 'I want to negotiate with seller 1' or 'Let me talk to seller 2'."
+                "instruction": "You are negotiating with two sellers. Each round, you need to choose ONE seller to negotiate with and provide your negotiation message. Please clearly indicate which seller (1 or 2) you want to negotiate with, for example: 'I want to negotiate with seller 1' or 'Let me talk to seller 2'."
             }
         )
         
@@ -264,17 +295,17 @@ def main(model_name=None):
         buyer_action = buyer_response
         
         # Get the conversation history for the selected seller
-        if selected_seller == 1:
-            conversation_history = observation["conversation_history_seller1"]
-        else:
-            conversation_history = observation["conversation_history_seller2"]
-        
         # Create updated conversation history that includes buyer's response
         # So seller can see buyer's message before responding
-        updated_conversation_history = conversation_history.copy()
+        if selected_seller == 1:
+            conversation_history = observation["conversation_history_seller1"].copy()
+        else:
+            conversation_history = observation["conversation_history_seller2"].copy()
+        
+        # Add buyer's message to the conversation history
         if buyer_action:
             current_round = observation.get("current_round", 0)
-            updated_conversation_history.append({
+            conversation_history.append({
                 "role": "buyer",
                 "content": buyer_action,
                 "round": current_round
@@ -283,12 +314,12 @@ def main(model_name=None):
         # Get the selected seller's response (seller can now see buyer's message)
         if selected_seller == 1:
             seller_action = seller1.respond(
-                conversation_history=updated_conversation_history,
+                conversation_history=conversation_history,
                 current_state=observation
             )
         else:
             seller_action = seller2.respond(
-                conversation_history=updated_conversation_history,
+                conversation_history=conversation_history,
                 current_state=observation
             )
         
@@ -307,7 +338,7 @@ def main(model_name=None):
         sys.stdout.flush()
         
         # Display step rewards for each round with detailed calculation
-        if 'step_seller1_reward' in info or 'step_seller2_reward' in info or 'step_buyer_reward' in info:
+        if 'step_buyer_reward' in info or 'step_seller1_reward' in info or 'step_seller2_reward' in info:
             print(f"\n[Step Rewards] ", end="")
             if 'step_buyer_reward' in info:
                 print(f"Buyer: {info['step_buyer_reward']:.3f}", end="")
@@ -388,13 +419,6 @@ def main(model_name=None):
             if info.get('selected_seller'):
                 print(f"Final Selected Seller: Seller {info['selected_seller']}")
                 print(f"Final Deal Price: ${info.get('final_deal_price', 0):.2f}")
-                # Display product info for selected seller
-                if info['selected_seller'] == 1:
-                    product_info = info.get('seller1_product_info', {})
-                    print(f"Selected Product: {product_info.get('name', 'N/A')} by {product_info.get('brand', 'N/A')}")
-                elif info['selected_seller'] == 2:
-                    product_info = info.get('seller2_product_info', {})
-                    print(f"Selected Product: {product_info.get('name', 'N/A')} by {product_info.get('brand', 'N/A')}")
             seller1_price = info.get('seller1_price', 0) or 0
             buyer_price_seller1 = info.get('buyer_price_seller1', 0) or 0
             seller2_price = info.get('seller2_price', 0) or 0
@@ -423,10 +447,6 @@ def main(model_name=None):
             
             # Collect results
             elapsed_time = time.time() - start_time
-            seller1_product_info = info.get('seller1_product_info', {})
-            seller2_product_info = info.get('seller2_product_info', {})
-            # current_round has been incremented to reflect the completed round
-            actual_rounds = info.get('round', 0)
             results.update({
                 "status": info.get('status', 'unknown'),
                 "success": terminated,
@@ -436,7 +456,7 @@ def main(model_name=None):
                 "seller2_price": info.get('seller2_price'),
                 "buyer_price_seller1": info.get('buyer_price_seller1'),
                 "buyer_price_seller2": info.get('buyer_price_seller2'),
-                "total_rounds": actual_rounds,
+                "total_rounds": info.get('round', 0),
                 "total_reward": float(reward) if reward is not None else None,
                 "buyer_reward": info.get('buyer_reward'),
                 "seller1_reward": info.get('seller1_reward'),
@@ -449,8 +469,22 @@ def main(model_name=None):
                 "buyer_max_price": buyer_max_price,
                 "seller1_min_price": seller1_min_price,
                 "seller2_min_price": seller2_min_price,
-                "seller1_product_info": seller1_product_info,
-                "seller2_product_info": seller2_product_info,
+                "product_info": {
+                    "seller1_product": {
+                        "name": "Sea Gull Lighting 85200-12 Wynfield One-Light Outdoor Wall Lantern with Clear Beveled Glass Panels, Black Finish",
+                        "brand": "Visit the Sea Gull Lighting Store",
+                        "model": "85200-12",
+                        "original_price": 61.17,
+                        "asin": "B003HBR86S",
+                    },
+                    "seller2_product": {
+                        "name": "Hillsdale Furniture Hillsdale Cole Frame Queen Bed, Black twinkle",
+                        "brand": "Visit the Hillsdale Store",
+                        "model": "1601BQR",
+                        "original_price": 226.20,
+                        "asin": "B004A9L7ZO",
+                    },
+                },
                 "model": get_model_name(model),
             })
             break
@@ -466,7 +500,7 @@ def main(model_name=None):
     # Save results to file
     try:
         # Create results directory structure
-        results_dir = Path(project_root) / "agenticpay" / "results" / "multi_products_multi_seller"
+        results_dir = Path(project_root) / "agenticpay" / "results" / "only_multi_seller"
         results_dir.mkdir(parents=True, exist_ok=True)
         
         # Get model name for directory (sanitize for filesystem)
@@ -485,12 +519,12 @@ def main(model_name=None):
         with open(summary_file, 'w', encoding='utf-8') as f:
             json.dump(results, f, indent=2, ensure_ascii=False)
         
-        # Save output text
-        output_file = run_dir / "Task9_s5_output.txt"
+        # Save output text (we'll create a simple output file with key information)
+        output_file = run_dir / "Task9_s5_bed_wall_lantern_output.txt"
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write("="*80 + "\n")
-            f.write("Task9 Scenario 5: Commercial Photography - Sequential Two-Seller Per One Product Negotiation Results\n")
-            f.write("Category: Professional Services\n")
+            f.write("Task9 Scenario 5: Wall Lantern & Queen Bed - Sequential Two-Seller Negotiation Results\n")
+            f.write("Category: Home & Kitchen\n")
             f.write("="*80 + "\n\n")
             f.write(f"Timestamp: {results['timestamp']}\n")
             f.write(f"Model: {results['model']}\n")
@@ -503,9 +537,7 @@ def main(model_name=None):
             f.write(f"Elapsed Time: {elapsed_time:.2f}s\n\n")
             if results.get('selected_seller'):
                 f.write(f"Final Selected Seller: Seller {results['selected_seller']}\n")
-                f.write(f"Final Deal Price: ${results.get('final_deal_price', 0):.2f}\n")
-                selected_product = results.get('seller1_product_info' if results['selected_seller'] == 1 else 'seller2_product_info', {})
-                f.write(f"Selected Product: {selected_product.get('name', 'N/A')} by {selected_product.get('brand', 'N/A')}\n\n")
+                f.write(f"Final Deal Price: ${results.get('final_deal_price', 0):.2f}\n\n")
             f.write("Final Prices:\n")
             f.write(f"  Seller1 - Seller Price: ${results['seller1_price']:.2f}" if results.get('seller1_price') is not None else "  Seller1 - Seller Price: Not specified")
             f.write("\n")
@@ -515,12 +547,6 @@ def main(model_name=None):
             f.write("\n")
             f.write(f"  Seller2 - Buyer Price: ${results['buyer_price_seller2']:.2f}" if results.get('buyer_price_seller2') is not None else "  Seller2 - Buyer Price: Not specified")
             f.write("\n\n")
-            f.write("Products:\n")
-            seller1_product = results.get('seller1_product_info', {})
-            f.write(f"  Seller1 Product: {seller1_product.get('name', 'N/A')} by {seller1_product.get('brand', 'N/A')} (${seller1_product.get('price', 0):.2f})\n")
-            seller2_product = results.get('seller2_product_info', {})
-            f.write(f"  Seller2 Product: {seller2_product.get('name', 'N/A')} by {seller2_product.get('brand', 'N/A')} (${seller2_product.get('price', 0):.2f})\n")
-            f.write("\n")
             f.write("Rewards:\n")
             if results.get('total_reward') is not None:
                 f.write(f"  Total Reward: {results['total_reward']:.3f}\n")
@@ -554,7 +580,7 @@ def main(model_name=None):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Task9 Scenario 5: Commercial Photography - Sequential Two-Seller Per One Product Negotiation")
+    parser = argparse.ArgumentParser(description="Task9 Scenario 5: Wall Lantern & Queen Bed - Sequential Two-Seller Negotiation")
     parser.add_argument(
         "--model",
         type=str,
@@ -563,4 +589,3 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     main(model_name=args.model)
-

@@ -1,8 +1,8 @@
-"""Task9 Scenario 5: Commercial Photography Bundle - Two-Product Negotiation
+"""Task9 Scenario 5: Wall Lantern & Queen Bed Bundle - Two-Product Negotiation
 
-Buyer negotiates for product photography with video content bundle.
+Buyer negotiates for Sea Gull Wall Lantern and Hillsdale Queen Bed bundle.
 Bundle purchase with total price negotiation.
-Category: Professional Services
+Category: Home & Kitchen
 """
 
 import os
@@ -105,8 +105,8 @@ def main(model_name=None):
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
     # buyer_max_price and seller_min_price represent total expected cost for both products
     print("Creating agents...")
-    buyer_max_price = 2500.0  # Maximum acceptable total purchase price for buyer (confidential) - Photos $2,000 + Video $500
-    seller_min_price = 1300.0  # Minimum acceptable total selling price for seller (confidential) - Photos $800 + Video $500
+    buyer_max_price = 290.0  # Maximum acceptable total purchase price for buyer (confidential) - Wall Lantern + Queen Bed
+    seller_min_price = 225.0  # Minimum acceptable total selling price for seller (confidential) - $45 + $180
     buyer = BuyerAgent(model=model, buyer_max_price=buyer_max_price)
     seller = SellerAgent(model=model, seller_min_price=seller_min_price)
     
@@ -117,44 +117,57 @@ def main(model_name=None):
         buyer_agent=buyer,
         seller_agent=seller,
         max_rounds=max_rounds,
-        initial_seller_price=2300.0,  # Initial total price offered by seller for both services
+        initial_seller_price=287.37,  # Initial total price offered by seller for both products ($61.17 + $226.20)
         buyer_max_price=buyer_max_price,  # Buyer total max price (confidential, for both products)
         seller_min_price=seller_min_price,  # Seller total min price (confidential, for both products)
         environment_info={
-            "purpose": "E-commerce listing",
             "platform": "Amazon",
-            "deadline": "2 weeks",
+            "market_type": "B2C",
         },
         price_tolerance=price_tolerance,
     )
     
     # Create user profile (text description of personal preferences)
-    user_profile = "E-commerce seller looking for professional product photography and video content. Values portfolio quality and quick turnaround. Concerned about usage rights and additional editing costs. Wants cohesive visual branding."
+    user_profile = "Homeowner looking to furnish bedroom and enhance outdoor lighting. Values quality fixtures, UL listing for wet locations for outdoor use. For bedroom, prefers metal frame with assembly option, queen size."
     print(f"User Profile: {user_profile}")
     
     # Define two products with their individual prices
+    # Product 1: Sea Gull Wall Lantern (from Task8 example)
+    # Product 2: Hillsdale Queen Bed (from sampled_products2.jsonl line 5)
     # The product_info should contain a list of two products
     product_info = {
         "products": [
             {
-                "name": "Product Photography Package",
-                "price": 1500.0,  # Individual price of first product
-                "products_count": 10,
-                "shots_per_product": 3,
-                "edited_images": 15,
-                "delivery_days": 7,
-                "usage_rights": "Commercial, 1-year exclusive",
-                "photographer_experience": "15 years, Fortune 500 clients",
+                "name": "Sea Gull Lighting 85200-12 Wynfield One-Light Outdoor Wall Lantern with Clear Beveled Glass Panels, Black Finish",
+                "price": 61.17,
+                "condition": "New",
+                "brand": "Visit the Sea Gull Lighting Store",
+                "model": "85200-12",
+                "availability_quantity": 7,
+                "availability_status": "Only 7 left in stock - order soon.",
+                "product_category": "Tools & Home Improvement › Lighting & Ceiling Fans › Outdoor Lighting › Porch & Patio Lights › Wall Lights",
+                "average_rating": 4.4,
+                "total_reviews": 11,
+                "seller_name": "Amazon.com",
+                "asin": "B003HBR86S",
+                "full_description": "The Sea Gull Lighting Wynfield one light outdoor wall fixture in black enhances the beauty of your property, makes your home safer and more secure, and increases the number of pleasurable hours you spend outdoors. The Wynfield collection by Sea Gull Lighting complements classical home designs with its soft curves and colonial accents. A Black Powdercoat finish over a durable cast aluminum body adds dependable quality to an enduring style. Either Frosted glass or Clear Beveled glass give the fixtures distinct appeal. The one-light fixtures with Clear Beveled glass can easily convert to LED by purchasing LED replacement lamps sold separately. Requires 1 A19 medium light bulb, 100-watt max (sold separately). This fixture is dimmable with a dimmable bulb (not included). UL listed for wet locations.",
+                "image_url": "https://m.media-amazon.com/images/I/51c3GuGWaSL.jpg",
             },
             {
-                "name": "Product Video Content Package",
-                "price": 800.0,  # Individual price of second product
-                "videos_count": 3,
-                "video_length": "30 seconds each",
-                "editing": "Professional color grading and transitions",
-                "delivery_format": "4K, optimized for social media",
-                "usage_rights": "Commercial, 1-year exclusive",
-                "turnaround": "10 days",
+                "name": "Hillsdale Furniture Hillsdale Cole Frame Queen Bed, Black twinkle",
+                "price": 226.20,
+                "condition": "New",
+                "brand": "Visit the Hillsdale Store",
+                "model": "1601BQR",
+                "availability_quantity": 2,
+                "availability_status": "Only 2 left in stock - order soon.",
+                "product_category": "Home & Kitchen › Furniture › Bedroom Furniture › Beds, Frames & Bases › Beds",
+                "average_rating": 4.5,
+                "total_reviews": 14,
+                "seller_name": "Amazon.com",
+                "asin": "B004A9L7ZO",
+                "full_description": "The cole bed set with rails enhances a traditional silhouette with its unique and whimsical accents. classic ball finials are accentuated by sweeping scrollwork and intricate castings. the black twinkle finish offers a great base, intensifying your decor and color scheme. all of these wonderful details culminate with the sturdy steel construction. some assembly required. available in black twinkle color and queen size. this set includes one headboard and one footboard. headboard measures 52-inch height by 62-inch width by 2-inch depth and footboard measures 32-inch height by 62-inch width by 2-inch depth.",
+                "image_url": "https://m.media-amazon.com/images/I/41Bw9FRPu8L.jpg",
             },
         ]
     }
@@ -168,7 +181,7 @@ def main(model_name=None):
     
     # Get user requirement (should describe purchasing two products)
     # Use default requirement for automatic running
-    user_requirement = "Need professional product photos and videos for my Amazon listing. 10 products with cohesive branding."
+    user_requirement = "I'm looking for a Sea Gull Lighting Wynfield outdoor wall lantern for my porch and a Hillsdale Cole Frame Queen Bed for my bedroom. Prefer clear beveled glass and black finish for the lantern; for the bed need assembly required with box spring. Want to buy both as a bundle."
     print(f"Using default requirement: {user_requirement}")
     
     # Reset environment
@@ -188,7 +201,7 @@ def main(model_name=None):
     
     # Initialize results dictionary
     results = {
-        "task": "Task9_s5_commercial_photography_bundle_negotiation",
+        "task": "Task9_s5_bed_wall_lantern_bundle_negotiation",
         "timestamp": datetime.now().isoformat(),
         "user_requirement": user_requirement,
         "user_profile": user_profile,
@@ -291,7 +304,7 @@ def main(model_name=None):
     
     # Close environment
     env.close()
-    print("\nTwo-product negotiation completed!")
+    print("\nTwo-product bundle negotiation completed!")
     
     # Ensure elapsed_time is set even if negotiation didn't complete normally
     if "elapsed_time" not in results:
@@ -320,11 +333,11 @@ def main(model_name=None):
             json.dump(results, f, indent=2, ensure_ascii=False)
         
         # Save output text
-        output_file = run_dir / "Task9_s5_output.txt"
+        output_file = run_dir / "Task9_s5_bed_wall_lantern_bundle_output.txt"
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write("="*80 + "\n")
-            f.write("Task9 Scenario 5: Commercial Photography Bundle - Two-Product Negotiation Results\n")
-            f.write("Category: Professional Services\n")
+            f.write("Task9 Scenario 5: Wall Lantern & Queen Bed Bundle - Two-Product Negotiation Results\n")
+            f.write("Category: Home & Kitchen\n")
             f.write("="*80 + "\n\n")
             f.write(f"Timestamp: {results['timestamp']}\n")
             f.write(f"Model: {results['model']}\n")
@@ -370,7 +383,7 @@ def main(model_name=None):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Task9 Scenario 5: Commercial Photography Bundle - Two-Product Negotiation")
+    parser = argparse.ArgumentParser(description="Task9 Scenario 5: Wall Lantern & Queen Bed Bundle - Two-Product Negotiation")
     parser.add_argument(
         "--model",
         type=str,

@@ -1,9 +1,9 @@
-"""Task9 Scenario 5: Commercial Photography Package - Sequential Two-Buyer Two-Seller Two-Product Negotiation
+"""Task9 Scenario 5: Wall Lantern & Queen Bed Bundle - Sequential Two-Buyer Two-Seller Two-Product Negotiation
 
-Two buyers negotiating with two sellers for commercial photography packages (photography + editing services).
+Two buyers negotiating with two sellers for Wall Lantern + Queen Bed bundle.
 Each buyer chooses one seller per round to negotiate with.
-Prices represent total price for the photography package (shoot + post-production).
-Category: Professional Services
+Prices represent total price for both products.
+Category: Home & Kitchen
 """
 
 import os
@@ -148,13 +148,12 @@ def main(model_name=None):
     print(f"✓ Successfully initialized: {model}")
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
-    # buyer_max_price and seller_min_price represent total expected cost for the photography package (shoot + editing)
-    # Based on scenario 2-2: buyer_max_price=$2,000, seller_min_price=$800
+    # buyer_max_price and seller_min_price represent total expected cost for both products (Wall Lantern + Queen Bed)
     print("Creating agents...")
-    buyer1_max_price = 2000.0  # Maximum acceptable total photography price for buyer1 (confidential, small e-commerce seller)
-    buyer2_max_price = 2500.0  # Maximum acceptable total photography price for buyer2 (confidential, larger business with higher quality needs)
-    seller1_min_price = 800.0  # Minimum acceptable total photography price for seller1 (confidential, experienced professional photographer)
-    seller2_min_price = 700.0  # Minimum acceptable total photography price for seller2 (confidential, emerging photographer)
+    buyer1_max_price = 290.0  # Maximum acceptable total price for buyer1 (confidential)
+    buyer2_max_price = 300.0  # Maximum acceptable total price for buyer2 (confidential)
+    seller1_min_price = 225.0  # Minimum acceptable total price for seller1 - $45 + $180 (confidential)
+    seller2_min_price = 225.0  # Minimum acceptable total price for seller2 (confidential)
     
     buyer1 = BuyerAgent(model=model, buyer_max_price=buyer1_max_price)
     buyer2 = BuyerAgent(model=model, buyer_max_price=buyer2_max_price)
@@ -169,97 +168,80 @@ def main(model_name=None):
         seller1_agent=seller1,
         seller2_agent=seller2,
         max_rounds=max_rounds,
-        initial_seller1_price=1800.0,  # Initial total price offered by seller1 for the photography package (15 years experience)
-        initial_seller2_price=1400.0,  # Initial total price offered by seller2 for the photography package (emerging photographer, lower)
+        initial_seller1_price=287.37,  # Initial total price offered by seller1 - Wall Lantern + Queen Bed ($61.17 + $226.20)
+        initial_seller2_price=287.37,  # Initial total price offered by seller2 - same bundle
         buyer1_max_price=buyer1_max_price,  # Buyer1 total max price (confidential, for photography package)
         buyer2_max_price=buyer2_max_price,  # Buyer2 total max price (confidential, for photography package)
         seller1_min_price=seller1_min_price,  # Seller1 total min price (confidential, for photography package)
         seller2_min_price=seller2_min_price,  # Seller2 total min price (confidential, for photography package)
         environment_info={
-            "platform": "Local/Online Marketplace",
-            "purpose": "E-commerce listing photography",
-            "industry_standard": "$100-$200 per product",
-            "deadline": "2 weeks",
+            "platform": "Amazon",
+            "market_type": "B2C",
         },
         price_tolerance=price_tolerance,
         reward_weights=reward_weights,  # Reward weights configuration
     )
     
     # Create user profile (text description of personal preferences)
-    user_profile = "Two buyers competing for commercial photography services. Buyer1 is a small e-commerce seller needing quality product photos. Buyer2 is a larger business seeking premium photography with lifestyle shots. Both value professional quality and usage rights."
+    user_profile = "Two homeowners: Buyer1 wants outdoor wall lantern and queen bed for new home. Buyer2 also furnishing bedroom and porch. Both value quality and fair pricing."
     print(f"User Profile: {user_profile}")
     
     # Define two products with their individual prices
-    # The product_info should contain a list of two products (photography shoot + post-production package)
-    # Based on scenario 2-2: Product Photography Package
+    # Product 1: Sea Gull Wall Lantern (from Task8 example)
+    # Product 2: Hillsdale Queen Bed (from sampled_products2.jsonl line 5)
     product_info = {
         "products": [
             {
-                "name": "Product Photography Shoot",
-                "brand": "Professional Photographer",
-                "price": 1200.0,  # Individual price of photography shoot
-                "photographer_portfolio_seller1": "15 years experience, worked with Fortune 500 companies",
-                "photographer_portfolio_seller2": "5 years experience, growing portfolio with local businesses",
-                "base_package_seller1": {
-                    "products": 10,
-                    "shots_per_product": 3,
-                    "total_shots": 30,
-                    "delivery_days": 7,
-                    "location": "Professional studio with lighting equipment",
-                },
-                "base_package_seller2": {
-                    "products": 10,
-                    "shots_per_product": 2,
-                    "total_shots": 20,
-                    "delivery_days": 10,
-                    "location": "Home studio setup",
-                },
-                "style_reference": "Apple product photography - clean, minimal, white background",
-                "equipment_seller1": "Professional DSLR, studio lighting, multiple backdrops",
-                "equipment_seller2": "Mirrorless camera, basic lighting, white backdrop",
+                "name": "Sea Gull Lighting 85200-12 Wynfield One-Light Outdoor Wall Lantern with Clear Beveled Glass Panels, Black Finish",
+                "brand": "Visit the Sea Gull Lighting Store",
+                "price": 61.17,
+                "condition": "New",
+                "model": "85200-12",
+                "availability_quantity": 7,
+                "availability_status": "Only 7 left in stock - order soon.",
+                "product_category": "Tools & Home Improvement › Lighting & Ceiling Fans › Outdoor Lighting › Porch & Patio Lights › Wall Lights",
+                "average_rating": 4.4,
+                "total_reviews": 11,
+                "seller_name": "Amazon.com",
+                "asin": "B003HBR86S",
+                "full_description": "The Sea Gull Lighting Wynfield one light outdoor wall fixture in black enhances the beauty of your property, makes your home safer and more secure, and increases the number of pleasurable hours you spend outdoors. The Wynfield collection by Sea Gull Lighting complements classical home designs with its soft curves and colonial accents. A Black Powdercoat finish over a durable cast aluminum body adds dependable quality to an enduring style. Either Frosted glass or Clear Beveled glass give the fixtures distinct appeal. The one-light fixtures with Clear Beveled glass can easily convert to LED by purchasing LED replacement lamps sold separately. Requires 1 A19 medium light bulb, 100-watt max (sold separately). This fixture is dimmable with a dimmable bulb (not included). UL listed for wet locations.",
+                "image_url": "https://m.media-amazon.com/images/I/51c3GuGWaSL.jpg",
             },
             {
-                "name": "Post-Production & Editing Package",
-                "brand": "Editing Services",
-                "price": 800.0,  # Individual price of editing services
-                "edited_images_seller1": 15,
-                "edited_images_seller2": 10,
-                "editing_included_seller1": [
-                    "Color correction",
-                    "Background removal/replacement",
-                    "Shadow/reflection effects",
-                    "Retouching and enhancement",
-                    "Multiple format exports",
-                ],
-                "editing_included_seller2": [
-                    "Basic color correction",
-                    "Background removal",
-                    "Simple retouching",
-                ],
-                "usage_rights_seller1": "Commercial, 2-year exclusive license",
-                "usage_rights_seller2": "Commercial, 1-year non-exclusive license",
-                "rush_fee": "+50% for 3-day delivery",
-                "additional_editing": "$15-20 per image",
+                "name": "Hillsdale Furniture Hillsdale Cole Frame Queen Bed, Black twinkle",
+                "brand": "Visit the Hillsdale Store",
+                "price": 226.20,
+                "condition": "New",
+                "model": "1601BQR",
+                "availability_quantity": 2,
+                "availability_status": "Only 2 left in stock - order soon.",
+                "product_category": "Home & Kitchen › Furniture › Bedroom Furniture › Beds, Frames & Bases › Beds",
+                "average_rating": 4.5,
+                "total_reviews": 14,
+                "seller_name": "Amazon.com",
+                "asin": "B004A9L7ZO",
+                "full_description": "The cole bed set with rails enhances a traditional silhouette with its unique and whimsical accents. classic ball finials are accentuated by sweeping scrollwork and intricate castings. the black twinkle finish offers a great base, intensifying your decor and color scheme. all of these wonderful details culminate with the sturdy steel construction. some assembly required. available in black twinkle color and queen size. this set includes one headboard and one footboard. headboard measures 52-inch height by 62-inch width by 2-inch depth and footboard measures 32-inch height by 62-inch width by 2-inch depth.",
+                "image_url": "https://m.media-amazon.com/images/I/41Bw9FRPu8L.jpg",
             },
         ]
     }
     
     # Calculate total product price
     total_product_price = sum(p["price"] for p in product_info["products"])
-    print(f"\nProducts (Photography Package):")
+    print(f"\nProducts (Wall Lantern + Queen Bed Bundle):")
     for i, p in enumerate(product_info["products"], 1):
         print(f"  {i}. {p['name']}: ${p['price']:.2f}")
     print(f"  Total Package Price: ${total_product_price:.2f}")
     
-    # Get user requirement (should describe purchasing the photography package)
+    # Get user requirement (should describe purchasing the product bundle)
     # Use default requirement for automatic running
-    user_requirement = "Need professional product photos for my Amazon listing. 10 products, white background, lifestyle shots preferred. Looking for clean, professional quality that will help products stand out."
+    user_requirement = "I'm looking for a Sea Gull Lighting Wynfield outdoor wall lantern for my porch and a Hillsdale Cole Frame Queen Bed for my bedroom. Want to buy both as a bundle. Prefer clear beveled glass for the lantern; for the bed need assembly required with box spring."
     print(f"Using default requirement: {user_requirement}")
     
     # Reset environment
     print("\n" + "="*60)
-    print("Starting new sequential negotiation for commercial photography packages...")
-    print("Two buyers competing with two sellers for Product Photography Services")
+    print("Starting new sequential negotiation for Wall Lantern & Queen Bed bundle...")
+    print("Two buyers competing with two sellers for the product bundle")
     print("="*60)
     
     observation, info = env.reset(
@@ -274,7 +256,7 @@ def main(model_name=None):
     
     # Initialize results dictionary
     results = {
-        "task": "Task9_s5_commercial_photography_package_negotiation",
+        "task": "Task9_s5_bed_wall_lantern_package_negotiation",
         "timestamp": datetime.now().isoformat(),
         "user_requirement": user_requirement,
         "user_profile": user_profile,
@@ -322,7 +304,7 @@ def main(model_name=None):
             conversation_history=combined_history_b1,
             current_state={
                 **observation,
-                "instruction": "You are negotiating with two sellers for two products. Each round, you need to choose ONE seller to negotiate with and provide your negotiation message. Please clearly indicate which seller (1 or 2) you want to negotiate with, for example: 'I want to negotiate with seller 1' or 'Let me talk to seller 2'. Prices represent total price for both products."
+                "instruction": "You are negotiating with two sellers for a Wall Lantern and Queen Bed bundle. Each round, you need to choose ONE seller to negotiate with and provide your negotiation message. Please clearly indicate which seller (1 or 2) you want to negotiate with, for example: 'I want to negotiate with seller 1' or 'Let me talk to seller 2'. Prices represent total price for both products."
             }
         )
         
@@ -331,7 +313,7 @@ def main(model_name=None):
             conversation_history=combined_history_b2,
             current_state={
                 **observation,
-                "instruction": "You are negotiating with two sellers for two products. Each round, you need to choose ONE seller to negotiate with and provide your negotiation message. Please clearly indicate which seller (1 or 2) you want to negotiate with, for example: 'I want to negotiate with seller 1' or 'Let me talk to seller 2'. Prices represent total price for both products."
+                "instruction": "You are negotiating with two sellers for a Wall Lantern and Queen Bed bundle. Each round, you need to choose ONE seller to negotiate with and provide your negotiation message. Please clearly indicate which seller (1 or 2) you want to negotiate with, for example: 'I want to negotiate with seller 1' or 'Let me talk to seller 2'. Prices represent total price for both products."
             }
         )
         
@@ -614,7 +596,7 @@ def main(model_name=None):
     
     # Close environment
     env.close()
-    print("\nCommercial photography package negotiation completed!")
+    print("\nWall Lantern & Queen Bed bundle negotiation completed!")
     
     # Ensure elapsed_time is set even if negotiation didn't complete normally
     if "elapsed_time" not in results:
@@ -643,11 +625,11 @@ def main(model_name=None):
             json.dump(results, f, indent=2, ensure_ascii=False)
         
         # Save output text
-        output_file = run_dir / "Task9_s5_output.txt"
+        output_file = run_dir / "Task9_s5_bed_wall_lantern_package_output.txt"
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write("="*80 + "\n")
-            f.write("Task9 Scenario 5: Commercial Photography Package - Sequential Two-Buyer Two-Seller Two-Product Negotiation Results\n")
-            f.write("Category: Professional Services\n")
+            f.write("Task9 Scenario 5: Wall Lantern & Queen Bed Bundle - Sequential Two-Buyer Two-Seller Two-Product Negotiation Results\n")
+            f.write("Category: Home & Kitchen\n")
             f.write("="*80 + "\n\n")
             f.write(f"Timestamp: {results['timestamp']}\n")
             f.write(f"Model: {results['model']}\n")
@@ -713,7 +695,7 @@ def main(model_name=None):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Task9 Scenario 5: Commercial Photography Package - Sequential Two-Buyer Two-Seller Two-Product Negotiation")
+    parser = argparse.ArgumentParser(description="Task9 Scenario 5: Wall Lantern & Queen Bed Bundle - Sequential Two-Buyer Two-Seller Two-Product Negotiation")
     parser.add_argument(
         "--model",
         type=str,

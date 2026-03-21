@@ -1,8 +1,8 @@
-"""Task9 Scenario 5: Commercial Photography - Sequential Two-Buyer Two-Seller Negotiation
+"""Task9 Scenario 5: Wall Lantern & Queen Bed - Sequential Two-Buyer Two-Seller Negotiation
 
-Two buyers negotiating with two photographers for product photography services.
+Two buyers negotiating with two sellers: Seller1 offers Sea Gull Wall Lantern, Seller2 offers Hillsdale Queen Bed.
 Each buyer chooses one seller per round to negotiate with.
-Category: Professional Services
+Category: Home & Kitchen
 """
 
 import os
@@ -148,10 +148,10 @@ def main(model_name=None):
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
     print("Creating agents...")
-    buyer1_max_price = 2000.0  # Maximum acceptable price for buyer1 (confidential) - basic e-commerce seller
-    buyer2_max_price = 2200.0  # Maximum acceptable price for buyer2 (confidential) - premium brand seller
-    seller1_min_price = 800.0  # Minimum acceptable price for seller1 (confidential) - standard package
-    seller2_min_price = 900.0  # Minimum acceptable price for seller2 (confidential) - premium package
+    buyer1_max_price = 58.0  # Maximum acceptable price for buyer1 (confidential) - Wall Lantern budget
+    buyer2_max_price = 250.0  # Maximum acceptable price for buyer2 (confidential) - can afford Queen Bed
+    seller1_min_price = 45.0  # Minimum acceptable price for seller1 - Wall Lantern (confidential)
+    seller2_min_price = 180.0  # Minimum acceptable price for seller2 - Queen Bed (confidential)
     
     buyer1 = BuyerAgent(model=model, buyer_max_price=buyer1_max_price)
     buyer2 = BuyerAgent(model=model, buyer_max_price=buyer2_max_price)
@@ -166,28 +166,27 @@ def main(model_name=None):
         seller1_agent=seller1,
         seller2_agent=seller2,
         max_rounds=max_rounds,
-        initial_seller1_price=1500.0,  # Initial price offered by seller1
-        initial_seller2_price=1800.0,  # Initial price offered by seller2 (higher for premium)
+        initial_seller1_price=61.17,  # Initial price offered by seller1 - Wall Lantern
+        initial_seller2_price=226.20,  # Initial price offered by seller2 - Queen Bed
         buyer1_max_price=buyer1_max_price,  # Buyer1 bottom price (confidential)
         buyer2_max_price=buyer2_max_price,  # Buyer2 bottom price (confidential)
         seller1_min_price=seller1_min_price,  # Seller1 bottom price (confidential)
         seller2_min_price=seller2_min_price,  # Seller2 bottom price (confidential)
         environment_info={
-            "purpose": "E-commerce listing",
             "platform": "Amazon",
-            "deadline": "2 weeks",
+            "market_type": "B2C",
         },
         price_tolerance=0,
         reward_weights=reward_weights,  # Reward weights configuration
     )
     
     # Create user profile (text description of personal preferences)
-    user_profile = "Two e-commerce sellers competing for photographers. Buyer1 has basic budget. Buyer2 values premium quality for brand image."
+    user_profile = "Two homeowners: Buyer1 wants outdoor wall lantern for porch. Buyer2 looking for queen bed frame for bedroom. Both value quality and fair pricing."
     print(f"User Profile: {user_profile}")
     
     # Get user requirement
     # Use default requirement for automatic running
-    user_requirement = "Need professional product photos for 10 items with cohesive branding"
+    user_requirement = "Buyer1: looking for Sea Gull Lighting Wynfield outdoor wall lantern, clear beveled glass, black finish, UL listed. Buyer2: looking for Hillsdale Cole Frame Queen Bed, assembly required, black twinkle finish."
     print(f"Using default requirement: {user_requirement}")
     
     # Reset environment
@@ -195,20 +194,46 @@ def main(model_name=None):
     print("Starting new sequential negotiation with two buyers and two sellers...")
     print("="*60)
     
+    # Seller1: Sea Gull Wall Lantern (from Task8 example)
+    # Seller2: Hillsdale Queen Bed (from sampled_products2.jsonl line 5)
+    product_info = {
+            "seller1_product": {
+                "name": "Sea Gull Lighting 85200-12 Wynfield One-Light Outdoor Wall Lantern with Clear Beveled Glass Panels, Black Finish",
+                "price": 61.17,
+                "condition": "New",
+                "brand": "Visit the Sea Gull Lighting Store",
+                "model": "85200-12",
+                "availability_quantity": 7,
+                "availability_status": "Only 7 left in stock - order soon.",
+                "product_category": "Tools & Home Improvement › Lighting & Ceiling Fans › Outdoor Lighting › Porch & Patio Lights › Wall Lights",
+                "average_rating": 4.4,
+                "total_reviews": 11,
+                "seller_name": "Amazon.com",
+                "asin": "B003HBR86S",
+                "full_description": "The Sea Gull Lighting Wynfield one light outdoor wall fixture in black enhances the beauty of your property, makes your home safer and more secure, and increases the number of pleasurable hours you spend outdoors. The Wynfield collection by Sea Gull Lighting complements classical home designs with its soft curves and colonial accents. A Black Powdercoat finish over a durable cast aluminum body adds dependable quality to an enduring style. Either Frosted glass or Clear Beveled glass give the fixtures distinct appeal. The one-light fixtures with Clear Beveled glass can easily convert to LED by purchasing LED replacement lamps sold separately. Requires 1 A19 medium light bulb, 100-watt max (sold separately). This fixture is dimmable with a dimmable bulb (not included). UL listed for wet locations.",
+                "image_url": "https://m.media-amazon.com/images/I/51c3GuGWaSL.jpg",
+            },
+            "seller2_product": {
+                "name": "Hillsdale Furniture Hillsdale Cole Frame Queen Bed, Black twinkle",
+                "price": 226.20,
+                "condition": "New",
+                "brand": "Visit the Hillsdale Store",
+                "model": "1601BQR",
+                "availability_quantity": 2,
+                "availability_status": "Only 2 left in stock - order soon.",
+                "product_category": "Home & Kitchen › Furniture › Bedroom Furniture › Beds, Frames & Bases › Beds",
+                "average_rating": 4.5,
+                "total_reviews": 14,
+                "seller_name": "Amazon.com",
+                "asin": "B004A9L7ZO",
+                "full_description": "The cole bed set with rails enhances a traditional silhouette with its unique and whimsical accents. classic ball finials are accentuated by sweeping scrollwork and intricate castings. the black twinkle finish offers a great base, intensifying your decor and color scheme. all of these wonderful details culminate with the sturdy steel construction. some assembly required. available in black twinkle color and queen size. this set includes one headboard and one footboard. headboard measures 52-inch height by 62-inch width by 2-inch depth and footboard measures 32-inch height by 62-inch width by 2-inch depth.",
+                "image_url": "https://m.media-amazon.com/images/I/41Bw9FRPu8L.jpg",
+            },
+        },
+    }
     observation, info = env.reset(
         user_requirement=user_requirement,
-        product_info={
-            "name": "Product Photography Package",
-            "products_count": 10,
-            "shots_seller1": "3 per product, 15 edited",
-            "shots_seller2": "5 per product, 25 edited",
-            "delivery_seller1": "7 days",
-            "delivery_seller2": "5 days",
-            "usage_rights_seller1": "Commercial, 1-year",
-            "usage_rights_seller2": "Commercial, unlimited",
-            "rating_seller1": "4.8/5 (89 reviews)",
-            "rating_seller2": "5.0/5 (156 reviews)",
-        },
+        product_info=product_info,
         user_profile=user_profile,  # Pass user profile
     )
     
@@ -218,7 +243,7 @@ def main(model_name=None):
     
     # Initialize results dictionary
     results = {
-        "task": "Task9_s5_commercial_photography_negotiation",
+        "task": "Task9_s5_bed_wall_lantern_negotiation",
         "timestamp": datetime.now().isoformat(),
         "user_requirement": user_requirement,
         "user_profile": user_profile,
@@ -521,7 +546,6 @@ def main(model_name=None):
             
             # Collect results
             elapsed_time = time.time() - start_time
-            product_info = info.get('product_info', {})
             results.update({
                 "status": info.get('status', 'unknown'),
                 "success": terminated,
@@ -588,11 +612,11 @@ def main(model_name=None):
             json.dump(results, f, indent=2, ensure_ascii=False)
         
         # Save output text
-        output_file = run_dir / "Task9_s5_output.txt"
+        output_file = run_dir / "Task9_s5_bed_wall_lantern_output.txt"
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write("="*80 + "\n")
-            f.write("Task9 Scenario 5: Commercial Photography - Sequential Two-Buyer Two-Seller Negotiation Results\n")
-            f.write("Category: Professional Services\n")
+            f.write("Task9 Scenario 5: Wall Lantern & Queen Bed - Sequential Two-Buyer Two-Seller Negotiation Results\n")
+            f.write("Category: Home & Kitchen\n")
             f.write("="*80 + "\n\n")
             f.write(f"Timestamp: {results['timestamp']}\n")
             f.write(f"Model: {results['model']}\n")
@@ -616,10 +640,11 @@ def main(model_name=None):
             f.write(f"  Buyer2-Seller2: Buyer=${results['b2s2_buyer_price']:.2f} | Seller=${results['b2s2_seller_price']:.2f}" if results.get('b2s2_buyer_price') is not None and results.get('b2s2_seller_price') is not None else "  Buyer2-Seller2: Not specified")
             f.write("\n\n")
             product_info = results.get('product_info', {})
-            f.write("Product:\n")
-            f.write(f"  Name: {product_info.get('name', 'N/A')}\n")
-            f.write(f"  Brand: {product_info.get('brand', 'N/A')}\n")
-            f.write(f"  Price: ${product_info.get('price', 0):.2f}\n")
+            f.write("Products:\n")
+            s1 = product_info.get('seller1_product', {})
+            s2 = product_info.get('seller2_product', {})
+            f.write(f"  Seller1: {s1.get('name', 'N/A')} by {s1.get('brand', 'N/A')} (${s1.get('price', 0):.2f})\n")
+            f.write(f"  Seller2: {s2.get('name', 'N/A')} by {s2.get('brand', 'N/A')} (${s2.get('price', 0):.2f})\n")
             f.write("\n")
             f.write("Rewards:\n")
             if results.get('total_reward') is not None:
@@ -656,7 +681,7 @@ def main(model_name=None):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Task9 Scenario 5: Commercial Photography - Sequential Two-Buyer Two-Seller Negotiation")
+    parser = argparse.ArgumentParser(description="Task9 Scenario 5: Wall Lantern & Queen Bed - Sequential Two-Buyer Two-Seller Negotiation")
     parser.add_argument(
         "--model",
         type=str,
