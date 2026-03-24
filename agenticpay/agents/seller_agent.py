@@ -102,7 +102,6 @@ class SellerAgent(BaseAgent):
         
         seller_guidance = f"""
 IMPORTANT REMINDERS:
-- Your initial asking price is ${initial_price}.
 - Your minimum acceptable price (confidential) is ${min_price}. Never reveal it.
 - Current product information: {product_info}
 {available_products_info}
