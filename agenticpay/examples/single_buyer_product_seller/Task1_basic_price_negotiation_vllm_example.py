@@ -25,9 +25,13 @@ from agenticpay.agents.seller_agent import SellerAgent
 from agenticpay.models.custom_llm import CustomLLM
 from agenticpay.models.qwen3_vl import Qwen3VL
 from agenticpay.models.vllm_lm import VLLMLLM
+from agenticpay.models.vllm_http_llm import VLLMHttpLLM
 from agenticpay.models.sglang_vlm import SGLangVLM
 
-from agenticpay.examples.config import reward_weights, max_rounds, price_tolerance
+from agenticpay.examples.config import (
+    reward_weights, max_rounds, price_tolerance,
+    VLLM_BASE_URL, VLLM_MODEL,
+)
 
 
 def get_model_name(model):
@@ -112,12 +116,21 @@ def main(model_name=None):
     model_name = "Qwen2.5-7B-Instruct"
     model_path = ".cache/huggingface/hub/models--Qwen--Qwen2.5-7B-Instruct/snapshots/a09a35458c702b33eeacc393d103063234e8bc28"
 
-    # vLLM LLM Model
-    model = VLLMLLM(
-        model_path=model_path,
-        trust_remote_code=True,
-        gpu_memory_utilization=0.9,
-        tensor_parallel_size=4, # 4 GPUs
+    # Option A: vLLM in-process (loads model locally, requires GPU + vllm package)
+    # model = VLLMLLM(
+    #    model_path=model_path,
+    #    trust_remote_code=True,
+    #    gpu_memory_utilization=0.9,
+    #    tensor_parallel_size=4, # 4 GPUs
+    #)
+
+    # Option B: vLLM HTTP server (connects to a running `vllm serve` endpoint)
+    # Start the server first:
+    #   vllm serve Qwen/Qwen2.5-7B-Instruct --port 8000
+    # Then use:
+    model = VLLMHttpLLM(
+        model=VLLM_MODEL,       # from config.py: VLLM_MODEL
+        base_url=VLLM_BASE_URL, # from config.py: VLLM_BASE_URL
     )
 
     # SGLang VLM Model

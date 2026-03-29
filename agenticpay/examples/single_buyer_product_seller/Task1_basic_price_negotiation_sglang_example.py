@@ -27,63 +27,10 @@ from agenticpay.models.qwen3_vl import Qwen3VL
 from agenticpay.models.vllm_lm import VLLMLLM
 from agenticpay.models.sglang_vlm import SGLangVLM
 
-from agenticpay.examples.config import reward_weights, max_rounds, price_tolerance
+from agenticpay.examples.config import reward_weights, max_rounds, price_tolerance, get_model, get_model_name
 
 
-def get_model_name(model):
-    """Extract model name from model object
 
-    Returns:
-        str: Model name (never None/empty)
-    """
-    def _nonempty_str(value):
-        if value is None:
-            return None
-        if isinstance(value, str):
-            value = value.strip()
-            return value or None
-        return None
-
-    # Prefer explicit model name/id if present and non-empty.
-    model_attr = _nonempty_str(getattr(model, "model", None))
-    if model_attr:
-        return model_attr
-
-    model_id = _nonempty_str(getattr(model, "model_id", None))
-    if model_id:
-        return model_id
-
-    # For local paths (or HF cache paths), derive a stable readable name.
-    model_path = getattr(model, "model_path", None)
-    if model_path:
-        model_path_str = str(model_path).strip()
-        if model_path_str:
-            # HuggingFace cache pattern: .../models--ORG--NAME/snapshots/<hash>
-            try:
-                import re
-                match = re.search(r"models--([^/]+)--([^/]+)", model_path_str)
-                if match:
-                    org, name = match.group(1), match.group(2)
-                    return f"{org}/{name}"
-            except Exception:
-                pass
-
-            return os.path.basename(model_path_str)
-
-    # Fallback to string representation, but try to extract model name.
-    model_str = str(model).strip()
-    if not model_str:
-        return "unknown_model"
-
-    if "model=" in model_str:
-        try:
-            extracted = model_str.split("model=")[1].split(")")[0].strip()
-            return extracted or model_str
-        except Exception:
-            return model_str
-
-    return model_str
-    
 def main(model_name=None):
     """Main function: Demonstrates basic negotiation flow
     
@@ -92,39 +39,7 @@ def main(model_name=None):
     """
 
     print("Initializing model...")
-    
-    # Check API key
-    # api_key = os.getenv("OPENAI_API_KEY")
-    # if not api_key:
-    #     print("Warning: OPENAI_API_KEY not set. Please set it to use OpenAI models.")
-    #     print("You can set it with: export OPENAI_API_KEY='your-key-here'")
-    #     return
-    
-    # # Use provided model name or default
-    # if model_name is None:
-    #     model_name = "gemini-3-pro-all"  # Default model
-    
-    # model = CustomLLM(api_key=api_key, model=model_name) # claude-sonnet-4-5-20250929, gpt-5.2, gemini-3-pro-all, gpt-3.5-turbo, DeepSeek-R1
-
-    # Build absolute path to model directory
-    # model_path = os.path.join(project_root, "models", "download_models", "Qwen3-8B-Instruct")
-    # model_path = os.path.abspath(model_path)
-    model_name = "Qwen2.5-7B-Instruct"
-    model_path = ".cache/huggingface/hub/models--Qwen--Qwen2.5-7B-Instruct/snapshots/a09a35458c702b33eeacc393d103063234e8bc28"
-
-    # vLLM LLM Model
-    # model = VLLMLLM(
-    #     model_path=model_path,
-    #     trust_remote_code=True,
-    #     gpu_memory_utilization=0.9,
-    #     tensor_parallel_size=4, # 4 GPUs
-    # )
-
-    # SGLang VLM Model
-    model = SGLangVLM(
-        model_path=model_path,
-    )
-
+    model = get_model()
     print(f"✓ Successfully initialized: {model}")
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)

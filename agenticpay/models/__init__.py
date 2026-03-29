@@ -69,3 +69,13 @@ try:
         __all__ = ["BaseLLM", "BaseVLM", "SGLangVLM"]
 except ImportError:
     pass  # SGLangVLM is optional
+
+# Try to import vLLM HTTP LLM implementation, but don't fail if not available
+try:
+    from agenticpay.models.vllm_http_llm import VLLMHttpLLM
+    if len(__all__) > 2:
+        __all__.append("VLLMHttpLLM")
+    else:
+        __all__ = ["BaseLLM", "BaseVLM", "VLLMHttpLLM"]
+except ImportError:
+    pass  # VLLMHttpLLM is optional

@@ -30,37 +30,8 @@ from agenticpay.models.qwen3_vl import Qwen3VL
 from agenticpay.models.vllm_lm import VLLMLLM
 from agenticpay.models.sglang_vlm import SGLangVLM
 
-from agenticpay.examples.config import reward_weights, max_rounds, price_tolerance
+from agenticpay.examples.config import reward_weights, max_rounds, price_tolerance, get_model, get_model_name
 
-
-def get_model_name(model):
-    """Extract model name from model object
-    
-    Args:
-        model: Model object (CustomLLM, VLLMLLM, etc.)
-    
-    Returns:
-        str: Model name
-    """
-    if hasattr(model, 'model'):
-        return model.model
-    elif hasattr(model, 'model_id'):
-        return model.model_id
-    elif hasattr(model, 'model_path'):
-        # Extract model name from path
-        model_path = model.model_path
-        return os.path.basename(model_path) if model_path else str(model)
-    else:
-        # Fallback to string representation, but try to extract model name
-        model_str = str(model)
-        # Try to extract model name from string like "CustomLLM(model=qwen3-8b)"
-        if "model=" in model_str:
-            try:
-                return model_str.split("model=")[1].split(")")[0]
-            except:
-                return model_str
-        else:
-            return model_str
 
 
 def main(model_name=None):
@@ -71,25 +42,7 @@ def main(model_name=None):
     """
 
     print("Initializing model...")
-    
-    # Check API key
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        print("Warning: OPENAI_API_KEY not set. Please set it to use OpenAI models.")
-        print("You can set it with: export OPENAI_API_KEY='your-key-here'")
-        return
-    
-    # Use OpenAIVLM (Vision Language Model) for headphones negotiation with product images
-    model_name = model_name or "gpt-4o-mini"  # gpt-4o, gpt-4o-mini, gpt-4-vision-preview, etc.
-    model = OpenAIVLM(model=model_name, api_key=api_key)
-
-    # Alternative: CustomLLM for text-only models
-    # model = CustomLLM(api_key=api_key, model=model_name)
-
-    # Alternative: SGLang VLM (local)
-    # model_path = os.path.join(project_root, "models", "download_models", "Qwen3-VL-8B-Instruct")
-    # model = SGLangVLM(model_path=os.path.abspath(model_path))
-
+    model = get_model()
     print(f"✓ Successfully initialized: {model}")
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)

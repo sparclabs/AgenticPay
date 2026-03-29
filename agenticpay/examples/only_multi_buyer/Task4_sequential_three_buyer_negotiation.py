@@ -27,7 +27,7 @@ import re
 examples_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, examples_dir)
 try:
-    from config import reward_weights, buyer_reward_aggregation, seller_reward_aggregation, max_rounds, price_tolerance
+    from config import reward_weights, buyer_reward_aggregation, seller_reward_aggregation, max_rounds, price_tolerance, get_model, get_model_name
 except ImportError:
     # Default values if config not available
     reward_weights = {"buyer_savings": 1.0, "seller_profit": 1.0, "time_cost": 0.1}
@@ -36,35 +36,6 @@ except ImportError:
     max_rounds = 20
     price_tolerance = 0.0
 
-
-def get_model_name(model):
-    """Extract model name from model object
-    
-    Args:
-        model: Model object (CustomLLM, VLLMLLM, etc.)
-    
-    Returns:
-        str: Model name
-    """
-    if hasattr(model, 'model'):
-        return model.model
-    elif hasattr(model, 'model_id'):
-        return model.model_id
-    elif hasattr(model, 'model_path'):
-        # Extract model name from path
-        model_path = model.model_path
-        return os.path.basename(model_path) if model_path else str(model)
-    else:
-        # Fallback to string representation, but try to extract model name
-        model_str = str(model)
-        # Try to extract model name from string like "CustomLLM(model=qwen3-8b)"
-        if "model=" in model_str:
-            try:
-                return model_str.split("model=")[1].split(")")[0]
-            except:
-                return model_str
-        else:
-            return model_str
 
 
 def extract_buyer_choice(seller_response: str, observation: dict) -> int:
@@ -138,19 +109,7 @@ def main(model_name=None):
     """
     
     print("Initializing model...")
-    
-    # Check API key
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        print("Warning: OPENAI_API_KEY not set. Please set it to use OpenAI models.")
-        print("You can set it with: export OPENAI_API_KEY='your-key-here'")
-        return
-    
-    # Use provided model name or default
-    # Use OpenAIVLM (Vision Language Model) - same pattern as Task1_basic_price_negotiation_api
-    model_name = model_name or "gpt-4o-mini"  # gpt-4o, gpt-4o-mini, gpt-4-vision-preview, etc.
-    model = OpenAIVLM(model=model_name, api_key=api_key)
-
+    model = get_model()
     print(f"✓ Successfully initialized: {model}")
     
     # Create Agents (set their respective bottom prices, this information is confidential, unknown to each other)
