@@ -27,7 +27,7 @@ import re
 examples_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, examples_dir)
 try:
-    from config import reward_weights, buyer_reward_aggregation, seller_reward_aggregation, max_rounds, price_tolerance, get_model, get_model_name
+    from config import reward_weights, buyer_reward_aggregation, seller_reward_aggregation, max_rounds, price_tolerance, get_model, get_model_name, adjust_zopa
 except ImportError:
     # Default values if config not available
     reward_weights = {"buyer_savings": 1.0, "seller_profit": 1.0, "time_cost": 0.1}
@@ -90,7 +90,7 @@ def extract_buyer_choice(seller_response: str, observation: dict) -> int:
     return 1
 
 
-def main(model_name=None):
+def main(model_name=None, difficulty="normal"):
     """Main function: Demonstrates sequential multi-buyer negotiation flow
     
     Args:
@@ -106,6 +106,8 @@ def main(model_name=None):
     buyer1_max_price = 2000.0  # Maximum acceptable price for buyer1 (confidential) - e-commerce seller budget
     buyer2_max_price = 1800.0  # Maximum acceptable price for buyer2 (confidential, different from buyer1)
     seller_min_price = 800.0  # Minimum acceptable price for seller (confidential) - covers equipment and time
+    buyer1_max_price, _ = adjust_zopa(buyer1_max_price, seller_min_price, difficulty)
+    buyer2_max_price, _ = adjust_zopa(buyer2_max_price, seller_min_price, difficulty)
     
     buyer1 = BuyerAgent(model=model, buyer_max_price=buyer1_max_price)
     buyer2 = BuyerAgent(model=model, buyer_max_price=buyer2_max_price)
@@ -166,6 +168,7 @@ def main(model_name=None):
     
     # Initialize results dictionary
     results = {
+        "difficulty": difficulty,
         "task": "Task9_s5_commercial_photography_negotiation",
         "timestamp": datetime.now().isoformat(),
         "user_requirement": user_requirement,
@@ -556,6 +559,13 @@ if __name__ == "__main__":
         default=None,
         help="Model name to use (e.g., 'gemini-3-pro-all', 'gpt-5.2', 'claude-sonnet-4-5-20250929'). If not provided, uses default model."
     )
+    parser.add_argument(
+        "--difficulty",
+        choices=["normal", "hard", "no_deal"],
+        default=os.environ.get("DIFFICULTY", "normal"),
+        help="ZOPA difficulty: normal (default), hard (tight ZOPA ~5%% spread), "
+             "no_deal (buyer max < seller min — no rational agreement possible).",
+    )
     args = parser.parse_args()
-    main(model_name=args.model)
+    main(model_name=args.model, difficulty=args.difficulty)
 

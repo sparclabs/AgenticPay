@@ -88,7 +88,7 @@ def get_model_name(model):
 
     return model_str
     
-def main(model_name=None):
+def main(model_name=None, difficulty="normal"):
     """Main function: Demonstrates basic negotiation flow
     
     Args:
@@ -144,6 +144,7 @@ def main(model_name=None):
     print("Creating agents...")
     buyer_max_price = 150.0  # Maximum acceptable purchase price for buyer (confidential)
     seller_min_price = 80.0  # Minimum acceptable selling price for seller (confidential)
+    buyer_max_price, seller_min_price = adjust_zopa(buyer_max_price, seller_min_price, difficulty)
     
     buyer = BuyerAgent(model=model, buyer_max_price=buyer_max_price)
     seller = SellerAgent(model=model, seller_min_price=seller_min_price)
@@ -222,6 +223,7 @@ def main(model_name=None):
     
     # Initialize results dictionary
     results = {
+        "difficulty": difficulty,
         "task": "Task1_basic_price_negotiation",
         "timestamp": datetime.now().isoformat(),
         "user_requirement": user_requirement,
@@ -472,6 +474,13 @@ if __name__ == "__main__":
         default=None,
         help="Model name to use (e.g., 'gemini-3-pro-all', 'gpt-5.2', 'claude-sonnet-4-5-20250929'). If not provided, uses default model."
     )
+    parser.add_argument(
+        "--difficulty",
+        choices=["normal", "hard", "no_deal"],
+        default=os.environ.get("DIFFICULTY", "normal"),
+        help="ZOPA difficulty: normal (default), hard (tight ZOPA ~5%% spread), "
+             "no_deal (buyer max < seller min — no rational agreement possible).",
+    )
     args = parser.parse_args()
-    main(model_name=args.model)
+    main(model_name=args.model, difficulty=args.difficulty)
 

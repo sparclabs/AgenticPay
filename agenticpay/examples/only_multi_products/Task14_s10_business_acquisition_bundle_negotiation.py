@@ -28,11 +28,11 @@ from agenticpay.models.sglang_vlm import SGLangVLM
 # Import configuration parameters
 examples_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, examples_dir)
-from config import reward_weights, buyer_reward_aggregation, seller_reward_aggregation, max_rounds, price_tolerance, get_model, get_model_name
+from config import reward_weights, buyer_reward_aggregation, seller_reward_aggregation, max_rounds, price_tolerance, get_model, get_model_name, adjust_zopa
 
 
 
-def main(model_name=None):
+def main(model_name=None, difficulty="normal"):
     """Main function: Demonstrates two-product negotiation flow
     
     Args:
@@ -48,6 +48,7 @@ def main(model_name=None):
     print("Creating agents...")
     buyer_max_price = 270000.0  # Maximum acceptable total purchase price for buyer (confidential) - Business $250,000 + Support $20,000
     seller_min_price = 210000.0  # Minimum acceptable total selling price for seller (confidential) - Business $195,000 + Support $15,000
+    buyer_max_price, seller_min_price = adjust_zopa(buyer_max_price, seller_min_price, difficulty)
     buyer = BuyerAgent(model=model, buyer_max_price=buyer_max_price)
     seller = SellerAgent(model=model, seller_min_price=seller_min_price)
     
@@ -128,6 +129,7 @@ def main(model_name=None):
     
     # Initialize results dictionary
     results = {
+        "difficulty": difficulty,
         "task": "Task14_s10_business_acquisition_bundle_negotiation",
         "timestamp": datetime.now().isoformat(),
         "user_requirement": user_requirement,
@@ -317,6 +319,13 @@ if __name__ == "__main__":
         default=None,
         help="Model name to use (e.g., 'gemini-3-pro-all', 'gpt-5.2', 'claude-sonnet-4-5-20250929'). If not provided, uses default model."
     )
+    parser.add_argument(
+        "--difficulty",
+        choices=["normal", "hard", "no_deal"],
+        default=os.environ.get("DIFFICULTY", "normal"),
+        help="ZOPA difficulty: normal (default), hard (tight ZOPA ~5%% spread), "
+             "no_deal (buyer max < seller min — no rational agreement possible).",
+    )
     args = parser.parse_args()
-    main(model_name=args.model)
+    main(model_name=args.model, difficulty=args.difficulty)
 

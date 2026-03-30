@@ -79,3 +79,13 @@ try:
         __all__ = ["BaseLLM", "BaseVLM", "VLLMHttpLLM"]
 except ImportError:
     pass  # VLLMHttpLLM is optional
+
+# Try to import Anthropic LLM implementation, but don't fail if not available
+try:
+    from agenticpay.models.anthropic_llm import AnthropicLLM
+    if len(__all__) > 2:
+        __all__.append("AnthropicLLM")
+    else:
+        __all__ = ["BaseLLM", "BaseVLM", "AnthropicLLM"]
+except ImportError:
+    pass  # AnthropicLLM is optional

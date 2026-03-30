@@ -29,7 +29,7 @@ from agenticpay.models.sglang_vlm import SGLangVLM
 examples_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, examples_dir)
 try:
-    from config import reward_weights, buyer_reward_aggregation, seller_reward_aggregation, max_rounds, price_tolerance, get_model, get_model_name
+    from config import reward_weights, buyer_reward_aggregation, seller_reward_aggregation, max_rounds, price_tolerance, get_model, get_model_name, adjust_zopa
 except ImportError:
     # Default values if config not available
     reward_weights = {"buyer_savings": 1.0, "seller_profit": 1.0, "time_cost": 0.1}
@@ -40,7 +40,7 @@ except ImportError:
 
 
 
-def main(model_name=None):
+def main(model_name=None, difficulty="normal"):
     """Main function: Demonstrates multi-buyer multi-seller negotiation flow
     
     Args:
@@ -59,6 +59,10 @@ def main(model_name=None):
     seller1_min_price = 80.0  # Minimum acceptable selling price for seller1 (confidential)
     seller2_min_price = 85.0  # Minimum acceptable selling price for seller2 (confidential)
     seller3_min_price = 90.0  # Minimum acceptable selling price for seller3 (confidential)
+    _ref_seller_min = min(seller1_min_price, seller2_min_price, seller3_min_price)
+    buyer1_max_price, _ = adjust_zopa(buyer1_max_price, _ref_seller_min, difficulty)
+    buyer2_max_price, _ = adjust_zopa(buyer2_max_price, _ref_seller_min, difficulty)
+    buyer3_max_price, _ = adjust_zopa(buyer3_max_price, _ref_seller_min, difficulty)
     
     buyer1 = BuyerAgent(model=model, buyer_max_price=buyer1_max_price)
     buyer2 = BuyerAgent(model=model, buyer_max_price=buyer2_max_price)
@@ -130,6 +134,7 @@ def main(model_name=None):
     
     # Initialize results dictionary
     results = {
+        "difficulty": difficulty,
         "task": "Task2_parallel_three_buyer_three_seller_negotiation",
         "timestamp": datetime.now().isoformat(),
         "user_requirement": user_requirement,
@@ -706,6 +711,13 @@ if __name__ == "__main__":
         default=None,
         help="Model name to use (e.g., 'gemini-3-pro-all', 'gpt-5.2', 'claude-sonnet-4-5-20250929'). If not provided, uses default model."
     )
+    parser.add_argument(
+        "--difficulty",
+        choices=["normal", "hard", "no_deal"],
+        default=os.environ.get("DIFFICULTY", "normal"),
+        help="ZOPA difficulty: normal (default), hard (tight ZOPA ~5%% spread), "
+             "no_deal (buyer max < seller min — no rational agreement possible).",
+    )
     args = parser.parse_args()
-    main(model_name=args.model)
+    main(model_name=args.model, difficulty=args.difficulty)
 

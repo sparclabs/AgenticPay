@@ -105,14 +105,17 @@ def extract_metrics(path: Path, model_filter) -> dict:
     parts = path.parts
     category = parts[-4] if len(parts) >= 4 else "unknown"
 
+    task = data.get("task", "")
     return {
         "model": model,
         "category": category,
+        "difficulty": data.get("difficulty", "normal"),
         "success": bool(data.get("success", False)),
         "global_score": data.get("global_score"),
         "buyer_score": data.get("buyer_score"),
         "seller_score": data.get("seller_score"),
         "overflow": _check_overflow(data),
+        "is_quantity_discount": "quantity_discount" in task,
     }
 
 
@@ -254,31 +257,54 @@ def main() -> None:
     model_tag = f"  (model filter: '{args.model}')" if args.model else ""
     print(f"\nLoaded {len(records)} result(s) from {args.results_dir}{model_tag}")
 
-    # Overall
-    overall_rows = [("Overall", aggregate(records))]
-    print_table("Overall Results", overall_rows)
+    records_excl = [r for r in records if not r["is_quantity_discount"]]
+    records_incl = records
+    n_qty = len(records) - len(records_excl)
 
-    # Per-category
-    by_cat = defaultdict(list)
-    for r in records:
-        by_cat[r["category"]].append(r)
-    cat_rows = [(cat, aggregate(recs)) for cat, recs in sorted(by_cat.items())]
-    print_table("Results by Category", cat_rows)
+    def _print_all_tables(recs, title_prefix, csv_suffix):
+        # Overall
+        overall_rows = [(title_prefix.strip() or "Overall", aggregate(recs))]
+        print_table(f"{title_prefix}Overall Results", overall_rows)
 
-    # Per-model (only printed when results span multiple models)
-    models_seen = sorted({r["model"] for r in records})
-    if len(models_seen) > 1:
-        model_rows = [(m, aggregate([r for r in records if r["model"] == m]))
-                      for m in models_seen]
-        print_table("Results by Model", model_rows)
+        # Per-category
+        by_cat = defaultdict(list)
+        for r in recs:
+            by_cat[r["category"]].append(r)
+        cat_rows = [(cat, aggregate(rs)) for cat, rs in sorted(by_cat.items())]
+        print_table(f"{title_prefix}Results by Category", cat_rows)
 
-    # CSV
-    if args.csv:
-        print("\nWriting CSV files...")
-        save_csv(args.results_dir / "overall.csv",     overall_rows)
-        save_csv(args.results_dir / "by_category.csv", cat_rows)
+        # Per-difficulty
+        diffs_seen = sorted({r["difficulty"] for r in recs},
+                            key=lambda d: ("normal", "hard", "no_deal").index(d)
+                            if d in ("normal", "hard", "no_deal") else 99)
+        diff_rows = None
+        if len(diffs_seen) > 1:
+            diff_rows = [(d, aggregate([r for r in recs if r["difficulty"] == d]))
+                         for d in diffs_seen]
+            print_table(f"{title_prefix}Results by Difficulty", diff_rows)
+
+        # Per-model
+        models_seen = sorted({r["model"] for r in recs})
+        model_rows = None
         if len(models_seen) > 1:
-            save_csv(args.results_dir / "by_model.csv", model_rows)
+            model_rows = [(m, aggregate([r for r in recs if r["model"] == m]))
+                          for m in models_seen]
+            print_table(f"{title_prefix}Results by Model", model_rows)
+
+        if args.csv:
+            print(f"\nWriting CSV files ({csv_suffix})...")
+            save_csv(args.results_dir / f"overall{csv_suffix}.csv",     overall_rows)
+            save_csv(args.results_dir / f"by_category{csv_suffix}.csv", cat_rows)
+            if diff_rows:
+                save_csv(args.results_dir / f"by_difficulty{csv_suffix}.csv", diff_rows)
+            if model_rows:
+                save_csv(args.results_dir / f"by_model{csv_suffix}.csv", model_rows)
+
+    _print_all_tables(records_incl, "", "")
+    if n_qty > 0:
+        print(f"\n  ({n_qty} quantity-discount task(s) found — "
+              "showing results without them below)\n")
+        _print_all_tables(records_excl, "[Excl. Quantity Discount] ", "_excl_qty")
 
 
 if __name__ == "__main__":

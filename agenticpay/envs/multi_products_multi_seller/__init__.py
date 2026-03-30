@@ -10,11 +10,13 @@ from agenticpay.envs.multi_products_multi_seller.Task1_parallel_two_seller_per_o
 from agenticpay.envs.multi_products_multi_seller.Task2_parallel_three_seller_per_one_product_negotiation import Task2ParallelThreeSellerPerOneProductNegotiation
 from agenticpay.envs.multi_products_multi_seller.Task3_sequential_two_seller_per_one_product_negotiation import Task3SequentialTwoSellerPerOneProductNegotiation
 from agenticpay.envs.multi_products_multi_seller.Task4_sequential_three_seller_per_one_product_negotiation import Task4SequentialThreeSellerPerOneProductNegotiation
+from agenticpay.envs.multi_products_multi_seller.Task15_quantity_discount_negotiation import Task15MultiProductTwoSellerQuantityDiscountNegotiation
 
 __all__ = [
     "Task1ParallelTwoSellerPerOneProductNegotiation",
     "Task2ParallelThreeSellerPerOneProductNegotiation",
     "Task3SequentialTwoSellerPerOneProductNegotiation",
     "Task4SequentialThreeSellerPerOneProductNegotiation",
+    "Task15MultiProductTwoSellerQuantityDiscountNegotiation",
 ]
 

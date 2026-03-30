@@ -30,11 +30,11 @@ from agenticpay.models.qwen3_vl import Qwen3VL
 from agenticpay.models.vllm_lm import VLLMLLM
 from agenticpay.models.sglang_vlm import SGLangVLM
 
-from agenticpay.examples.config import reward_weights, max_rounds, price_tolerance, get_model, get_model_name
+from agenticpay.examples.config import reward_weights, max_rounds, price_tolerance, get_model, get_model_name, adjust_zopa
 
 
 
-def main(model_name=None):
+def main(model_name=None, difficulty="normal"):
     """Main function: Demonstrates basic negotiation flow
     
     Args:
@@ -50,6 +50,7 @@ def main(model_name=None):
     # Scenario 5: Sea Gull Wall Lantern - buyer_max_price: $58 (wants discount), seller_min_price: $45 (cost basis)
     buyer_max_price = 58.0  # Maximum acceptable purchase price for buyer (confidential)
     seller_min_price = 45.0  # Minimum acceptable selling price for seller (confidential)
+    buyer_max_price, seller_min_price = adjust_zopa(buyer_max_price, seller_min_price, difficulty)
     
     buyer = BuyerAgent(model=model, buyer_max_price=buyer_max_price)
     seller = SellerAgent(model=model, seller_min_price=seller_min_price)
@@ -132,6 +133,7 @@ def main(model_name=None):
     
     # Initialize results dictionary
     results = {
+        "difficulty": difficulty,
         "task": "Task8_s5_wall_lantern_negotiation",
         "category": "Home & Garden",
         "scenario": "Sea Gull Lighting Wynfield Wall Lantern transaction",
@@ -388,6 +390,13 @@ if __name__ == "__main__":
         default=None,
         help="VLM model name (e.g., 'gpt-4o', 'gpt-4o-mini', 'gpt-4-vision-preview'). Default: gpt-4o-mini"
     )
+    parser.add_argument(
+        "--difficulty",
+        choices=["normal", "hard", "no_deal"],
+        default=os.environ.get("DIFFICULTY", "normal"),
+        help="ZOPA difficulty: normal (default), hard (tight ZOPA ~5%% spread), "
+             "no_deal (buyer max < seller min — no rational agreement possible).",
+    )
     args = parser.parse_args()
-    main(model_name=args.model)
+    main(model_name=args.model, difficulty=args.difficulty)
 
