@@ -81,12 +81,13 @@ TASK_SCRIPTS["Task11"]="Task11_s7_saas_software_bundle_negotiation"
 TASK_SCRIPTS["Task12"]="Task12_s8_raw_materials_bundle_negotiation"
 TASK_SCRIPTS["Task13"]="Task13_s9_luxury_watch_bundle_negotiation"
 TASK_SCRIPTS["Task14"]="Task14_s10_business_acquisition_bundle_negotiation"
+TASK_SCRIPTS["Task15"]="Task15_quantity_discount_negotiation"
 
 # Determine which tasks to run
 if [ ${#TASKS[@]} -eq 0 ]; then
     # If TASKS is empty, run all available tasks
     echo "TASKS list is empty. Running all available tasks..."
-    TASKS_TO_RUN=("Task1" "Task2" "Task3" "Task4" "Task5" "Task6" "Task7" "Task8" "Task9" "Task10" "Task11" "Task12" "Task13" "Task14")
+    TASKS_TO_RUN=("Task1" "Task2" "Task3" "Task4" "Task5" "Task6" "Task7" "Task8" "Task9" "Task10" "Task11" "Task12" "Task13" "Task14" "Task15")
 else
     # Use the specified task list
     TASKS_TO_RUN=("${TASKS[@]}")

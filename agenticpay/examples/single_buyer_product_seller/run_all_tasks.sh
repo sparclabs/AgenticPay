@@ -60,7 +60,7 @@ MODELS=("llama-3.1-8b")
 # Format: Just specify task numbers (e.g., "Task1", "Task4", "Task5")
 # Example:
 # TASKS=("Task1" "Task4" "Task5")
-TASKS=("Task12")
+TASKS=()
 
 # ============================================
 # Execute Tasks
@@ -80,12 +80,13 @@ TASK_SCRIPTS["Task10"]="Task10_s7_sandals_negotiation"
 TASK_SCRIPTS["Task11"]="Task11_s8_jeans_negotiation"
 TASK_SCRIPTS["Task12"]="Task12_s9_beverage_negotiation"
 TASK_SCRIPTS["Task13"]="Task13_s10_food_color_negotiation"
+TASK_SCRIPTS["Task15"]="Task15_quantity_discount_negotiation"
 
 # Determine which tasks to run
 if [ ${#TASKS[@]} -eq 0 ]; then
     # If TASKS is empty, run all available tasks
     echo "TASKS list is empty. Running all available tasks..."
-    TASKS_TO_RUN=("Task1" "Task2" "Task3" "Task4" "Task5" "Task6" "Task7" "Task8" "Task9" "Task10" "Task11" "Task12" "Task13")
+    TASKS_TO_RUN=("Task1" "Task2" "Task3" "Task4" "Task5" "Task6" "Task7" "Task8" "Task9" "Task10" "Task11" "Task12" "Task13" "Task15")
 else
     # Use the specified task list
     TASKS_TO_RUN=("${TASKS[@]}")
