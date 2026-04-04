@@ -2,6 +2,17 @@
 
 # claude-opus-4-5-20251101
 
+# Parse arguments
+SKIP_EXISTING=0
+for arg in "$@"; do
+    case "$arg" in
+        --skip-existing)
+            SKIP_EXISTING=1
+            echo "Mode: skip tasks with existing results"
+            ;;
+    esac
+done
+
 # Change to script directory
 cd "$(dirname "$0")"
 
@@ -48,7 +59,7 @@ for dir in "${DIRS[@]}"; do
     
     # Change to the subdirectory and execute the script
     cd "${BASE_DIR}/${dir}"
-    bash run_all_tasks.sh
+    SKIP_EXISTING="$SKIP_EXISTING" bash run_all_tasks.sh
     
     # Check if the script executed successfully
     if [ $? -ne 0 ]; then

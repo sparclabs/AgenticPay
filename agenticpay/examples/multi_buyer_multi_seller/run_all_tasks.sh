@@ -42,6 +42,29 @@ save_run_history() {
     fi
 }
 
+
+# Function to check if task results already exist for a given model
+task_result_exists() {
+    local model_name="$1"
+    local script_name="$2"
+    local model_name_safe=$(echo "$model_name" | sed 's/[\/\\:]/_/g')
+    local model_dir="$RESULTS_BASE/$model_name_safe"
+
+    if [ ! -d "$model_dir" ]; then
+        return 1
+    fi
+
+    for summary in "$model_dir"/batch_evaluation_*/summary.json; do
+        if [ -f "$summary" ]; then
+            local task_in_file
+            task_in_file=$(python3 -c "import json; d=json.load(open('$summary')); print(d.get('task',''))" 2>/dev/null)
+            if [ "$task_in_file" = "$script_name" ]; then
+                return 0
+            fi
+        fi
+    done
+    return 1
+}
 # ============================================
 # Configuration: Model List
 # ============================================
@@ -148,6 +171,10 @@ else
             fi
             
             if [ -f "${script_name}.py" ]; then
+                if [ "${SKIP_EXISTING:-0}" = "1" ] && task_result_exists "$model" "$script_name"; then
+                    echo "Skipping ${task_name} (model: $model) - results already exist"
+                    continue
+                fi
                 echo ""
                 echo "Running ${task_name} (model: $model)..."
                 python "${script_name}.py" --model "$model" 2>&1 | tee "$TEMP_LOG"
