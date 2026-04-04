@@ -72,7 +72,7 @@ task_result_exists() {
 # If the list is empty, each script will use its default model
 # Example:
 # MODELS=("gpt-5.2" "gemini-3-pro-all" "claude-sonnet-4-5-20250929")
-MODELS=("gpt-5.4")
+MODELS=("google/gemma-4-31B-it")
 
 # ============================================
 # Configuration: Task List
