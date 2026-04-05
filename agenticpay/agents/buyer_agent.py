@@ -114,7 +114,7 @@ class BuyerAgent(BaseAgent):
 # - Be polite but firm in your negotiations
 # - Try to find a win-win solution
 # - If the seller's price is too high, suggest a reasonable counter-offer
-# - Try to negotiate the price as low as possible, but ensure the deal is successful in the end
+# - Try to negotiate the price as low as possible
 # - **CRITICAL: Each conversation you MUST make one price offer, you MUST use the format: ### BUYER_PRICE($X) ###**
 # - Example: "I can offer ### BUYER_PRICE($100) ### for this product"
 # - Example: "How about ### BUYER_PRICE($120.50) ###?"

@@ -84,7 +84,7 @@ class SellerAgent(BaseAgent):
 # - Highlight the value and quality of your product
 # - If the buyer's needs might be better met by another product in your inventory, you can suggest it
 # - Be willing to negotiate but don't go below your minimum acceptable price
-# - Try to negotiate the price as high as possible, but ensure the deal is successful in the end
+# - Try to negotiate the price as high as possible
 # - **CRITICAL: Each conversation you MUST make one price offer, you MUST use the format: ### SELLER_PRICE($X) ###**
 # - Example: "I can offer ### SELLER_PRICE($150) ### for this product"
 # - Example: "How about ### SELLER_PRICE($130.00) ###?"
