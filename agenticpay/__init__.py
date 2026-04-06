@@ -4,6 +4,8 @@ from agenticpay.core import NegotiationStatus, NegotiationInfo, BaseEnv
 from agenticpay.agents.base_agent import BaseAgent
 from agenticpay.agents.buyer_agent import BuyerAgent
 from agenticpay.agents.seller_agent import SellerAgent
+from agenticpay.agents.multi_param_buyer_agent import MultiParamBuyerAgent
+from agenticpay.agents.multi_param_seller_agent import MultiParamSellerAgent
 from agenticpay.memory.conversation_memory import ConversationMemory
 from agenticpay.models.base_llm import BaseLLM
 
@@ -18,7 +20,12 @@ from agenticpay.envs import (
     Task1BasicPriceNegotiation,  # Backward compatibility
     Task2ClosePriceNegotiation,  # Backward compatibility
     Task3CloseToMarketPriceNegotiation,  # Backward compatibility
+    Task1PriceQualityNegotiation,
+    Task2PriceQualityDeliveryNegotiation,
+    Task3PriceQualityDeliveryWarrantyNegotiation,
+    Task4AllParamsNegotiation,
 )
+from agenticpay.envs.multi_param.base_multi_param_negotiation import ParamPreferences, MultiParamOffer
 
 __version__ = "0.1.0"
 
@@ -31,6 +38,8 @@ __all__ = [
     "BaseAgent",
     "BuyerAgent",
     "SellerAgent",
+    "MultiParamBuyerAgent",
+    "MultiParamSellerAgent",
     # Memory
     "ConversationMemory",
     # LLM
@@ -46,6 +55,13 @@ __all__ = [
     "Task1BasicPriceNegotiation",
     "Task2ClosePriceNegotiation",
     "Task3CloseToMarketPriceNegotiation",
+    # Multi-parameter negotiation
+    "Task1PriceQualityNegotiation",
+    "Task2PriceQualityDeliveryNegotiation",
+    "Task3PriceQualityDeliveryWarrantyNegotiation",
+    "Task4AllParamsNegotiation",
+    "ParamPreferences",
+    "MultiParamOffer",
 ]
 
 # Try to import OpenAI LLM if available

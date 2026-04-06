@@ -19,6 +19,11 @@ __all__ = [
     "pprint_registry",
     "registry",
     "EnvSpec",
+    # Multi-parameter negotiation environments
+    "Task1PriceQualityNegotiation",
+    "Task2PriceQualityDeliveryNegotiation",
+    "Task3PriceQualityDeliveryWarrantyNegotiation",
+    "Task4AllParamsNegotiation",
     "Task1BasicPriceNegotiation",
     "Task2ClosePriceNegotiation",
     "Task3CloseToMarketPriceNegotiation",
@@ -173,5 +178,35 @@ register(
 register(
     id="Task15_quantity_discount_negotiation_multi_buyer_multi_products_multi_seller-v0",
     entry_point="agenticpay.envs.multi_buyer_multi_products_multi_seller.Task15_quantity_discount_negotiation:Task15TwoBuyerTwoSellerMultiProductQuantityDiscountNegotiation",
+    max_episode_steps=20,
+)
+
+# Multi-parameter negotiation environments
+from agenticpay.envs.multi_param.Task1_price_quality_negotiation import Task1PriceQualityNegotiation
+from agenticpay.envs.multi_param.Task2_price_quality_delivery_negotiation import Task2PriceQualityDeliveryNegotiation
+from agenticpay.envs.multi_param.Task3_price_quality_delivery_warranty_negotiation import Task3PriceQualityDeliveryWarrantyNegotiation
+from agenticpay.envs.multi_param.Task4_all_params_negotiation import Task4AllParamsNegotiation
+
+register(
+    id="Task1_price_quality_negotiation-v0",
+    entry_point="agenticpay.envs.multi_param.Task1_price_quality_negotiation:Task1PriceQualityNegotiation",
+    max_episode_steps=20,
+)
+
+register(
+    id="Task2_price_quality_delivery_negotiation-v0",
+    entry_point="agenticpay.envs.multi_param.Task2_price_quality_delivery_negotiation:Task2PriceQualityDeliveryNegotiation",
+    max_episode_steps=20,
+)
+
+register(
+    id="Task3_price_quality_delivery_warranty_negotiation-v0",
+    entry_point="agenticpay.envs.multi_param.Task3_price_quality_delivery_warranty_negotiation:Task3PriceQualityDeliveryWarrantyNegotiation",
+    max_episode_steps=20,
+)
+
+register(
+    id="Task4_all_params_negotiation-v0",
+    entry_point="agenticpay.envs.multi_param.Task4_all_params_negotiation:Task4AllParamsNegotiation",
     max_episode_steps=20,
 )
